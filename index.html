@@ -95,7 +95,7 @@
                   </svg>
                   Gallery
                </button>
-               <h1 id="detailsTitle">Cap</h1>
+               <h1 id="detailsTitle" contenteditable="true">Cap</h1>
                <button type="button" id="deleteButton" title="Delete cap"></button>
             </div>
             <div class="details-body">
@@ -134,23 +134,48 @@
             </div>
             <div class="sheet-body">
                <div class="setting-row">
+                  <span class="setting-label">Theme</span>
+                  <div class="settings-buttons">
+                     <button class="theme-btn selected" data-theme-pref="auto">Device</button>
+                     <button class="theme-btn" data-theme-pref="light">Light</button>
+                     <button class="theme-btn" data-theme-pref="dark">Dark</button>
+                  </div>
+               </div>
+               <div class="setting-row">
                   <span class="setting-label">Appearance</span>
-                  <div class="theme-buttons">
+                  <div class="settings-buttons">
                      <button class="theme-btn selected" data-theme-val="android">Android</button>
                      <button class="theme-btn" data-theme-val="ios">iOS</button>
                   </div>
                </div>
                <div class="setting-row">
+                  <span class="setting-label">Show cap names in gallery</span>
+                  <div class="settings-buttons">
+                     <button class="theme-btn selected" data-button-val="yes">Yes</button>
+                     <button class="theme-btn" data-button-val="no">No</button>
+                  </div>
+               </div>
+               <hr>
+               <div class="setting-row">
                   <span class="setting-label">Github API key</span>
+                  <!-- insert the fine-grained token to be able to post data on the github repo -->
                </div>
                <div class="setting-row">
                   <span class="setting-label">Automatic saving</span>
+                  <!-- if yes first set a passphrase to encript the saved data -->
+                  <div class="settings-buttons">
+                     <button class="theme-btn selected" data-button-val="yes">Yes</button>
+                     <button class="theme-btn" data-button-val="no">No</button>
+                  </div>
                </div>
+               <hr>
                <div class="setting-row">
                   <span class="setting-label">Import data</span>
+                  <!-- import backup from device or from github repo with the correct passphrase -->
                </div>
                <div class="setting-row">
                   <span class="setting-label">Export data</span>
+                  <!-- export to device as a backup or as all the gallery data files (maybe in a zip) -->
                </div>
             </div>
          </section>

@@ -6,502 +6,93 @@
 :root {
    /* Colors */
    --clr-bg: #fffbfe;
-   --clr-surface: #fef7ff;
-   /* Warmer than pure white (M3) */
-   --clr-surface-2: #f2eef5;
-   /* More distinct from surface */
+   --clr-surface: #ffffff;
+   --clr-surface-2: #f4eff4;
    --clr-on-surface: #1c1b1f;
    --clr-primary: #6750a4;
    --clr-on-primary: #ffffff;
-   --clr-primary-container: #eaddff;
-   /* For selected states */
    --clr-accent: #7965af;
-   --clr-destructive: #dc2626;
-   /* System red */
-   --clr-success: #16a34a;
-   /* System green */
-   --clr-warning: #f59e0b;
-   /* System orange */
    --clr-ripple: rgba(103, 80, 164, 0.12);
    --clr-border: #cac4d0;
    --clr-muted: #49454f;
    --clr-overlay: rgba(0, 0, 0, 0.45);
    --clr-search-bg: #e8def8;
 
-   /* Elevation overlays (Material You key feature) */
-   --elevation-0: none;
-   --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.15);
-   --elevation-2: 0 2px 6px rgba(0, 0, 0, 0.25), 0 1px 4px rgba(0, 0, 0, 0.1);
-   --elevation-3: 0 4px 16px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.14);
-
-   /* Shape (larger radii for M3) */
-   --radius-sm: 8px;
-   /* Was 4px - M3 minimum */
-   --radius-md: 16px;
-   /* Was 12px */
+   /* Shape */
+   --radius-sm: 4px;
+   --radius-md: 12px;
    --radius-lg: 28px;
-   --radius-xl: 32px;
-   /* For bottom sheets */
    --radius-pill: 999px;
    --radius-sheet: 28px 28px 0 0;
 
    /* Typography */
-   --font: 'Google Sans', 'Roboto', system-ui, -apple-system, sans-serif;
+   --font: 'Google Sans', 'Roboto', sans-serif;
    --font-size: 14px;
    --font-size-lg: 20px;
-   --font-size-title: 22px;
-   /* Large titles */
    --font-weight-med: 500;
-   --line-height-tight: 1.2;
-   --line-height-normal: 1.5;
 
-   /* Spacing (8dp grid system) */
-   --lsp: 8px;
-   /* Was 6px */
-   --sp: 16px;
-   /* Was 12px */
+   /* Spacing */
+   --lsp: 6px;
+   --sp: 12px;
    --sidebar-w: 176px;
 
    /* Components */
-   --btn-h: 48px;
-   /* M3 minimum touch target */
+   --btn-h: 40px;
    --input-radius: 4px 4px 0 0;
-   /* Underline style */
+   /* underline style */
    --input-border: 2px solid var(--clr-primary);
 
-   /* Elevation / shadow (legacy, use elevation vars above) */
+   /* Elevation / shadow */
    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .12), 0 1px 3px rgba(0, 0, 0, .08);
    --shadow-md: 0 3px 8px rgba(0, 0, 0, .14), 0 1px 3px rgba(0, 0, 0, .1);
    --shadow-sheet: 0 -4px 24px rgba(0, 0, 0, .18);
 
    /* Motion */
-   --dur: 300ms;
-   /* Snappier than 320ms */
+   --dur: 320ms;
    --ease: cubic-bezier(0.2, 0, 0, 1);
-   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+   /* Material standard */
    --ease-decel: cubic-bezier(0, 0, 0.2, 1);
    --ease-accel: cubic-bezier(0.4, 0, 1, 1);
-   --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
-   /* Hero transitions */
 }
 
 /* --- iOS / Human Interface Guidelines --- */
 [data-theme="ios"] {
-   /* Colors (iOS 15+ system colors) */
    --clr-bg: #f2f2f7;
-   /* systemGray6 */
    --clr-surface: #ffffff;
    --clr-surface-2: #e5e5ea;
-   /* systemGray5 */
    --clr-on-surface: #000000;
    --clr-primary: #007aff;
-   /* System Blue */
    --clr-on-primary: #ffffff;
-   --clr-primary-container: #d4e6ff;
    --clr-accent: #0a84ff;
-   /* Lighter blue */
-   --clr-destructive: #ff3b30;
-   /* System Red */
-   --clr-success: #34c759;
-   /* System Green */
-   --clr-warning: #ff9500;
-   /* System Orange */
-   --clr-ripple: rgba(0, 122, 255, 0.08);
-   /* Subtler */
-   --clr-border: rgba(60, 60, 67, 0.29);
-   /* More translucent */
+   --clr-ripple: rgba(0, 122, 255, 0.10);
+   --clr-border: rgba(60, 60, 67, 0.18);
    --clr-muted: #8e8e93;
-   --clr-overlay: rgba(0, 0, 0, 0.4);
    --clr-search-bg: #e5f0ff;
 
-   /* iOS blur effect */
-   --blur-bg: rgba(242, 242, 247, 0.8);
-   --backdrop-blur: blur(20px);
-
-   /* Shape (larger, uniform radii) */
-   --radius-sm: 8px;
-   --radius-md: 10px;
-   /* Standard cards */
-   --radius-lg: 13px;
-   /* Large cards */
-   --radius-xl: 16px;
-   /* Bottom sheets */
+   --radius-sm: 10px;
+   --radius-md: 13px;
+   --radius-lg: 16px;
    --radius-pill: 999px;
    --radius-sheet: 16px 16px 0 0;
 
-   /* Typography (SF Pro + Dynamic Type) */
-   --font: -apple-system, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+   --font: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
    --font-size: 15px;
    --font-size-lg: 17px;
-   --font-size-title: 28px;
-   /* Large titles (bold) */
-   --font-weight-med: 500;
-   --font-weight-semibold: 600;
-   --line-height-tight: 1.1;
-   --line-height-normal: 1.45;
-   --letter-spacing: -0.3px;
-   /* Tighter tracking for large titles */
 
-   /* Spacing */
-   --lsp: 8px;
-   --sp: 16px;
-   --sidebar-w: 176px;
-
-   /* Components */
-   --btn-h: 44px;
-   /* Apple minimum */
-   --input-radius: 10px;
-   /* Fully rounded text fields */
-   --input-border: 1px solid var(--clr-border);
-   --input-focus-border: 2px solid var(--clr-primary);
-
-   /* Shadows (lighter, diffused) */
-   --shadow-sm: 0 0.5px 1.5px rgba(0, 0, 0, 0.05);
-   --shadow-md: 0 2px 12px rgba(0, 0, 0, 0.08);
-   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
-   --shadow-sheet: 0 -2px 20px rgba(0, 0, 0, 0.12);
-
-   /* Motion (iOS spring animations) */
-   --dur: 350ms;
-   --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-   --ease-spring: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-   --ease-decel: cubic-bezier(0, 0, 0.2, 1);
-   --ease-accel: cubic-bezier(0.4, 0, 1, 1);
-}
-
-/* =====================================================
-       PLATFORM-SPECIFIC STYLES
-       ===================================================== */
-
-/* Android Scrollbar */
-::-webkit-scrollbar {
-   width: 4px;
-   background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-   background: var(--clr-primary);
-   border-radius: 4px;
-}
-
-/* iOS Scrollbar (minimal) */
-[data-theme="ios"] ::-webkit-scrollbar {
-   width: 2px;
-}
-
-[data-theme="ios"] ::-webkit-scrollbar-thumb {
-   background: rgba(0, 0, 0, 0.3);
-   border-radius: 2px;
-}
-
-/* iOS Blur Effects */
-[data-theme="ios"] .tab-header,
-[data-theme="ios"] #topbar {
-   background: var(--blur-bg);
-   backdrop-filter: var(--backdrop-blur);
-   -webkit-backdrop-filter: var(--backdrop-blur);
-}
-
-[data-theme="ios"] .sheet-body {
-   background: var(--blur-bg);
-   backdrop-filter: var(--backdrop-blur);
-   -webkit-backdrop-filter: var(--backdrop-blur);
-}
-
-
-/* =====================================================
-       DARK THEME VARIABLES
-       ===================================================== */
-/* @media (prefers-color-scheme: dark) { */
-
-/* =====================================================
-          DARK THEME VARIABLES
-          ===================================================== */
-
-/* --- Android / Material You Dark Theme --- */
-[data-theme="android-dark"] {
-   /* Colors (Material You dark scheme) */
-   --clr-bg: #1c1b1f;
-   /* Surface background */
-   --clr-surface: #211f26;
-   /* Slightly lighter than bg */
-   --clr-surface-2: #2b2930;
-   /* Elevated surface */
-   --clr-on-surface: #e6e1e5;
-   /* High-emphasis text */
-   --clr-primary: #d0bcff;
-   /* Muted primary for dark bg */
-   --clr-on-primary: #381e72;
-   /* Dark bg primary text */
-   --clr-primary-container: #4a3788;
-   /* Container for selected states */
-   --clr-accent: #b69eff;
-   /* Lighter accent */
-   --clr-destructive: #f87171;
-   /* Softer destructive red */
-   --clr-success: #4ade80;
-   /* Softer success green */
-   --clr-warning: #fbbf24;
-   /* Softer warning orange */
-   --clr-ripple: rgba(208, 188, 255, 0.12);
-   --clr-border: #49454f;
-   /* Subtle border */
-   --clr-muted: #cac4d0;
-   /* Muted text */
-   --clr-overlay: rgba(0, 0, 0, 0.65);
-   /* Darker overlay */
-   --clr-search-bg: #2b2930;
-   /* Search field background */
-
-   /* Elevation overlays (darker shadows for dark mode) */
-   --elevation-0: none;
-   --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
-   --elevation-2: 0 2px 6px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.25);
-   --elevation-3: 0 4px 16px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
-
-   /* Shadows (dark mode optimized) */
-   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
-   --shadow-md: 0 3px 8px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
-   --shadow-sheet: 0 -4px 24px rgba(0, 0, 0, 0.4);
-
-   /* Shape (unchanged from light but kept for dark) */
-   --radius-sm: 8px;
-   --radius-md: 16px;
-   --radius-lg: 28px;
-   --radius-xl: 32px;
-   --radius-pill: 999px;
-   --radius-sheet: 28px 28px 0 0;
-
-   /* Typography */
-   --font: 'Google Sans', 'Roboto', system-ui, -apple-system, sans-serif;
-   --font-size: 14px;
-   --font-size-lg: 20px;
-   --font-size-title: 22px;
-   --font-weight-med: 500;
-   --line-height-tight: 1.2;
-   --line-height-normal: 1.5;
-
-   /* Spacing */
-   --lsp: 8px;
-   --sp: 16px;
-   --sidebar-w: 176px;
-
-   /* Components */
-   --btn-h: 48px;
-   --input-radius: 4px 4px 0 0;
-   --input-border: 2px solid var(--clr-primary);
-   --input-placeholder: #cac4d0;
-
-   /* Motion */
-   --dur: 300ms;
-   --ease: cubic-bezier(0.2, 0, 0, 1);
-   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
-   --ease-decel: cubic-bezier(0, 0, 0.2, 1);
-   --ease-accel: cubic-bezier(0.4, 0, 1, 1);
-}
-
-/* --- iOS / Human Interface Guidelines Dark Theme --- */
-[data-theme="ios-dark"] {
-   /* Colors (iOS 15+ dark system colors) */
-   --clr-bg: #000000;
-   /* systemBackground (black) */
-   --clr-surface: #1c1c1e;
-   /* secondarySystemBackground */
-   --clr-surface-2: #2c2c2e;
-   /* tertiarySystemBackground */
-   --clr-on-surface: #ffffff;
-   /* White text on dark bg */
-   --clr-primary: #0a84ff;
-   /* System Blue (unchanged from light) */
-   --clr-on-primary: #ffffff;
-   --clr-primary-container: #174a7a;
-   /* Dark container for selected */
-   --clr-accent: #5e5ce0;
-   /* Indigo accent */
-   --clr-destructive: #ff453a;
-   /* System Red (dark optimized) */
-   --clr-success: #32d74b;
-   /* System Green (dark) */
-   --clr-warning: #ff9f0a;
-   /* System Orange (dark) */
-   --clr-ripple: rgba(10, 132, 255, 0.12);
-   --clr-border: rgba(84, 84, 88, 0.65);
-   /* Darker translucent border */
-   --clr-muted: #98989e;
-   /* Muted text dark */
-   --clr-overlay: rgba(0, 0, 0, 0.7);
-   --clr-search-bg: #1c1c1e;
-   /* Match surface */
-
-   /* iOS blur effect (dark mode) */
-   --blur-bg: rgba(28, 28, 30, 0.85);
-   --backdrop-blur: blur(20px);
-
-   /* Shape */
-   --radius-sm: 8px;
-   --radius-md: 10px;
-   --radius-lg: 13px;
-   --radius-xl: 16px;
-   --radius-pill: 999px;
-   --radius-sheet: 16px 16px 0 0;
-
-   /* Typography (SF Pro + Dynamic Type) */
-   --font: -apple-system, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', sans-serif;
-   --font-size: 15px;
-   --font-size-lg: 17px;
-   --font-size-title: 28px;
-   --font-weight-med: 500;
-   --font-weight-semibold: 600;
-   --line-height-tight: 1.1;
-   --line-height-normal: 1.45;
-   --letter-spacing: -0.3px;
-
-   /* Spacing */
-   --lsp: 8px;
-   --sp: 16px;
-   --sidebar-w: 176px;
-
-   /* Components */
    --btn-h: 44px;
    --input-radius: 10px;
-   --input-border: 1px solid rgba(84, 84, 88, 0.65);
-   --input-focus-border: 2px solid var(--clr-primary);
-   --input-placeholder: #636366;
+   /* rounded style */
+   --input-border: 1.5px solid var(--clr-primary);
 
-   /* Shadows (darker, more diffused for dark bg) */
-   --shadow-sm: 0 0.5px 1.5px rgba(0, 0, 0, 0.4);
-   --shadow-md: 0 2px 12px rgba(0, 0, 0, 0.25);
-   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.35);
-   --shadow-sheet: 0 -2px 20px rgba(0, 0, 0, 0.3);
+   --shadow-sm: 0 1px 3px rgba(0, 0, 0, .08);
+   --shadow-md: 0 2px 8px rgba(0, 0, 0, .10);
+   --shadow-sheet: 0 -2px 20px rgba(0, 0, 0, .12);
 
-   /* Motion */
    --dur: 350ms;
    --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-   --ease-spring: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+   /* iOS spring-ish */
    --ease-decel: cubic-bezier(0, 0, 0.2, 1);
    --ease-accel: cubic-bezier(0.4, 0, 1, 1);
-}
-
-/* =====================================================
-          DARK THEME PLATFORM-SPECIFIC STYLES
-          ===================================================== */
-
-/* Android Dark Scrollbar (retains accent color) */
-[data-theme="android-dark"] ::-webkit-scrollbar {
-   width: 4px;
-   background: transparent;
-}
-
-[data-theme="android-dark"] ::-webkit-scrollbar-thumb {
-   background: var(--clr-primary);
-   border-radius: 4px;
-}
-
-/* iOS Dark Scrollbar (minimal, light on dark) */
-[data-theme="ios-dark"] ::-webkit-scrollbar {
-   width: 2px;
-}
-
-[data-theme="ios-dark"] ::-webkit-scrollbar-thumb {
-   background: rgba(255, 255, 255, 0.3);
-   border-radius: 2px;
-}
-
-/* iOS Dark Blur Effects */
-[data-theme="ios-dark"] .tab-header,
-[data-theme="ios-dark"] #topbar,
-[data-theme="ios-dark"] .sheet-body {
-   background: var(--blur-bg);
-   backdrop-filter: var(--backdrop-blur);
-   -webkit-backdrop-filter: var(--backdrop-blur);
-}
-
-/* =====================================================
-          ADDITIONAL DARK THEME ENHANCEMENTS
-          ===================================================== */
-
-/* Android Dark - Card & Surface Styles */
-[data-theme="android-dark"] .card,
-[data-theme="android-dark"] .surface {
-   background: var(--clr-surface);
-   border: 1px solid var(--clr-border);
-}
-
-[data-theme="android-dark"] .surface-elevated {
-   background: var(--clr-surface-2);
-   box-shadow: var(--elevation-1);
-}
-
-/* iOS Dark - Card & Surface Styles */
-[data-theme="ios-dark"] .card,
-[data-theme="ios-dark"] .surface {
-   background: var(--clr-surface);
-   border: 0.5px solid var(--clr-border);
-}
-
-[data-theme="ios-dark"] .surface-elevated {
-   background: var(--clr-surface-2);
-   box-shadow: var(--shadow-sm);
-}
-
-/* Common dark mode improvements */
-[data-theme="android-dark"] img,
-[data-theme="ios-dark"] img {
-   opacity: 0.9;
-   /* Slight dimming for images */
-}
-
-[data-theme="android-dark"] .divider,
-[data-theme="ios-dark"] .divider {
-   background: var(--clr-border);
-   height: 0.5px;
-}
-
-/* Dark mode selection highlight */
-[data-theme="android-dark"] ::selection,
-[data-theme="ios-dark"] ::selection {
-   background: var(--clr-primary);
-   color: var(--clr-on-primary);
-}
-
-/* Dark mode placeholder text */
-[data-theme="android-dark"] ::placeholder,
-[data-theme="ios-dark"] ::placeholder {
-   color: var(--clr-input-placeholder, var(--clr-muted));
-   opacity: 0.7;
-}
-
-[data-theme$="-dark"] #fabs button::before {
-   filter: opacity(0.7) invert(1);
-}
-
-[data-theme$="-dark"] #deleteButton {
-   filter: invert(1);
-}
-
-[data-theme$="-dark"] #stickyTop {
-   background: linear-gradient(to top, #211f26bf, #211f26f0);
-}
-
-[data-theme$="-dark"] #searchInput:focus {
-   background: color-mix(in srgb, var(--clr-primary) 28%, #fff8dc0d);
-}
-
-[data-theme$="-dark"] #searchInput:focus::placeholder {
-   color: white;
-}
-
-[data-theme$="-dark"] #detailsTag {
-   background: var(--clr-surface-2);
-}
-
-/* } */
-
-
-/* Safe area insets for modern devices */
-body {
-   padding-bottom: env(safe-area-inset-bottom, 0);
-   padding-top: env(safe-area-inset-top, 0);
 }
 
 /* =====================================================
@@ -537,10 +128,9 @@ TOPBAR & RESPONSIVE SIDEBAR
    flex-direction: column;
    justify-content: center;
    gap: 5px;
-   width: 44px;
-   /* Larger touch target */
-   height: 44px;
-   padding: 12px;
+   width: 36px;
+   height: 36px;
+   padding: 6px;
    border: none;
    background: transparent;
    border-radius: var(--radius-sm);
@@ -645,13 +235,13 @@ main {
 #fabs button {
    display: flex;
    align-items: center;
-   gap: 12px;
+   gap: 10px;
    height: var(--btn-h);
-   padding: 0 16px;
+   padding: 0 12px;
    border: none;
    background: transparent;
    color: var(--clr-on-surface);
-   border-radius: var(--radius-md);
+   border-radius: var(--radius-sm);
    cursor: pointer;
    font-size: var(--font-size);
    font-family: inherit;
@@ -671,31 +261,11 @@ main {
    background: color-mix(in srgb, var(--clr-primary) 18%, transparent);
 }
 
-/* Material You ripple effect */
-#fabs button::after {
-   content: '';
-   position: absolute;
-   top: 50%;
-   left: 50%;
-   width: 0;
-   height: 0;
-   border-radius: 50%;
-   background: var(--clr-ripple);
-   transform: translate(-50%, -50%);
-   transition: width 0.3s, height 0.3s;
-   pointer-events: none;
-}
-
-#fabs button:active::after {
-   width: 200px;
-   height: 200px;
-}
-
 #fabs button::before {
    content: "";
    display: inline-block;
-   width: 24px;
-   height: 24px;
+   width: 20px;
+   height: 20px;
    flex-shrink: 0;
    background-size: contain;
    background-repeat: no-repeat;
@@ -748,7 +318,7 @@ main {
        Three states per tab:
          (default)   = off-screen RIGHT (entering from right)
          .active     = on-screen
-         .behind     = pushed LEFT (parallax style)
+         .behind     = pushed LEFT (partially, parallax style)
        ===================================================== */
 .tab {
    position: absolute;
@@ -792,7 +362,7 @@ main {
    padding: var(--sp);
    display: flex;
    flex-direction: column;
-   gap: 8px;
+   gap: 4px;
    overflow-y: auto;
    flex: 1;
 }
@@ -810,13 +380,12 @@ main {
    font-size: var(--font-size);
    font-weight: var(--font-weight-med);
    text-align: left;
-   transition: all var(--dur) var(--ease);
+   transition: background var(--dur) var(--ease);
    box-shadow: var(--shadow-sm);
 }
 
 #categories li button:hover {
    background: var(--clr-ripple);
-   transform: translateX(4px);
 }
 
 #categories li button.selected {
@@ -828,11 +397,11 @@ main {
    display: inline-block;
    position: absolute;
    right: 20px;
-   width: 40px;
-   height: 40px;
+   width: 32px;
+   height: 32px;
    border: none;
    background: transparent;
-   color: var(--clr-destructive);
+   color: #c0392b;
    border-radius: var(--radius-sm);
    cursor: pointer;
    animation: pop-in var(--dur) var(--ease-decel) both;
@@ -840,7 +409,7 @@ main {
 }
 
 .cat-delete-btn:hover {
-   background: rgba(220, 38, 38, 0.12);
+   background: rgba(192, 57, 43, 0.12);
 }
 
 @keyframes pop-in {
@@ -862,17 +431,17 @@ main {
    display: flex;
    align-items: center;
    gap: 8px;
-   padding: 12px var(--sp);
+   padding: 10px var(--sp);
    background: var(--clr-surface);
    border-bottom: 1px solid var(--clr-border);
-   min-height: 60px;
+   min-height: 52px;
    flex-shrink: 0;
 }
 
 .tab-header .back-btn {
    display: flex;
    align-items: center;
-   gap: 6px;
+   gap: 4px;
    opacity: .9;
    border: none;
    background: transparent;
@@ -881,7 +450,7 @@ main {
    font-size: var(--font-size);
    font-weight: var(--font-weight-med);
    cursor: pointer;
-   padding: 8px 12px;
+   padding: 6px 8px;
    border-radius: var(--radius-sm);
    transition: background var(--dur) var(--ease);
    flex-shrink: 0;
@@ -899,20 +468,10 @@ main {
    font-size: var(--font-size-lg);
    font-weight: var(--font-weight-med);
    flex: 1;
+   /* white-space: nowrap; */
    overflow-wrap: anywhere;
    overflow: hidden;
    text-overflow: ellipsis;
-}
-
-.tab-header h1[contenteditable="true"] {
-   cursor: pointer;
-}
-
-/* iOS large title style */
-[data-theme="ios"] .tab-header h1 {
-   font-size: 28px;
-   font-weight: 700;
-   letter-spacing: -0.5px;
 }
 
 /* =====================================================
@@ -925,8 +484,7 @@ main {
 #gallery .gallery-scroll {
    flex: 1;
    overflow-y: auto;
-   overflow-x: hidden;
-   padding: 0 var(--sp) var(--sp) var(--sp);
+   padding: var(--sp);
 }
 
 /* Search input (shown when in "all" mode) */
@@ -942,7 +500,7 @@ main {
 #searchInput {
    width: 100%;
    height: var(--btn-h);
-   padding: 0 16px;
+   padding: 0 14px;
    border-radius: var(--input-radius);
    border: none;
    border-bottom: var(--input-border);
@@ -951,18 +509,12 @@ main {
    font-family: inherit;
    font-size: var(--font-size);
    outline: none;
-   transition: all var(--dur) var(--ease);
+   transition: background var(--dur) var(--ease);
 }
 
 [data-theme="ios"] #searchInput {
    border: var(--input-border);
    border-radius: var(--input-radius);
-   background: var(--clr-surface-2);
-}
-
-[data-theme="ios"] #searchInput:focus {
-   border: var(--input-focus-border);
-   background: var(--clr-surface);
 }
 
 #searchInput:focus {
@@ -973,28 +525,25 @@ main {
    display: flex;
    align-items: baseline;
    justify-content: space-between;
-   gap: 8px;
-   flex-wrap: wrap;
 }
 
 #filters,
 #selecting {
    display: flex;
-   gap: 8px;
+   gap: 6px;
    flex-wrap: wrap;
    margin-bottom: var(--lsp);
 }
 
 .filter-chip,
 .selecting-chip {
-   padding: 6px 14px;
+   padding: 4px 12px;
    border-radius: var(--radius-pill);
    border: 1px solid var(--clr-border);
    background: var(--clr-surface);
    color: var(--clr-muted);
    font-family: inherit;
-   font-size: 13px;
-   font-weight: 500;
+   font-size: 12px;
    cursor: pointer;
    transition: all var(--dur) var(--ease);
 }
@@ -1005,40 +554,38 @@ main {
    border-color: var(--clr-primary);
 }
 
-.filter-chip:hover,
-.selecting-chip:hover {
-   transform: translateY(-1px);
-   box-shadow: var(--shadow-sm);
-}
-
 #stickyTop {
    position: sticky;
    top: 0;
    backdrop-filter: blur(10px);
    background: linear-gradient(to top, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.6));
-   margin: 0px -12px;
-   padding: var(--sp) 12px 12px 12px;
+   margin: 0 -12px;
+   padding: 0 12px;
    z-index: 52;
 }
 
-/* #stickyTop::before {
+#stickyTop:before {
    content: "";
    position: absolute;
+
    top: -20px;
    left: -12px;
    right: -12px;
    height: 20px;
+
    backdrop-filter: blur(10px);
    -webkit-backdrop-filter: blur(10px);
+
    background: linear-gradient(to top, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 1));
+
    pointer-events: none;
-} */
+}
 
 #gallery ul {
    list-style: none;
    display: grid;
-   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-   gap: 12px;
+   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+   gap: 8px;
    padding-top: var(--lsp);
 }
 
@@ -1069,9 +616,8 @@ main {
    padding: 0;
    border: double;
    border-radius: 50%;
-   width: 24px;
-   height: 24px;
-   cursor: pointer;
+   width: 20px;
+   height: 20px;
 }
 
 #galleryColor::-webkit-color-swatch,
@@ -1085,19 +631,19 @@ main {
    display: flex;
    align-items: center;
    justify-content: center;
-   width: 44px;
-   height: 44px;
+   width: 36px;
+   height: 36px;
    border: none;
    background: transparent;
    border-radius: var(--radius-sm);
    cursor: pointer;
-   color: var(--clr-destructive);
+   color: #c0392b;
    transition: background var(--dur) var(--ease), opacity var(--dur) var(--ease);
    flex-shrink: 0;
 }
 
 #deleteButton:hover {
-   background: rgba(220, 38, 38, 0.10);
+   background: rgba(192, 57, 43, 0.10);
 }
 
 #deleteButton::before {
@@ -1108,6 +654,7 @@ main {
    background-size: contain;
    background-repeat: no-repeat;
    background-position: center;
+   /* paste the data URI from above here, with stroke='%23c0392b' */
 }
 
 /* hide for ALL category */
@@ -1118,6 +665,8 @@ main {
 /* =====================================================
        DETAILS TAB
        ===================================================== */
+#details .tab-header {}
+
 #details .details-body {
    flex: 1;
    overflow-y: auto;
@@ -1142,17 +691,17 @@ main {
    box-shadow: var(--shadow-sm);
    display: flex;
    flex-direction: column;
-   gap: 16px;
+   gap: 12px;
 }
 
 .details-meta label {
    display: flex;
    flex-direction: column;
-   gap: 4px;
+   gap: 2px;
 }
 
 .details-meta .meta-key {
-   font-size: 12px;
+   font-size: 11px;
    text-transform: uppercase;
    letter-spacing: .06em;
    color: var(--clr-muted);
@@ -1165,14 +714,7 @@ main {
 }
 
 #detailsDesc {
-   min-height: 150px;
-   padding: 12px;
-   border-radius: var(--radius-sm);
-   border: 1px solid var(--clr-border);
-   background: var(--clr-surface-2);
-   font-family: inherit;
-   font-size: var(--font-size);
-   resize: vertical;
+   height: 250px;
 }
 
 /* =====================================================
@@ -1199,8 +741,7 @@ main {
    bottom: 0;
    left: 0;
    right: 0;
-   height: auto;
-   max-height: 70%;
+   height: 55%;
    background: var(--clr-surface);
    border-radius: var(--radius-sheet);
    box-shadow: var(--shadow-sheet);
@@ -1211,22 +752,16 @@ main {
    transition: transform var(--dur) var(--ease-decel);
 }
 
-[data-theme="ios"] #settings {
-   background: var(--blur-bg);
-   backdrop-filter: var(--backdrop-blur);
-   -webkit-backdrop-filter: var(--backdrop-blur);
-}
-
 #settings.open {
    transform: translateY(0);
 }
 
 .sheet-handle {
-   width: 40px;
-   height: 5px;
+   width: 36px;
+   height: 4px;
    border-radius: var(--radius-pill);
    background: var(--clr-border);
-   margin: 12px auto 8px;
+   margin: 10px auto 4px;
    flex-shrink: 0;
 }
 
@@ -1234,7 +769,7 @@ main {
    display: flex;
    align-items: center;
    justify-content: space-between;
-   padding: 12px 20px;
+   padding: 8px 16px 12px;
    border-bottom: 1px solid var(--clr-border);
    flex-shrink: 0;
 }
@@ -1249,48 +784,47 @@ main {
    background: var(--clr-surface-2);
    color: var(--clr-muted);
    border-radius: var(--radius-pill);
-   width: 32px;
-   height: 32px;
+   width: 28px;
+   height: 28px;
    display: flex;
    align-items: center;
    justify-content: center;
    cursor: pointer;
-   font-size: 18px;
-   transition: all var(--dur) var(--ease);
+   font-size: 16px;
+   transition: background var(--dur) var(--ease);
 }
 
 .sheet-close:hover {
    background: var(--clr-border);
-   transform: scale(1.05);
 }
 
 .sheet-body {
    flex: 1;
    overflow-y: auto;
-   padding: 20px;
+   padding: 16px;
    display: flex;
    flex-direction: column;
-   gap: 20px;
+   gap: 12px;
 }
 
 /* Theme switcher inside settings */
 .setting-row {
    display: flex;
    flex-direction: column;
-   gap: 12px;
+   gap: 8px;
 }
 
 .setting-label {
-   font-size: 13px;
+   font-size: 12px;
    text-transform: uppercase;
    letter-spacing: .06em;
    color: var(--clr-muted);
    font-weight: var(--font-weight-med);
 }
 
-.settings-buttons {
+.theme-buttons {
    display: flex;
-   gap: 12px;
+   gap: 8px;
 }
 
 .theme-btn {
@@ -1309,7 +843,6 @@ main {
 
 .theme-btn:hover {
    border-color: var(--clr-primary);
-   transform: translateY(-2px);
 }
 
 .theme-btn.selected {
@@ -1318,9 +851,6 @@ main {
    color: var(--clr-primary);
 }
 
-/* =====================================================
-       RESPONSIVE DESIGN
-       ===================================================== */
 @media (max-width: 600px) {
 
    /* Show topbar, add room below it */
@@ -1366,40 +896,4 @@ main {
       flex: 1;
       min-height: 0;
    }
-
-   /* Adjust grid for mobile */
-   #gallery ul {
-      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-      gap: 8px;
-   }
-
-   /* Smaller touch targets on mobile? No, keep at least 44px */
-   .filter-chip,
-   .selecting-chip {
-      padding: 8px 12px;
-      font-size: 12px;
-   }
-}
-
-/* =====================================================
-       UTILITY CLASSES
-       ===================================================== */
-.visually-hidden {
-   position: absolute;
-   width: 1px;
-   height: 1px;
-   padding: 0;
-   margin: -1px;
-   overflow: hidden;
-   clip: rect(0, 0, 0, 0);
-   white-space: nowrap;
-   border-width: 0;
-}
-
-/* Smooth scrolling for all scrollable areas */
-.gallery-scroll,
-.sheet-body,
-#categories ul,
-.details-body {
-   scroll-behavior: smooth;
 }

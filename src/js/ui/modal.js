@@ -19,6 +19,8 @@
  *   If no image is pre-loaded, the user sees an upload slot instead.
  */
 
+//import camera from '../camera/camera.js';
+
 const Modal = (() => {
    /* ─── State ──────────────────────────────────────────────────────────── */
    let _pendingImage = null;     // set from outside before opening cap modal
@@ -36,338 +38,632 @@ const Modal = (() => {
 
       /* ── Overlay ── */
       .mdl-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 9999;
-        background: rgba(10, 10, 12, 0.72);
-        backdrop-filter: blur(6px);
-        -webkit-backdrop-filter: blur(6px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
-        animation: mdl-overlay-in 0.18s ease;
+         position: fixed;
+         inset: 0;
+         z-index: 9999;
+         background: rgba(10, 10, 12, 0.72);
+         backdrop-filter: blur(6px);
+         -webkit-backdrop-filter: blur(6px);
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         padding: 1rem;
+         animation: mdl-overlay-in 0.18s ease;
       }
+
       @keyframes mdl-overlay-in {
-        from { opacity: 0; }
-        to   { opacity: 1; }
+         from {
+            opacity: 0;
+         }
+
+         to {
+            opacity: 1;
+         }
       }
 
       /* ── Box ── */
       .mdl-box {
-        background: #f5f2ec;
-        color: #1a1a1a;
-        border: 1.5px solid #1a1a1a;
-        border-radius: 2px;
-        box-shadow: 6px 6px 0 #1a1a1a;
-        width: 100%;
-        max-width: 480px;
-        font-family: 'Syne', sans-serif;
-        animation: mdl-box-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-        overflow: hidden;
+         background: #f5f2ec;
+         color: #1a1a1a;
+         border: 1.5px solid #1a1a1a;
+         border-radius: 2px;
+         box-shadow: 6px 6px 0 #1a1a1a;
+         width: 100%;
+         max-width: 480px;
+         font-family: 'Syne', sans-serif;
+         animation: mdl-box-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+         overflow: hidden;
       }
+
       @keyframes mdl-box-in {
-        from { opacity: 0; transform: translateY(18px) scale(0.97); }
-        to   { opacity: 1; transform: translateY(0)   scale(1);     }
+         from {
+            opacity: 0;
+            transform: translateY(18px) scale(0.97);
+         }
+
+         to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+         }
       }
 
       /* ── Header ── */
       .mdl-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.9rem 1.25rem 0.75rem;
-        border-bottom: 1.5px solid #1a1a1a;
-        background: #1a1a1a;
-        color: #f5f2ec;
+         display: flex;
+         align-items: center;
+         justify-content: space-between;
+         padding: 0.9rem 1.25rem 0.75rem;
+         border-bottom: 1.5px solid #1a1a1a;
+         background: #1a1a1a;
+         color: #f5f2ec;
       }
+
       .mdl-header-label {
-        font-family: 'DM Mono', monospace;
-        font-size: 0.65rem;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        opacity: 0.55;
+         font-family: 'DM Mono', monospace;
+         font-size: 0.65rem;
+         letter-spacing: 0.18em;
+         text-transform: uppercase;
+         opacity: 0.55;
       }
+
       .mdl-header-title {
-        font-size: 1rem;
-        font-weight: 700;
-        letter-spacing: 0.02em;
-        margin-top: 2px;
+         font-size: 1rem;
+         font-weight: 700;
+         letter-spacing: 0.02em;
+         margin-top: 2px;
       }
+
       .mdl-close {
-        background: none;
-        border: 1.5px solid rgba(245,242,236,0.3);
-        color: #f5f2ec;
-        width: 28px;
-        height: 28px;
-        border-radius: 2px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1rem;
-        line-height: 1;
-        transition: background 0.15s, border-color 0.15s;
-        flex-shrink: 0;
+         background: none;
+         border: 1.5px solid rgba(245, 242, 236, 0.3);
+         color: #f5f2ec;
+         width: 28px;
+         height: 28px;
+         border-radius: 2px;
+         cursor: pointer;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         font-size: 1rem;
+         line-height: 1;
+         transition: background 0.15s, border-color 0.15s;
+         flex-shrink: 0;
       }
+
       .mdl-close:hover {
-        background: rgba(245,242,236,0.12);
-        border-color: rgba(245,242,236,0.6);
+         background: rgba(245, 242, 236, 0.12);
+         border-color: rgba(245, 242, 236, 0.6);
       }
 
       /* ── Body ── */
       .mdl-body {
-        padding: 1.5rem 1.25rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1.1rem;
+         padding: 1.5rem 1.25rem;
+         display: flex;
+         flex-direction: column;
+         gap: 1.1rem;
       }
 
       /* ── Confirm question ── */
       .mdl-question {
-        font-size: 1.05rem;
-        font-weight: 600;
-        line-height: 1.45;
-        color: #1a1a1a;
+         font-size: 1.05rem;
+         font-weight: 600;
+         line-height: 1.45;
+         color: #1a1a1a;
       }
 
       /* ── Field ── */
       .mdl-field {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
+         display: flex;
+         flex-direction: column;
+         gap: 0.35rem;
       }
+
       .mdl-label {
-        font-family: 'DM Mono', monospace;
-        font-size: 0.62rem;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
-        color: #555;
+         font-family: 'DM Mono', monospace;
+         font-size: 0.62rem;
+         letter-spacing: 0.16em;
+         text-transform: uppercase;
+         color: #555;
       }
+
       .mdl-label span.mdl-required {
-        color: #c0392b;
-        margin-left: 2px;
+         color: #c0392b;
+         margin-left: 2px;
       }
 
       /* ── Inputs ── */
       .mdl-input,
       .mdl-textarea,
       .mdl-select {
-        background: #fff;
-        border: 1.5px solid #bbb;
-        border-radius: 2px;
-        padding: 0.55rem 0.75rem;
-        font-family: 'Syne', sans-serif;
-        font-size: 0.9rem;
-        color: #1a1a1a;
-        outline: none;
-        transition: border-color 0.15s, box-shadow 0.15s;
-        width: 100%;
-        box-sizing: border-box;
+         background: #fff;
+         border: 1.5px solid #bbb;
+         border-radius: 2px;
+         padding: 0.55rem 0.75rem;
+         font-family: 'Syne', sans-serif;
+         font-size: 0.9rem;
+         color: #1a1a1a;
+         outline: none;
+         transition: border-color 0.15s, box-shadow 0.15s;
+         width: 100%;
+         box-sizing: border-box;
       }
+
       .mdl-input:focus,
       .mdl-textarea:focus,
       .mdl-select:focus {
-        border-color: #1a1a1a;
-        box-shadow: 3px 3px 0 #1a1a1a;
+         border-color: #1a1a1a;
+         box-shadow: 3px 3px 0 #1a1a1a;
       }
+
       .mdl-textarea {
-        resize: vertical;
-        min-height: 90px;
-        line-height: 1.5;
+         resize: vertical;
+         min-height: 90px;
+         line-height: 1.5;
       }
+
       .mdl-char-count {
-        font-family: 'DM Mono', monospace;
-        font-size: 0.6rem;
-        color: #999;
-        text-align: right;
-        margin-top: -0.2rem;
-        transition: color 0.15s;
+         font-family: 'DM Mono', monospace;
+         font-size: 0.6rem;
+         color: #999;
+         text-align: right;
+         margin-top: -0.2rem;
+         transition: color 0.15s;
       }
-      .mdl-char-count.warn  { color: #e67e22; }
-      .mdl-char-count.over  { color: #c0392b; }
+
+      .mdl-char-count.warn {
+         color: #e67e22;
+      }
+
+      .mdl-char-count.over {
+         color: #c0392b;
+      }
 
       /* ── Color row ── */
       .mdl-color-row {
-        display: flex;
-        align-items: center;
-        gap: 0.65rem;
+         display: flex;
+         align-items: center;
+         gap: 0.65rem;
       }
+
       .mdl-color-swatch {
-        width: 36px;
-        height: 36px;
-        border-radius: 2px;
-        border: 1.5px solid #bbb;
-        flex-shrink: 0;
-        cursor: pointer;
-        transition: box-shadow 0.15s;
-        overflow: hidden;
-        padding: 0;
-        background: none;
+         width: 36px;
+         height: 36px;
+         border-radius: 2px;
+         border: 1.5px solid #bbb;
+         flex-shrink: 0;
+         cursor: pointer;
+         transition: box-shadow 0.15s;
+         overflow: hidden;
+         padding: 0;
+         background: none;
       }
-      .mdl-color-swatch:focus { outline: none; box-shadow: 3px 3px 0 #1a1a1a; }
+
+      .mdl-color-swatch:focus {
+         outline: none;
+         box-shadow: 3px 3px 0 #1a1a1a;
+      }
+
       .mdl-color-swatch input[type="color"] {
-        width: 150%;
-        height: 150%;
-        margin: -25%;
-        border: none;
-        cursor: pointer;
-        opacity: 0;
-        position: absolute;
+         width: 150%;
+         height: 150%;
+         margin: -25%;
+         border: none;
+         cursor: pointer;
+         opacity: 0;
+         position: absolute;
       }
-      .mdl-color-swatch { position: relative; }
+
+      .mdl-color-swatch {
+         position: relative;
+      }
+
       .mdl-color-preview {
-        position: absolute;
-        inset: 0;
-        border-radius: 1px;
-        pointer-events: none;
+         position: absolute;
+         inset: 0;
+         border-radius: 1px;
+         pointer-events: none;
       }
+
       .mdl-input.mdl-hex {
-        font-family: 'DM Mono', monospace;
-        font-size: 0.82rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        width: auto;
-        flex: 1;
+         font-family: 'DM Mono', monospace;
+         font-size: 0.82rem;
+         letter-spacing: 0.08em;
+         text-transform: uppercase;
+         width: auto;
+         flex: 1;
       }
 
       /* ── Image slot ── */
       .mdl-image-slot {
-        border: 1.5px dashed #bbb;
-        border-radius: 2px;
-        background: #fff;
-        min-height: 110px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        gap: 0.5rem;
-        cursor: pointer;
-        transition: border-color 0.15s, background 0.15s;
-        position: relative;
-        overflow: hidden;
+         border: 1.5px dashed #bbb;
+         border-radius: 2px;
+         background: #fff;
+         min-height: 110px;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         flex-direction: column;
+         gap: 0.5rem;
+         cursor: pointer;
+         transition: border-color 0.15s, background 0.15s;
+         position: relative;
+         overflow: hidden;
       }
-      .mdl-image-slot:hover { border-color: #1a1a1a; background: #f9f7f2; }
+
+      .mdl-image-slot:hover {
+         border-color: #1a1a1a;
+         background: #f9f7f2;
+      }
+
       .mdl-image-slot input[type="file"] {
-        position: absolute;
-        inset: 0;
-        opacity: 0;
-        cursor: pointer;
-        width: 100%;
-        height: 100%;
+         position: absolute;
+         inset: 0;
+         opacity: 0;
+         cursor: pointer;
+         width: 100%;
+         height: 100%;
       }
+
       .mdl-image-slot img {
-        max-width: 100%;
-        max-height: 140px;
-        object-fit: contain;
-        display: block;
+         max-width: 100%;
+         max-height: 140px;
+         object-fit: contain;
+         display: block;
       }
+
       .mdl-image-slot-hint {
-        font-family: 'DM Mono', monospace;
-        font-size: 0.62rem;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: #aaa;
-        text-align: center;
-        pointer-events: none;
+         font-family: 'DM Mono', monospace;
+         font-size: 0.62rem;
+         letter-spacing: 0.12em;
+         text-transform: uppercase;
+         color: #aaa;
+         text-align: center;
+         pointer-events: none;
       }
+
       .mdl-image-icon {
-        font-size: 1.6rem;
-        line-height: 1;
-        pointer-events: none;
+         font-size: 1.6rem;
+         line-height: 1;
+         pointer-events: none;
+      }
+
+      /* ── Camera button row ── */
+      .mdl-camera-row {
+         display: flex;
+         gap: 0.5rem;
+         margin-top: 0.5rem;
+      }
+
+      .mdl-camera-btn {
+         flex: 1;
+         background: #1a1a1a;
+         color: #f5f2ec;
+         border: 1.5px solid #1a1a1a;
+         border-radius: 2px;
+         padding: 0.5rem;
+         font-family: 'Syne', sans-serif;
+         font-size: 0.75rem;
+         font-weight: 600;
+         cursor: pointer;
+         transition: transform 0.12s, box-shadow 0.12s;
+         display: flex;
+         justify-content: center;
+         align-items: baseline;
+         gap: 0.4rem;
+      }
+
+      .mdl-camera-btn:active {
+         transform: translate(2px, 2px);
+         box-shadow: none;
+      }
+
+      .mdl-camera-btn em {
+         font-size: 1.2rem;
+         line-height: 1.2rem;
+         font-style: normal;
+      }
+
+      .mdl-camera-btn-secondary {
+         background: #f5f2ec;
+         color: #1a1a1a;
+         border-color: #1a1a1a;
       }
 
       /* ── Tag / select ── */
-      .mdl-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231a1a1a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2.2rem; cursor: pointer; }
+      .mdl-select {
+         appearance: none;
+         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231a1a1a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+         background-repeat: no-repeat;
+         background-position: right 0.75rem center;
+         padding-right: 2.2rem;
+         cursor: pointer;
+      }
 
       .mdl-new-category-inline {
-        display: flex;
-        flex-direction: column;
-        gap: 0.65rem;
-        padding: 0.85rem;
-        border: 1.5px solid #ddd;
-        border-radius: 2px;
-        background: #fffef9;
-        margin-top: 0.2rem;
-        animation: mdl-box-in 0.18s ease;
+         display: flex;
+         flex-direction: column;
+         gap: 0.65rem;
+         padding: 0.85rem;
+         border: 1.5px solid #ddd;
+         border-radius: 2px;
+         background: #fffef9;
+         margin-top: 0.2rem;
+         animation: mdl-box-in 0.18s ease;
       }
+
       .mdl-new-category-inline .mdl-label {
-        color: #888;
+         color: #888;
       }
 
       /* ── Error ── */
       .mdl-error {
-        font-family: 'DM Mono', monospace;
-        font-size: 0.62rem;
-        letter-spacing: 0.1em;
-        color: #c0392b;
-        text-transform: uppercase;
-        padding: 0.5rem 0.65rem;
-        background: #fff0ee;
-        border: 1px solid #f5c6c0;
-        border-radius: 2px;
-        display: none;
+         font-family: 'DM Mono', monospace;
+         font-size: 0.62rem;
+         letter-spacing: 0.1em;
+         color: #c0392b;
+         text-transform: uppercase;
+         padding: 0.5rem 0.65rem;
+         background: #fff0ee;
+         border: 1px solid #f5c6c0;
+         border-radius: 2px;
+         display: none;
       }
-      .mdl-error.visible { display: block; }
+
+      .mdl-error.visible {
+         display: block;
+      }
 
       /* ── Footer / actions ── */
       .mdl-footer {
-        display: flex;
-        gap: 0.6rem;
-        padding: 1rem 1.25rem 1.25rem;
-        border-top: 1.5px solid #e0ddd6;
-        justify-content: flex-end;
+         display: flex;
+         gap: 0.6rem;
+         padding: 1rem 1.25rem 1.25rem;
+         border-top: 1.5px solid #e0ddd6;
+         justify-content: flex-end;
       }
+
       .mdl-btn {
-        font-family: 'Syne', sans-serif;
-        font-weight: 700;
-        font-size: 0.82rem;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        padding: 0.55rem 1.1rem;
-        border-radius: 2px;
-        cursor: pointer;
-        border: 1.5px solid transparent;
-        transition: transform 0.12s, box-shadow 0.12s, background 0.12s;
+         font-family: 'Syne', sans-serif;
+         font-weight: 700;
+         font-size: 0.82rem;
+         letter-spacing: 0.06em;
+         text-transform: uppercase;
+         padding: 0.55rem 1.1rem;
+         border-radius: 2px;
+         cursor: pointer;
+         border: 1.5px solid transparent;
+         transition: transform 0.12s, box-shadow 0.12s, background 0.12s;
       }
-      .mdl-btn:active { transform: translate(2px, 2px); box-shadow: none !important; }
+
+      .mdl-btn:active {
+         transform: translate(2px, 2px);
+         box-shadow: none !important;
+      }
 
       .mdl-btn-ghost {
-        background: transparent;
-        border-color: #bbb;
-        color: #555;
+         background: transparent;
+         border-color: #bbb;
+         color: #555;
       }
-      .mdl-btn-ghost:hover { border-color: #1a1a1a; color: #1a1a1a; }
+
+      .mdl-btn-ghost:hover {
+         border-color: #1a1a1a;
+         color: #1a1a1a;
+      }
 
       .mdl-btn-danger {
-        background: #fff0ee;
-        border-color: #c0392b;
-        color: #c0392b;
-        box-shadow: 3px 3px 0 #c0392b;
+         background: #fff0ee;
+         border-color: #c0392b;
+         color: #c0392b;
+         box-shadow: 3px 3px 0 #c0392b;
       }
-      .mdl-btn-danger:hover { background: #c0392b; color: #fff; }
+
+      .mdl-btn-danger:hover {
+         background: #c0392b;
+         color: #fff;
+      }
 
       .mdl-btn-primary {
-        background: #1a1a1a;
-        border-color: #1a1a1a;
-        color: #f5f2ec;
-        box-shadow: 3px 3px 0 rgba(26,26,26,0.25);
+         background: #1a1a1a;
+         border-color: #1a1a1a;
+         color: #f5f2ec;
       }
-      .mdl-btn-primary:hover { background: #333; box-shadow: 4px 4px 0 rgba(26,26,26,0.3); }
+
+      .mdl-btn-primary:hover {
+         background: #333;
+      }
+      
+      mdl-btn-important {
+         box-shadow: 3px 3px 0 rgba(26, 26, 26, 0.25);
+      }
+
+      .mdl-btn-important:hover {
+         box-shadow: 4px 4px 0 rgba(26, 26, 26, 0.3);
+      }
 
       /* ── Separator ── */
       .mdl-sep {
-        border: none;
-        border-top: 1px solid #e0ddd6;
-        margin: 0;
+         border: none;
+         border-top: 1px solid #e0ddd6;
+         margin: 0;
       }
 
       /* ── Scrollable body for long forms ── */
       .mdl-body-scroll {
-        max-height: calc(100vh - 240px);
-        overflow-y: auto;
-        scrollbar-width: thin;
-        scrollbar-color: #ccc transparent;
+         max-height: calc(100vh - 240px);
+         overflow-y: auto;
+         scrollbar-width: thin;
+         scrollbar-color: #ccc transparent;
+      }
+
+      /* ── Dark mode overrides for Modal ── */
+      [data-theme$="-dark"] .mdl-overlay {
+         background: rgba(0, 0, 0, 0.1);
+         backdrop-filter: blur(8px);
+         -webkit-backdrop-filter: blur(8px);
+      }
+
+      [data-theme$="-dark"] .mdl-box {
+         background: #1e1e20;
+         color: #a9a9a9;
+         border-color: #a9a9a9;
+         box-shadow: 6px 6px 0 #555;
+      }
+
+      [data-theme$="-dark"] .mdl-header {
+         border-bottom-color: #a9a9a9;
+         background: #a9a9a9;
+         color: #1e1e20;
+      }
+
+      [data-theme$="-dark"] .mdl-close {
+         border-color: rgba(30, 30, 32, 0.3);
+         color: #1e1e20;
+      }
+
+      [data-theme$="-dark"] .mdl-close:hover {
+         background: rgba(30, 30, 32, 0.12);
+         border-color: rgba(30, 30, 32, 0.6);
+      }
+
+      [data-theme$="-dark"] .mdl-question {
+         color: #a9a9a9;
+      }
+
+      [data-theme$="-dark"] .mdl-label {
+         color: #a8a8b2;
+      }
+
+      [data-theme$="-dark"] .mdl-label span.mdl-required {
+         color: #ff6b5c;
+      }
+
+      [data-theme$="-dark"] .mdl-input,
+      [data-theme$="-dark"] .mdl-textarea,
+      [data-theme$="-dark"] .mdl-select {
+         background: #2c2c30;
+         border-color: #555;
+         color: #a9a9a9;
+      }
+
+      [data-theme$="-dark"] .mdl-input:focus,
+      [data-theme$="-dark"] .mdl-textarea:focus,
+      [data-theme$="-dark"] .mdl-select:focus {
+         border-color: #a9a9a9;
+         box-shadow: 3px 3px 0 #a9a9a9;
+      }
+
+      [data-theme$="-dark"] .mdl-char-count {
+         color: #777;
+      }
+
+      [data-theme$="-dark"] .mdl-char-count.warn {
+         color: #f39c12;
+      }
+
+      [data-theme$="-dark"] .mdl-char-count.over {
+         color: #ff6b5c;
+      }
+
+      [data-theme$="-dark"] .mdl-color-swatch {
+         border-color: #555;
+      }
+
+      [data-theme$="-dark"] .mdl-color-swatch:focus {
+         box-shadow: 3px 3px 0 #a9a9a9;
+      }
+
+      [data-theme$="-dark"] .mdl-input.mdl-hex {
+         background: #2c2c30;
+      }
+
+      [data-theme$="-dark"] .mdl-image-slot {
+         border-color: #555;
+         background: #2c2c30;
+      }
+
+      [data-theme$="-dark"] .mdl-image-slot:hover {
+         border-color: #a9a9a9;
+         background: #35353a;
+      }
+
+      [data-theme$="-dark"] .mdl-image-slot-hint {
+         color: #888;
+      }
+
+      [data-theme$="-dark"] .mdl-camera-btn {
+         background: #a9a9a9;
+         color: #1e1e20;
+         border-color: #a9a9a9;
+      }
+
+      [data-theme$="-dark"] .mdl-camera-btn-secondary {
+         background: #2c2c30;
+         color: #a9a9a9;
+         border-color: #a9a9a9;
+      }
+
+      [data-theme$="-dark"] .mdl-new-category-inline {
+         border-color: #555;
+         background: #2c2c30;
+      }
+
+      [data-theme$="-dark"] .mdl-new-category-inline .mdl-label {
+         color: #a8a8b2;
+      }
+
+      [data-theme$="-dark"] .mdl-error {
+         color: #ff6b5c;
+         background: #2c1a18;
+         border-color: #ff6b5c;
+      }
+
+      [data-theme$="-dark"] .mdl-footer {
+         border-top-color: #3a3a40;
+      }
+
+      [data-theme$="-dark"] .mdl-btn-ghost {
+         border-color: #777;
+         color: #a8a8b2;
+      }
+
+      [data-theme$="-dark"] .mdl-btn-ghost:hover {
+         border-color: #a9a9a9;
+         color: #a9a9a9;
+      }
+
+      [data-theme$="-dark"] .mdl-btn-danger {
+         background: #2c1a18;
+         border-color: #ff6b5c;
+         color: #ff6b5c;
+         box-shadow: 3px 3px 0 #ff6b5c;
+      }
+
+      [data-theme$="-dark"] .mdl-btn-danger:hover {
+         background: #ff6b5c;
+         color: #1e1e20;
+      }
+
+      [data-theme$="-dark"] .mdl-btn-primary {
+         background: #a9a9a9;
+         border-color: #a9a9a9;
+         color: #1e1e20;
+      }
+
+      [data-theme$="-dark"] .mdl-btn-primary:hover {
+         background: #fff;
+      }
+
+      [data-theme$="-dark"] .mdl-btn-important {
+         box-shadow: 3px 3px 0 rgba(232, 232, 237, 0.25);
+      }
+
+      [data-theme$="-dark"] .mdl-btn-important:hover {
+         box-shadow: 4px 4px 0 rgba(232, 232, 237, 0.3);
+      }
+
+      [data-theme$="-dark"] .mdl-sep {
+         border-top-color: #3a3a40;
       }
     `;
       document.head.appendChild(style);
@@ -613,7 +909,7 @@ const Modal = (() => {
       imgPreview.style.display = 'none';
 
       const slotIcon = el('div', 'mdl-image-icon');
-      slotIcon.textContent = '🧢';
+      slotIcon.textContent = '🖼️';
       const slotHint = el('div', 'mdl-image-slot-hint');
       slotHint.textContent = 'Click to upload or drag an image';
 
@@ -622,6 +918,21 @@ const Modal = (() => {
       imageSlot.appendChild(slotIcon);
       imageSlot.appendChild(slotHint);
       imageField.appendChild(imageSlot);
+
+      /* ── Camera button row ── */
+      const cameraRow = el('div', 'mdl-camera-row');
+      const cameraBtn = el('button', 'mdl-camera-btn');
+      cameraBtn.innerHTML = '<em>📸</em> Take Photo';
+      /* const uploadBtn = el('button', 'mdl-camera-btn mdl-camera-btn-secondary');
+      uploadBtn.innerHTML = '📁 Upload File'; */
+
+      cameraRow.appendChild(cameraBtn);
+      //const inlineError = makeError();
+      //const { container: inlineFields, getData: getInlineCat, focusFirst: focusInlineFirst } = buildCategoryForm(inlineError);
+      //cameraRow.appendChild(inlineFields);
+      //cameraRow.appendChild(inlineError);
+      imageField.appendChild(cameraRow);
+
       container.appendChild(imageField);
 
       const showImagePreview = (src) => {
@@ -635,6 +946,25 @@ const Modal = (() => {
       if (pendingImage) {
          showImagePreview(URL.createObjectURL(pendingImage));
       }
+
+      // Handle camera capture
+      cameraBtn.addEventListener('click', async () => {
+         try {
+            const capturedBlob = await camera.showCameraModal();
+            if (capturedBlob) {
+               imageFile = capturedBlob;
+               showImagePreview(URL.createObjectURL(capturedBlob));
+            }
+         } catch (error) {
+            console.error('Camera error:', error);
+            errorEl.show('Could not access camera. Please check permissions.');
+         }
+      });
+
+      // Handle file upload
+      /* uploadBtn.addEventListener('click', () => {
+         fileInput.click();
+      }); */
 
       fileInput.addEventListener('change', () => {
          const f = fileInput.files[0];
@@ -664,6 +994,7 @@ const Modal = (() => {
       tagField.appendChild(label('Category tag', true));
 
       const tagSelect = el('select', 'mdl-select');
+      //tagSelect.addAttribute('name', 'Category');
 
       const placeholderOpt = el('option');
       placeholderOpt.value = '';
@@ -802,7 +1133,7 @@ const Modal = (() => {
             cancelBtn.textContent = 'Cancel';
             cancelBtn.addEventListener('click', () => _resolve(null));
 
-            const addBtn = el('button', 'mdl-btn mdl-btn-primary');
+            const addBtn = el('button', 'mdl-btn mdl-btn-primary mdl-btn-important');
             addBtn.textContent = 'Add Category';
             addBtn.addEventListener('click', () => {
                const data = getData();
@@ -829,13 +1160,41 @@ const Modal = (() => {
             cancelBtn.textContent = 'Cancel';
             cancelBtn.addEventListener('click', () => _resolve(null));
 
-            const addBtn = el('button', 'mdl-btn mdl-btn-primary');
+            // Add Multiple Caps button
+            const addMultipleBtn = el('button', 'mdl-btn mdl-btn-ghost mdl-btn-important');
+            addMultipleBtn.textContent = 'Batch add';
+            addMultipleBtn.addEventListener('click', () => {
+               // Open file picker for multiple files
+               const multiFileInput = el('input');
+               multiFileInput.type = 'file';
+               multiFileInput.multiple = true;
+               multiFileInput.accept = 'image/*';
+
+               multiFileInput.addEventListener('change', () => {
+                  const files = Array.from(multiFileInput.files);
+                  if (files.length > 0) {
+                     _resolve({
+                        isMultiple: true,
+                        files: files,
+                        tag: '__new__', // For multiple, user sets tag later or per item
+                        image: null,
+                        description: '',
+                     });
+                  }
+               });
+
+               multiFileInput.click();
+            });
+
+            const addBtn = el('button', 'mdl-btn mdl-btn-primary mdl-btn-important');
             addBtn.textContent = 'Add Cap';
             addBtn.addEventListener('click', () => {
                const data = getData();
                if (data) _resolve(data);
             });
 
+            footer.appendChild(addMultipleBtn);
+            footer.appendChild(el('hr', ''));
             footer.appendChild(cancelBtn);
             footer.appendChild(addBtn);
             frag.appendChild(footer);
