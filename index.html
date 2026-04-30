@@ -14,6 +14,20 @@
 </head>
 
 <body>
+   <!-- ── LOADING SCREEN ── -->
+   <div id="loadingScreen" class="loading-screen">
+      <div class="loading-spinner">
+         <svg class="bottle-cap-loader" viewBox="0 0 69 69" xmlns="http://www.w3.org/2000/svg">
+            <path
+               d="M35 36ZL50 9l3.8.2 2.1 2.6.5 3.9 1.3 2.8L61 20l3.1 2 .5 3.4-1.4 3.6-.3 3.1L65 35l1.7 3.3-1.2 3.2-3.1 2.4-1.7 2.5.3 3.6-.2 3.8-2.6 2.1-3.9.5-2.8 1.3L50 61l-2 3.1-3.4.5-3.6-1.4-3.1-.3L35 65l-3.3 1.7-3.2-1.2-2.4-3.1-2.5-1.7-3.6.3-3.8-.2-2.1-2.6-.5-3.9-1.3-2.8L9 50l-3.1-2-.5-3.4L6.8 41l.3-3.1L5 35l-1.7-3.3 1.2-3.2 3.1-2.4 1.7-2.5L9 20l.2-3.8 2.6-2.1 3.9-.5 2.8-1.3L20 9l2-3.1 3.4-.5Z"
+               stroke="currentColor" stroke-width="3" fill="transparent" />
+            <circle cx="34.5" cy="34.5" r="20" fill="gray" />
+            <ellipse rx="19" ry="21" cx="34.5" cy="34.5" fill="gray" opacity=".4" />
+         </svg>
+         <p>Loading</p>
+      </div>
+   </div>
+
    <main>
       <!-- ── NARROW TOPBAR (hidden on wide screens) ── -->
       <div id="topbar">
@@ -44,9 +58,6 @@
          <section id="categories" class="tab active">
             <ul>
                <li><button type="button" data-cat="all" class="cat-btn selected">ALL caps</button></li>
-               <li><button type="button" data-cat="blue" class="cat-btn">Blue</button></li>
-               <li><button type="button" data-cat="red" class="cat-btn">Red</button></li>
-               <li><button type="button" data-cat="vintage" class="cat-btn">Vintage</button></li>
             </ul>
          </section>
 
@@ -66,15 +77,15 @@
             <div class="gallery-scroll">
                <div id="stickyTop">
                   <div id="searchBar">
-                     <input type="search" id="searchInput" placeholder="Search caps…" autocomplete="off" />
+                     <input type="search" id="searchInput" placeholder="Search caps ..." autocomplete="off" />
                   </div>
                   <div id="filterRow">
                      <div id="filters">
-                        <button class="filter-chip">tag1</button>
-                        <button class="filter-chip">New</button>
-                        <button class="filter-chip">TAG2</button>
+                        <!-- Filter chips populated by JavaScript -->
                      </div>
+
                      <div id="selecting">
+                        <button class="selecting-chip stick-left">Remove</button>
                         <button class="selecting-chip">Select all</button>
                         <button class="selecting-chip">Deselect all</button>
                      </div>
@@ -99,27 +110,23 @@
                <button type="button" id="deleteButton" title="Delete cap"></button>
             </div>
             <div class="details-body">
-               <img id="detailsImage" src="" alt="" />
+               <div id="capImage">
+                  <img id="detailsImage" src="" alt="" />
+                  <div class="image-actions">
+                     <button type="button" class="action-btn" id="replaceImageBtn">🔄 Replace</button>
+                     <button type="button" class="action-btn" id="exportImageBtn">💾 Export</button>
+                     <button type="button" class="action-btn" id="deleteImageBtn">🗑️ Delete</button>
+                  </div>
+               </div>
                <div class="details-meta">
                   <label>
-                     <span class="meta-key" for="tag">Tag</span>
-                     <select type="text" class="meta-val" id="detailsTag" name="tag">
-                        <option value="tag1">TAG1</option>
-                        <option value="tag2">TAG2</option>
-                        <option value="tag3" selected>TAG3</option>
-                        <option value="tag4">TAG4</option>
-                     </select>
+                     <span class="meta-key" for="detailsCategory">Category</span>
+                     <select class="meta-val" id="detailsCategory" name="category"></select>
                   </label>
                   <label>
                      <span class="meta-key" for="description">Description</span>
                      <textarea class="meta-val" id="detailsDesc" name="description" maxlength="280"></textarea>
-                     <!-- <input type="text" class="meta-val" id="detailsDesc" name="description"> -->
                   </label>
-                  <!-- <label>
-                     <span class="meta-key">Category</span>
-                     <input type="text" class="meta-val" id="detailsCat" name="category">
-                     <span class="meta-val" id="detailsCat">—</span>
-                  </label> -->
                </div>
             </div>
          </section>
@@ -148,34 +155,61 @@
                      <button class="theme-btn" data-theme-val="ios">iOS</button>
                   </div>
                </div>
+               <div class="setting-row inline-row">
+                  <span class="setting-label">Open gallery by default</span>
+                  <label class="toggle-switch">
+                     <input type="checkbox" id="toggleOpenGalleryByDefault" />
+                     <span class="toggle-slider"></span>
+                  </label>
+               </div>
                <div class="setting-row">
+                  <span class="setting-label">Gallery background texture</span>
+                  <select id="galleryTextureSelect" class="meta-val"
+                     style="width: 100%; padding: 8px; border-radius: 4px;">
+                     <option value="none">None</option>
+                     <option value="cracks-texture">Cracks</option>
+                     <option value="dirty-wall-texture">Dirty Wall</option>
+                     <option value="fabric-texture">Fabric</option>
+                     <option value="grunge-texture">Grunge</option>
+                     <option value="sand-texture">Sand</option>
+                     <option value="wood-texture">Wood</option>
+                  </select>
+               </div>
+               <div class="setting-row inline-row">
                   <span class="setting-label">Show cap names in gallery</span>
-                  <div class="settings-buttons">
-                     <button class="theme-btn selected" data-button-val="yes">Yes</button>
-                     <button class="theme-btn" data-button-val="no">No</button>
-                  </div>
+                  <label class="toggle-switch">
+                     <input type="checkbox" id="toggleShowCapNames" />
+                     <span class="toggle-slider"></span>
+                  </label>
                </div>
                <hr>
                <div class="setting-row">
-                  <span class="setting-label">Github API key</span>
-                  <!-- insert the fine-grained token to be able to post data on the github repo -->
+                  <span class="setting-label">GitHub Personal Access Token</span>
+                  <input type="password" id="githubTokenInput" class="meta-val" placeholder="github_pat_..." />
+                  <small style="display: block; margin-top: 4px; color: var(--clr-muted);">For cloud sync and
+                     backup</small>
                </div>
-               <div class="setting-row">
-                  <span class="setting-label">Automatic saving</span>
-                  <!-- if yes first set a passphrase to encript the saved data -->
-                  <div class="settings-buttons">
-                     <button class="theme-btn selected" data-button-val="yes">Yes</button>
-                     <button class="theme-btn" data-button-val="no">No</button>
-                  </div>
+               <div class="setting-row inline-row">
+                  <span class="setting-label">Automatic saving to GitHub</span>
+                  <label class="toggle-switch">
+                     <input type="checkbox" id="toggleAutoSave" />
+                     <span class="toggle-slider"></span>
+                  </label>
                </div>
                <hr>
                <div class="setting-row">
                   <span class="setting-label">Import data</span>
-                  <!-- import backup from device or from github repo with the correct passphrase -->
+                  <div class="settings-buttons">
+                     <button type="button" class="theme-btn" id="importFromDeviceBtn">From Device</button>
+                     <button type="button" class="theme-btn" id="importFromGitHubBtn">From GitHub</button>
+                  </div>
                </div>
                <div class="setting-row">
                   <span class="setting-label">Export data</span>
-                  <!-- export to device as a backup or as all the gallery data files (maybe in a zip) -->
+                  <div class="settings-buttons">
+                     <button type="button" class="theme-btn" id="exportPlainBtn">Plain JSON</button>
+                     <button type="button" class="theme-btn" id="exportEncryptedBtn">Encrypted</button>
+                  </div>
                </div>
             </div>
          </section>

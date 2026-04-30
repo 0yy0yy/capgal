@@ -696,7 +696,7 @@ const Modal = (() => {
 
    /* ─── Core: mount & unmount ──────────────────────────────────────────── */
    const mount = (boxContent) => {
-      close(); // close any existing modal first
+      //close(); // close any existing modal first
       injectStyles();
 
       _overlay = el('div', 'mdl-overlay');
@@ -875,6 +875,7 @@ const Modal = (() => {
       const getData = () => {
          const name = nameInput.value.trim();
          if (!name) { errorEl.show('Category name is required.'); nameInput.focus(); return null; }
+         if (name.toLowerCase() === 'all') { errorEl.show('Category name "all" can\'t be used'); nameInput.focus(); return null; }
          errorEl.hide();
          return { name, color: currentColor };
       };
@@ -989,6 +990,27 @@ const Modal = (() => {
 
       container.appendChild(el('hr', 'mdl-sep'));
 
+      /* ── Cap title ── */
+      const titleField = el('div', 'mdl-field');
+      titleField.appendChild(label('Cap title', false));
+      const titleInput = el('input', 'mdl-input');
+      titleInput.type = 'text';
+      titleInput.placeholder = 'Enter cap name (optional)';
+      titleInput.maxLength = 100;
+      titleField.appendChild(titleInput);
+      container.appendChild(titleField);
+
+      // Auto-populate title from filename if image is selected
+      fileInput.addEventListener('change', () => {
+         const f = fileInput.files[0];
+         if (f && !titleInput.value) {
+            // Use filename without extension as default title
+            titleInput.value = f.name.replace(/\.[^/.]+$/, '');
+         }
+      });
+
+      container.appendChild(el('hr', 'mdl-sep'));
+
       /* ── Tag / category select ── */
       const tagField = el('div', 'mdl-field');
       tagField.appendChild(label('Category tag', true));
@@ -1003,7 +1025,8 @@ const Modal = (() => {
       placeholderOpt.selected = true;
       tagSelect.appendChild(placeholderOpt);
 
-      (categories || []).forEach(cat => {
+      // Filter out 'all' category - only show user-defined categories
+      (categories || []).filter(cat => cat.id !== 'all').forEach(cat => {
          const opt = el('option');
          opt.value = cat.id ?? cat.name;
          opt.textContent = cat.name;
@@ -1073,7 +1096,7 @@ const Modal = (() => {
       /* ── getData ── */
       const getData = () => {
          const tagVal = tagSelect.value;
-         if (!tagVal) { errorEl.show('Please select or create a category tag.'); tagSelect.focus(); return null; }
+         // Allow empty tag selection - will default to 'all' in caps.js
 
          let newCategory = null;
          if (tagVal === '__new__') {
@@ -1087,7 +1110,8 @@ const Modal = (() => {
          errorEl.hide();
          return {
             image: imageFile,
-            tag: tagVal,
+            title: titleInput.value.trim(),
+            tag: tagVal || 'all', // Default to 'all' if not selected
             ...(newCategory ? { newCategory } : {}),
             description,
          };
@@ -1217,8 +1241,74 @@ const Modal = (() => {
       _pendingImage = blobOrFile;
    };
 
+   /* ═══════════════════════════════════════════════════════════════════════
+      PUBLIC: Modal.getPassphrase
+      ═══════════════════════════════════════════════════════════════════════ */
+   /**
+    * Prompt user for encryption passphrase
+    * @param {string} title
+    * @param {string} label
+    * @returns {Promise<string|null>}
+    */
+   const getPassphrase = (title = 'Enter Passphrase', label = 'Encryption passphrase') => {
+      return new Promise(resolve => {
+         _activeResolve = resolve;
+         const frag = document.createDocumentFragment();
+
+         frag.appendChild(makeHeader('Encryption', title, true));
+
+         const body = el('div', 'mdl-body');
+
+         const field = el('div', 'mdl-field');
+         const labelEl = el('label', 'mdl-label');
+         labelEl.innerHTML = `${label} <span class="mdl-required">*</span>`;
+
+         const input = el('input', 'mdl-input');
+         input.type = 'password';
+         input.placeholder = 'At least 8 characters';
+         input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+               const val = input.value.trim();
+               if (val.length < 8) {
+                  alert('Passphrase must be at least 8 characters');
+               } else {
+                  _resolve(val);
+               }
+            }
+         });
+
+         field.appendChild(labelEl);
+         field.appendChild(input);
+         body.appendChild(field);
+         frag.appendChild(body);
+
+         const footer = el('div', 'mdl-footer');
+         const cancelBtn = el('button', 'mdl-btn mdl-btn-ghost');
+         cancelBtn.textContent = 'Cancel';
+         cancelBtn.addEventListener('click', () => _resolve(null));
+
+         const confirmBtn = el('button', 'mdl-btn mdl-btn-primary mdl-btn-important');
+         confirmBtn.textContent = 'Set Passphrase';
+         confirmBtn.addEventListener('click', () => {
+            const val = input.value.trim();
+            if (val.length < 8) {
+               alert('Passphrase must be at least 8 characters');
+            } else {
+               _resolve(val);
+            }
+         });
+
+         footer.appendChild(cancelBtn);
+         footer.appendChild(confirmBtn);
+         frag.appendChild(footer);
+
+         mount(frag);
+         setTimeout(() => input.focus(), 80);
+      });
+   };
+
    /* ─── Public surface ──────────────────────────────────────────────────── */
-   return { confirm, addItem, setPendingImage };
+   return { confirm, addItem, setPendingImage, getPassphrase };
 })();
 
 /* ── Optional: attach to window for plain-script usage ── */

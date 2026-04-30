@@ -8,8 +8,8 @@ const tabEls = {
 };
 
 export function applyTabStates() {
-   const top = store.getNavStackTop();
-   const behind = store.getNavStackBehind();
+   const top = store.navStack[store.navStack.length - 1] || 'categories';
+   const behind = store.navStack[store.navStack.length - 2] || null;
 
    Object.entries(tabEls).forEach(([name, el]) => {
       el.classList.remove('active', 'behind');
@@ -20,15 +20,13 @@ export function applyTabStates() {
 }
 
 export function pushTab(name) {
-   const currentStack = store.navStack;
-   if (currentStack[currentStack.length - 1] === name) return;
-   currentStack.push(name);
+   if (store.navStack[store.navStack.length - 1] === name) return;
+   store.navStack.push(name);
    applyTabStates();
 }
 
 export function popTab() {
-   const currentStack = store.navStack;
-   if (currentStack.length <= 1) return;
-   currentStack.pop();
+   if (store.navStack.length <= 1) return;
+   store.navStack.pop();
    applyTabStates();
 }

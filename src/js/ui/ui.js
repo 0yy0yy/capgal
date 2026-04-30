@@ -2,8 +2,10 @@
 import * as store from '../data/store.js';
 import { popTab } from './navigation.js';
 import { openGallery } from '../data/gallery.js';
-import { handleAddCategoryClick, initCategoryButtons, initCategoryDeleteHandlers } from './categories.js';
+import { handleAddCategoryClick, initCategoryButtons, initCategoryDeleteHandlers, initCategoryUI } from './categories.js';
 import { addCapsInBatch } from '../data/caps.js';
+import { saveAppData } from '../data/saving.js';
+import { importFromDevice, importFromGitHub, exportToDevice } from '../data/loading.js';
 
 const settingsPanel = document.getElementById('settings');
 const settingsBackdrop = document.getElementById('settings-backdrop');
@@ -30,6 +32,131 @@ export function initSettingsHandlers() {
    document.getElementById('settingsButton').addEventListener('click', openSettings);
    document.getElementById('settingsClose').addEventListener('click', closeSettings);
    settingsBackdrop.addEventListener('click', closeSettings);
+
+   // Initialize settings controls
+   initToggleSwitch('toggleShowCapNames', store.store.userSettings.showCapNames, (value) => {
+      store.store.userSettings.showCapNames = value;
+      saveAppData();
+      // Refresh gallery to show/hide cap names immediately
+      openGallery(store.currentCategory);
+   });
+
+   initToggleSwitch('toggleAutoSave', store.store.userSettings.autoSave, (value) => {
+      store.store.userSettings.autoSave = value;
+      saveAppData();
+   });
+
+   // GitHub token with masking
+   const githubTokenInput = document.getElementById('githubTokenInput');
+   if (githubTokenInput) {
+      const token = store.store.userSettings.githubToken || '';
+      githubTokenInput.value = token;
+      githubTokenInput.dataset.fullToken = token; // Store actual value
+
+      // Show/hide toggle and masking logic
+      const updateTokenDisplay = () => {
+         if (document.activeElement === githubTokenInput) {
+            // Show full token when focused
+            githubTokenInput.type = 'text';
+            githubTokenInput.value = githubTokenInput.dataset.fullToken;
+         } else {
+            // Mask token when not focused
+            const fullToken = githubTokenInput.dataset.fullToken;
+            if (fullToken && fullToken.length > 4) {
+               githubTokenInput.type = 'password';
+               githubTokenInput.value = fullToken.substring(0, 4) + '•'.repeat(Math.max(0, fullToken.length - 8)) + fullToken.substring(fullToken.length - 4);
+            }
+         }
+      };
+
+      githubTokenInput.addEventListener('focus', updateTokenDisplay);
+      githubTokenInput.addEventListener('blur', () => {
+         githubTokenInput.dataset.fullToken = githubTokenInput.value;
+         store.store.userSettings.githubToken = githubTokenInput.value;
+         saveAppData();
+         // Show auto-save toggle if token is now set
+         const autoSaveContainer = document.getElementById('toggleAutoSave')?.closest('.setting-row');
+         if (autoSaveContainer) {
+            autoSaveContainer.style.display = githubTokenInput.value ? 'flex' : 'none';
+         }
+         updateTokenDisplay();
+      });
+
+      updateTokenDisplay();
+   }
+
+   // Show auto-save toggle only if GitHub token is set
+   const autoSaveContainer = document.getElementById('toggleAutoSave')?.closest('.setting-row');
+   if (autoSaveContainer) {
+      autoSaveContainer.style.display = store.store.userSettings.githubToken ? 'flex' : 'none';
+   }
+
+   // Open gallery by default toggle
+   initToggleSwitch('toggleOpenGalleryByDefault', store.store.userSettings.openGalleryByDefault, (value) => {
+      store.store.userSettings.openGalleryByDefault = value;
+      saveAppData();
+   });
+
+   // Gallery background texture selector
+   const textureSelect = document.getElementById('galleryTextureSelect');
+   if (textureSelect) {
+      textureSelect.value = store.store.userSettings.galleryBackgroundTexture || 'none';
+      textureSelect.addEventListener('change', (e) => {
+         const texture = e.target.value;
+         store.store.userSettings.galleryBackgroundTexture = texture;
+
+         // Update gallery element classes
+         const gallery = document.getElementById('gallery');
+         if (gallery) {
+            // Remove all texture classes
+            gallery.classList.remove('cracks-texture', 'dirty-wall-texture', 'fabric-texture', 'grunge-texture', 'sand-texture', 'wood-texture');
+
+            // Add new texture class if not 'none'
+            if (texture && texture !== 'none') {
+               gallery.classList.add(texture);
+            }
+         }
+
+         saveAppData();
+      });
+   }
+
+   // Import/Export buttons
+   document.getElementById('importFromDeviceBtn')?.addEventListener('click', async () => {
+      const success = await importFromDevice();
+      if (success) {
+         alert('Data imported successfully!');
+         closeSettings();
+         location.reload();
+      }
+   });
+
+   document.getElementById('importFromGitHubBtn')?.addEventListener('click', async () => {
+      const success = await importFromGitHub();
+      if (success) {
+         alert('Data imported from GitHub!');
+         closeSettings();
+         location.reload();
+      }
+   });
+
+   document.getElementById('exportPlainBtn')?.addEventListener('click', async () => {
+      await exportToDevice(false);
+   });
+
+   document.getElementById('exportEncryptedBtn')?.addEventListener('click', async () => {
+      await exportToDevice(true);
+   });
+}
+
+function initToggleSwitch(elementId, initialState, onChange) {
+   const toggle = document.getElementById(elementId);
+   if (!toggle) return;
+
+   toggle.checked = initialState;
+   toggle.addEventListener('change', (e) => {
+      onChange(e.target.checked);
+   });
 }
 
 // ── Theme switcher ──────────────────────────────────────────────────────────
@@ -46,12 +173,10 @@ export function initThemeSwitcher() {
          } else {
             document.documentElement.setAttribute('data-theme', selectedStyle);
          }
+         store.store.userSettings.theme = selectedPref;
+         saveAppData();
       });
    });
-
-   /* window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-
-   }); */
 
    const selectedStyle = document.documentElement.getAttribute('data-theme').split('-')[0];
    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -71,7 +196,8 @@ export function initThemeStyleSwitcher() {
          } else {
             document.documentElement.setAttribute('data-theme', btn.dataset.themeVal);
          }
-
+         store.store.userSettings.appearance = btn.dataset.themeVal;
+         saveAppData();
       });
    });
 }
@@ -89,8 +215,8 @@ export function initFilterChips() {
 
 // ── Back buttons ────────────────────────────────────────────────────────────
 export function initBackButtons() {
-   document.getElementById('galleryBack').addEventListener('click', popTab);
-   document.getElementById('detailsBack').addEventListener('click', popTab);
+   document.getElementById('galleryBack')?.addEventListener('click', popTab);
+   document.getElementById('detailsBack')?.addEventListener('click', popTab);
 }
 
 // ── Search button (FAB) ──────────────────────────────────────────────────────
@@ -98,14 +224,14 @@ export function initSearchButton() {
    searchButton.addEventListener('click', () => {
       // Select "all" category first
       document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
-      document.querySelector('[data-cat="all"]').classList.add('selected');
+      document.querySelector('[data-cat="all"]')?.classList.add('selected');
 
-      if (store.getNavStackTop() === 'gallery' && store.currentCategory === 'all') {
+      if (store.navStack[store.navStack.length - 1] === 'gallery' && store.currentCategory === 'all') {
          // Already there — just focus search input
          searchInput.focus();
       } else {
          // Reset stack to categories then push gallery
-         store.setNavStack(['categories']);
+         store.navStack = ['categories'];
          openGallery('all', true);
       }
    });
@@ -113,15 +239,15 @@ export function initSearchButton() {
 
 // ── Add category button (FAB) ───────────────────────────────────────────────
 export function initAddCategoryButton() {
-   document.getElementById('addCategoryButton').addEventListener('click', () => {
-      handleAddCategoryClick();
+   document.getElementById('addCategoryButton').addEventListener('click', async () => {
+      await handleAddCategoryClick();
    });
 }
 
 // ── Add cap button (FAB) ────────────────────────────────────────────────────
 export function initAddCapButton() {
-   document.getElementById('addCapButton').addEventListener('click', () => {
-      addCapsInBatch();
+   document.getElementById('addCapButton').addEventListener('click', async () => {
+      await addCapsInBatch();
    });
 }
 
@@ -166,6 +292,7 @@ export function init() {
    initAddCategoryButton();
    initAddCapButton();
    initSidebarHandlers();
+   initCategoryUI();  // Populate categories from store
    initCategoryButtons();
    initCategoryDeleteHandlers();
 }

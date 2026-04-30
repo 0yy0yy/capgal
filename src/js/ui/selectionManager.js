@@ -110,7 +110,7 @@ export class SelectionManager {
 
    selectAll() {
       this.selectableItems.forEach(item => {
-         if (!this.selectedItems.has(item.id)) {
+         if (!this.selectedItems.has(item.id) && !item.element.classList.contains('hidden')) {
             this.selectedItems.add(item.id);
             item.element.classList.add('selected');
          }

@@ -5,8 +5,9 @@
 import { SelectionManager } from './selectionManager.js';
 
 let gallerySelectionManager = null;
+const removeButton = document.getElementsByClassName("selecting-chip stick-left")[0];
 
-export function initGallerySelection() {
+export function initGallerySelection(showRemoveButton = false) {
    const galleryList = document.getElementById('galleryList');
 
    if (!galleryList) return; // Gallery not yet rendered
@@ -31,6 +32,11 @@ export function initGallerySelection() {
          // Add/remove selection mode class to gallery
          galleryList.classList.toggle('selection-mode', isActive);
 
+         //Show/hide the remove button
+         if (showRemoveButton) {
+            removeButton.style.display = isActive ? 'block' : 'none';
+         }
+
          console.log('Selection mode:', isActive ? 'ON' : 'OFF');
       }
    });
@@ -46,11 +52,11 @@ export function initGallerySelection() {
  * Re-initialize selection manager when gallery items change
  * Call this after gallery items are rendered
  */
-export function updateGallerySelection() {
+export function updateGallerySelection(showRemoveButton = false) {
    if (gallerySelectionManager) {
       gallerySelectionManager.deselectAll();
    }
-   initGallerySelection();
+   initGallerySelection(showRemoveButton);
 }
 
 /**
