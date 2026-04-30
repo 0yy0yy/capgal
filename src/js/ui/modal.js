@@ -1013,7 +1013,7 @@ const Modal = (() => {
 
       /* ── Tag / category select ── */
       const tagField = el('div', 'mdl-field');
-      tagField.appendChild(label('Category tag', true));
+      tagField.appendChild(label('Category tag', false));
 
       const tagSelect = el('select', 'mdl-select');
       //tagSelect.addAttribute('name', 'Category');

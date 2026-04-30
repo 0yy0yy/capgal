@@ -47,6 +47,7 @@ export function initSettingsHandlers() {
    });
 
    // GitHub token with masking
+   const autoSaveInput = document.getElementById('toggleAutoSave');
    const githubTokenInput = document.getElementById('githubTokenInput');
    if (githubTokenInput) {
       const token = store.store.userSettings.githubToken || '';
@@ -75,9 +76,13 @@ export function initSettingsHandlers() {
          store.store.userSettings.githubToken = githubTokenInput.value;
          saveAppData();
          // Show auto-save toggle if token is now set
-         const autoSaveContainer = document.getElementById('toggleAutoSave')?.closest('.setting-row');
+         const autoSaveContainer = autoSaveInput?.closest('.setting-row');
          if (autoSaveContainer) {
             autoSaveContainer.style.display = githubTokenInput.value ? 'flex' : 'none';
+            if (!store.store.userSettings.githubToken) {
+               autoSaveInput.checked = false;
+               store.updateUserSettings({ autoSave: false });
+            }
          }
          updateTokenDisplay();
       });
@@ -86,9 +91,13 @@ export function initSettingsHandlers() {
    }
 
    // Show auto-save toggle only if GitHub token is set
-   const autoSaveContainer = document.getElementById('toggleAutoSave')?.closest('.setting-row');
+   const autoSaveContainer = autoSaveInput?.closest('.setting-row');
    if (autoSaveContainer) {
       autoSaveContainer.style.display = store.store.userSettings.githubToken ? 'flex' : 'none';
+      if (!store.store.userSettings.githubToken) {
+         autoSaveInput.checked = false;
+         store.updateUserSettings({ autoSave: false });
+      }
    }
 
    // Open gallery by default toggle

@@ -322,7 +322,7 @@ export function openDetails(id) {
    detailsCategory.innerHTML = '';
 
    // Add all categories except 'all'
-   store.store.categories.filter(cat => cat.id !== 'all').forEach(cat => {
+   store.store.categories.forEach(cat => {
       const opt = document.createElement('option');
       opt.value = cat.id;
       opt.textContent = cat.name;
