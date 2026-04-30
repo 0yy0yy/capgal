@@ -5,6 +5,29 @@ const ENCRYPTION_ALGORITHM = 'AES-GCM';
 const KEY_DERIVATION_ALGORITHM = 'PBKDF2';
 const HASH_ALGORITHM = 'SHA-256';
 
+function uint8ToBase64(u8) {
+   let binary = '';
+   const chunkSize = 0x8000;
+
+   for (let i = 0; i < u8.length; i += chunkSize) {
+      binary += String.fromCharCode(...u8.subarray(i, i + chunkSize));
+   }
+
+   return btoa(binary);
+}
+
+function base64ToUint8(base64) {
+   const binary = atob(base64);
+   const len = binary.length;
+   const bytes = new Uint8Array(len);
+
+   for (let i = 0; i < len; i++) {
+      bytes[i] = binary.charCodeAt(i);
+   }
+
+   return bytes;
+}
+
 /**
  * Hash a passphrase using SHA-256 (for GitHub filename)
  */
@@ -43,7 +66,7 @@ export async function deriveKey(passphrase, salt) {
          name: ENCRYPTION_ALGORITHM,
          length: 256,
       },
-      true, // extractable
+      true, // extractable -- If you don’t actually need to export the key, put false
       ['encrypt', 'decrypt']
    );
 }
@@ -75,9 +98,9 @@ export async function encrypt(plaintext, passphrase) {
 
       // Return base64-encoded
       return {
-         iv: btoa(String.fromCharCode.apply(null, new Uint8Array(iv))),
-         ciphertext: btoa(String.fromCharCode.apply(null, new Uint8Array(ciphertext))),
-         salt: btoa(String.fromCharCode.apply(null, new Uint8Array(salt))),
+         iv: uint8ToBase64(iv),
+         ciphertext: uint8ToBase64(new Uint8Array(ciphertext)),
+         salt: uint8ToBase64(salt),
       };
    } catch (error) {
       console.error('Encryption error:', error);
@@ -91,15 +114,9 @@ export async function encrypt(plaintext, passphrase) {
 export async function decrypt(encrypted, passphrase) {
    try {
       // Decode from base64
-      const salt = new Uint8Array(
-         atob(encrypted.salt).split('').map(c => c.charCodeAt(0))
-      );
-      const iv = new Uint8Array(
-         atob(encrypted.iv).split('').map(c => c.charCodeAt(0))
-      );
-      const ciphertext = new Uint8Array(
-         atob(encrypted.ciphertext).split('').map(c => c.charCodeAt(0))
-      );
+      const salt = base64ToUint8(encrypted.salt);
+      const iv = base64ToUint8(encrypted.iv);
+      const ciphertext = base64ToUint8(encrypted.ciphertext);
 
       // Derive key
       const key = await deriveKey(passphrase, salt);

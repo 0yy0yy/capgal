@@ -1242,9 +1242,9 @@ main {
 
 .action-btn {
    padding: 8px 12px;
-   background: var(--clr-primary);
-   color: var(--clr-on-primary);
-   border: none;
+   background: var(--clr-surface);
+   color: var(--clr-on-surface);
+   border-color: var(--clr-on-primary);
    border-radius: var(--radius-sm);
    cursor: pointer;
    font-size: 13px;
@@ -1254,6 +1254,7 @@ main {
 
 .action-btn:hover {
    background: color-mix(in srgb, var(--clr-primary) 80%, black);
+   color: var(--clr-surface);
 }
 
 .details-meta {

@@ -230,8 +230,7 @@ export function initSearchButton() {
          // Already there — just focus search input
          searchInput.focus();
       } else {
-         // Reset stack to categories then push gallery
-         store.navStack = ['categories'];
+         store.setNavStack(['categories']);
          openGallery('all', true);
       }
    });
