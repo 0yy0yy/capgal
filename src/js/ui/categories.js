@@ -4,6 +4,8 @@ import * as store from '../data/store.js';
 import { openGallery } from '../data/gallery.js';
 import { saveAppData } from '../data/saving.js';
 
+let preventClickOnLongPress = null;
+
 export async function deleteCategory(categoryId) {
    const category = store.store.categories.find(c => c.id === categoryId);
    const capCount = store.store.caps.filter(c => c.category === categoryId).length;
@@ -29,7 +31,7 @@ export async function deleteCategory(categoryId) {
 
       // Refresh UI
       initCategoryUI();
-      openGallery('all');
+      //openGallery('all');
       return true;
    }
    return false;
@@ -40,7 +42,7 @@ export async function handleAddCategoryClick() {
    if (!result) return;
 
    const newCategory = {
-      id: result.name.toLowerCase().replace(/\s+/g, '-'),
+      id: result.name.toLowerCase().replace(/\s+/g, '-') + Date.now(),
       name: result.name,
       color: result.color,
    };
@@ -54,11 +56,15 @@ export async function handleAddCategoryClick() {
 
 export function initCategoryButtons() {
    document.querySelectorAll('.cat-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-         document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
-         btn.classList.add('selected');
-         const catId = btn.dataset.cat;
-         openGallery(catId);
+      btn.addEventListener('click', (e) => {
+         if (!preventClickOnLongPress || e.target !== preventClickOnLongPress) {
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            const catId = btn.dataset.cat;
+            openGallery(catId);
+         } else {
+            preventClickOnLongPress = null;
+         }
       });
    });
 }
@@ -80,6 +86,7 @@ export function initCategoryDeleteHandlers() {
          if (e.button !== undefined && e.button !== 0) return;
          timer = setTimeout(() => {
             timer = null;
+            preventClickOnLongPress = e.target;
             showDeleteButton(li, catId);
          }, 350);
       });

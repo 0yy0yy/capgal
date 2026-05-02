@@ -22,13 +22,42 @@ function waitForOpenCV(timeout = 30000) {
 }
 
 /**
+ * Check if image is HEIC format and convert to JPG if needed
+ */
+async function convertHeicToJpgIfNeeded(imageBlob) {
+   // Check if file is HEIC
+   if (!imageBlob.type.toLowerCase().includes('heic') &&
+      !imageBlob.type.toLowerCase().includes('heif')) {
+      return imageBlob; // Not HEIC, return as-is
+   }
+
+   try {
+      // Load heic2any library if available
+      if (typeof heic2any === 'undefined') {
+         console.warn('heic2any not available, using HEIC as-is');
+         return imageBlob;
+      }
+
+      // Convert HEIC to JPEG
+      const jpegBlob = await heic2any({ blob: imageBlob, type: 'image/jpeg', quality: 1.0 });
+      return jpegBlob;
+   } catch (error) {
+      console.error('HEIC conversion failed:', error);
+      return imageBlob; // Fall back to original
+   }
+}
+
+/**
  * Process cap image: detect circle, extract color, crop
  */
 export async function processCapImage(imageBlob) {
    try {
+      // Convert HEIC to JPG if needed
+      let processBlob = await convertHeicToJpgIfNeeded(imageBlob);
+
       // Try OpenCV detection if available
       if (typeof cv !== 'undefined' && cv.Mat) {
-         return await detectAndProcessWithOpenCV(imageBlob);
+         return await detectAndProcessWithOpenCV(processBlob);
       }
    } catch (error) {
       console.warn('OpenCV detection failed, falling back to color extraction:', error);

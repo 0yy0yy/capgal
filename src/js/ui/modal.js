@@ -19,7 +19,7 @@
  *   If no image is pre-loaded, the user sees an upload slot instead.
  */
 
-//import camera from '../camera/camera.js';
+import * as camera from '../camera/camera.js';
 
 const Modal = (() => {
    /* ─── State ──────────────────────────────────────────────────────────── */

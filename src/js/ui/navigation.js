@@ -1,5 +1,6 @@
 // ── Tab navigation (the core transition engine) ─────────────────────────────
 import * as store from '../data/store.js';
+import { updateGalleryList } from '../data/gallery.js'
 
 const tabEls = {
    categories: document.getElementById('categories'),
@@ -27,6 +28,10 @@ export function pushTab(name) {
 
 export function popTab() {
    if (store.navStack.length <= 1) return;
-   store.navStack.pop();
+   const closingView = store.navStack.pop();
    applyTabStates();
+
+   if (closingView === 'details') {
+      updateGalleryList();
+   }
 }

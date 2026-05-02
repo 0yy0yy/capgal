@@ -495,6 +495,15 @@
    background: var(--clr-surface-2);
 }
 
+[data-theme$="-dark"] .action-btn:hover {
+   background: color-mix(in srgb, var(--clr-primary) 60%, white);
+   color: var(--clr-surface);
+}
+
+[data-theme$="-dark"] .setting-row select.meta-val {
+   background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path fill="%23e6e1e5" d="M2 4l4 4 4-4z"/></svg>');
+}
+
 
 /* Safe area insets for modern devices */
 body {
@@ -1049,7 +1058,7 @@ main {
    background: var(--clr-primary);
    border-color: var(--clr-primary);
    color: var(--clr-on-primary);
-   font-size: 25px;
+   font-size: 24px;
    line-height: 13px;
    display: flex;
 }
@@ -1114,6 +1123,10 @@ main {
    position: relative;
 }
 
+#gallery:has(li:first-child > div.cap-title.visible) li {
+   aspect-ratio: 0.75;
+}
+
 #gallery li.selected {
    outline: 3px solid var(--clr-primary);
    outline-offset: 2px;
@@ -1134,6 +1147,22 @@ main {
    height: 100%;
    object-fit: contain;
    display: block;
+}
+
+.cap-title {
+   padding: 4%;
+}
+
+.cap-title.visible {
+   color: #0a84ff;
+}
+
+.cap-title.hidden {
+   height: 0px;
+}
+
+.cap-image-container {
+   aspect-ratio: 1;
 }
 
 #galleryColor {

@@ -1,7 +1,7 @@
 // ── UI Controls (Settings, Theme, Sidebar, Back Buttons) ──────────────────
 import * as store from '../data/store.js';
 import { popTab } from './navigation.js';
-import { openGallery } from '../data/gallery.js';
+import { openGallery, addLastCategoryToFilters } from '../data/gallery.js';
 import { handleAddCategoryClick, initCategoryButtons, initCategoryDeleteHandlers, initCategoryUI } from './categories.js';
 import { addCapsInBatch } from '../data/caps.js';
 import { saveAppData } from '../data/saving.js';
@@ -249,6 +249,10 @@ export function initSearchButton() {
 export function initAddCategoryButton() {
    document.getElementById('addCategoryButton').addEventListener('click', async () => {
       await handleAddCategoryClick();
+
+      if (store.navStack.includes('gallery') && store.currentCategory === 'all') {
+         addLastCategoryToFilters();
+      }
    });
 }
 

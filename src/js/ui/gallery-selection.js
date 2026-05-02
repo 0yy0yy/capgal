@@ -62,7 +62,12 @@ export function updateGallerySelection(showRemoveButton = false) {
 /**
  * Get the current selection manager instance
  */
-export function getGallerySelectionManager() {
+export function getGallerySelectionManager(showRemoveButton = false) {
+   //Show/hide the remove button
+   if (showRemoveButton) {
+      removeButton.style.display = gallerySelectionManager ? 'block' : 'none';
+   }
+
    return gallerySelectionManager;
 }
 
