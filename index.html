@@ -11,9 +11,17 @@
 
    <link rel="stylesheet" href="./src/css/base.css">
    <script src="./src/js/app.js" type="module"></script>
+   <script async src="./src/js/cv/opencv.js" type="text/javascript"></script>
+   <script async src="./src/js/cv/heic2any.min.js" type="text/javascript"></script>
 </head>
 
 <body>
+   <!-- ── CV DEBUG ── -->
+   <div class="debug-canvas" style="display: none;">
+      <canvas id="circlesOutput"></canvas>
+      <canvas id="canvasOutput"></canvas>
+   </div>
+
    <!-- ── LOADING SCREEN ── -->
    <div id="loadingScreen" class="loading-screen">
       <div class="loading-spinner">
@@ -24,7 +32,7 @@
             <circle cx="34.5" cy="34.5" r="20" fill="gray" />
             <ellipse rx="19" ry="21" cx="34.5" cy="34.5" fill="gray" opacity=".4" />
          </svg>
-         <p>Loading</p>
+         <p id="loadingScreenLogs">Loading</p>
       </div>
    </div>
 
@@ -86,6 +94,7 @@
 
                      <div id="selecting">
                         <button class="selecting-chip stick-left">Remove</button>
+                        <!-- <button class="selecting-chip stick-left">Delete cap(s)</button> -->
                         <button class="selecting-chip">Select all</button>
                         <button class="selecting-chip">Deselect all</button>
                      </div>
@@ -166,7 +175,7 @@
                   <span class="setting-label">Gallery background texture</span>
                   <select id="galleryTextureSelect" class="meta-val"
                      style="width: 100%; padding: 8px; border-radius: 4px;">
-                     <option value="none">None</option>
+                     <option value="none">No texture</option>
                      <option value="cracks-texture">Cracks</option>
                      <option value="dirty-wall-texture">Dirty Wall</option>
                      <option value="fabric-texture">Fabric</option>

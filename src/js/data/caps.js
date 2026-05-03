@@ -4,6 +4,7 @@ import * as store from './store.js';
 import { saveAppData } from './saving.js';
 import { processCapImage } from './image-processor.js';
 import { openGallery } from './gallery.js';
+import { getWordForCount, tryHeicConversion } from '../helpers/helper.js';
 
 /**
  * Delete a cap from collection (with confirmation)
@@ -43,8 +44,8 @@ export async function saveCap(capData) {
       let capColor = '#808080';
 
       if (capData.image) {
-         // Process image with OpenCV
-         const processed = await processCapImage(capData.image);
+         const convertedJpegImage = await tryHeicConversion(capData.image);
+         const processed = await processCapImage(convertedJpegImage);
          imageBase64 = await fileToBase64(processed.imageBlob);
          capColor = processed.capColor;
       }
@@ -100,7 +101,7 @@ export async function addCapsInBatch() {
             keepAdding = await Modal.confirm({
                question: 'Cap added! Add another?',
                yesLabel: 'Yes',
-               noLabel: 'Done',
+               noLabel: 'No, done',
             });
          } catch (error) {
             console.error('Error adding cap:', error);
@@ -120,7 +121,7 @@ export async function addCapsInBatch() {
 
          // Ask if user wants to add details now or later
          const addDetailsNow = await Modal.confirm({
-            question: `Add titles for ${totalFiles} caps now?\n(or add them later individually)`,
+            question: `Add titles for ${totalFiles} ${getWordForCount(totalFiles, 'cap')} now?\n(or add them later individually)`,
             yesLabel: 'Add now',
             noLabel: 'Add later',
          });
@@ -140,7 +141,7 @@ export async function addCapsInBatch() {
                   const remaining = result.files.length - i - 1;
                   if (remaining > 0) {
                      const continueAdding = await Modal.confirm({
-                        question: `${remaining} images left. Continue?`,
+                        question: `${remaining} ${getWordForCount(remaining, 'images')} left. Continue?`,
                         yesLabel: 'Yes',
                         noLabel: 'No',
                      });
@@ -173,9 +174,8 @@ export async function addCapsInBatch() {
 
          // Show summary and refresh
          await Modal.confirm({
-            question: `Added ${addedCount} caps!`,
-            yesLabel: 'OK',
-            noLabel: null,
+            question: `Added ${addedCount} ${getWordForCount(addedCount, 'cap')}!`,
+            yesLabel: 'OK'
          });
 
          // Refresh gallery

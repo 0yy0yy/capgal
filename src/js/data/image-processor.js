@@ -24,22 +24,26 @@ function waitForOpenCV(timeout = 30000) {
 /**
  * Check if image is HEIC format and convert to JPG if needed
  */
-async function convertHeicToJpgIfNeeded(imageBlob) {
+export async function convertHeicToJpgIfNeeded(imageBlob) {
    // Check if file is HEIC
-   if (!imageBlob.type.toLowerCase().includes('heic') &&
-      !imageBlob.type.toLowerCase().includes('heif')) {
-      return imageBlob; // Not HEIC, return as-is
+   const type = imageBlob.type?.toLowerCase() || '';
+   const name = imageBlob.name?.toLowerCase() || '';
+
+   const isHeicType = type.includes('heic') || type.includes('heif');
+   const isHeicName = name.endsWith('.heic') || name.endsWith('.heif');
+
+   if (!isHeicType && !isHeicName) {
+      return imageBlob;
    }
 
    try {
-      // Load heic2any library if available
       if (typeof heic2any === 'undefined') {
          console.warn('heic2any not available, using HEIC as-is');
          return imageBlob;
       }
 
       // Convert HEIC to JPEG
-      const jpegBlob = await heic2any({ blob: imageBlob, type: 'image/jpeg', quality: 1.0 });
+      const jpegBlob = await heic2any({ blob: imageBlob, toType: 'image/jpeg', quality: 1.0 });
       return jpegBlob;
    } catch (error) {
       console.error('HEIC conversion failed:', error);
@@ -53,11 +57,11 @@ async function convertHeicToJpgIfNeeded(imageBlob) {
 export async function processCapImage(imageBlob) {
    try {
       // Convert HEIC to JPG if needed
-      let processBlob = await convertHeicToJpgIfNeeded(imageBlob);
+      //let processBlob = await convertHeicToJpgIfNeeded(imageBlob);
 
       // Try OpenCV detection if available
       if (typeof cv !== 'undefined' && cv.Mat) {
-         return await detectAndProcessWithOpenCV(processBlob);
+         return await detectAndProcessWithOpenCV(imageBlob);
       }
    } catch (error) {
       console.warn('OpenCV detection failed, falling back to color extraction:', error);
@@ -87,17 +91,31 @@ async function detectAndProcessWithOpenCV(imageBlob) {
 
       // Detect circles using Hough Circle Detection
       let circles = new cv.Mat();
+
+      /* Parameters:
+            image	      8-bit, single-channel, grayscale input image.
+            circles	   output vector of found circles(cv.CV_32FC3 type). Each vector is encoded as a 3-element floating-point vector (x,y,radius) .
+            method	   detection method(see cv.HoughModes). Currently, the only implemented method is HOUGH_GRADIENT
+            dp	         inverse ratio of the accumulator resolution to the image resolution. For example, if dp = 1 , the accumulator has the same resolution as the input image. If dp = 2 , the accumulator has half as big width and height.
+            minDist	   minimum distance between the centers of the detected circles. If the parameter is too small, multiple neighbor circles may be falsely detected in addition to a true one. If it is too large, some circles may be missed.
+            param1	   first method-specific parameter. In case of HOUGH_GRADIENT , it is the higher threshold of the two passed to the Canny edge detector (the lower one is twice smaller).
+            param2	   second method-specific parameter. In case of HOUGH_GRADIENT , it is the accumulator threshold for the circle centers at the detection stage. The smaller it is, the more false circles may be detected. Circles, corresponding to the larger accumulator values, will be returned first.
+            minRadius	minimum circle radius.
+            maxRadius	maximum circle radius. 
+      */
       cv.HoughCircles(
          gray,
          circles,
          cv.HOUGH_GRADIENT,
+         1, 45, 175, 40, 0, 0
+      );
+      /* -- SHOULD MAKE A BIT SMARTER.. checking distance to know how big will the cap be on the image or something... todo
          1,
-         gray.rows / 8,
+         gray.rows / 8, 
          100,
          30,
          20,
-         100
-      );
+         100 */
 
       let capColor = '#808080';
       let processedBlob = imageBlob;
@@ -111,6 +129,33 @@ async function detectAndProcessWithOpenCV(imageBlob) {
             circles.data32F[1],
             circles.data32F[2],
          ];
+
+
+         // testing circles lol
+         const crcdst = cv.Mat.zeros(src.rows, src.cols, cv.CV_8U);
+         const colors = [
+            new cv.Scalar(0, 0, 255),     // Red
+            new cv.Scalar(0, 255, 0),     // Green
+            new cv.Scalar(255, 0, 0),     // Blue
+            new cv.Scalar(0, 165, 255),   // Orange
+            new cv.Scalar(255, 0, 255),   // Purple (Magenta)
+            new cv.Scalar(255, 255, 0),   // Cyan
+         ];
+         // draw circles
+         for (let i = 0; i < circles.cols; ++i) {
+            let x = circles.data32F[i * 3];
+            let y = circles.data32F[i * 3 + 1];
+            let radius = circles.data32F[i * 3 + 2];
+            let center = new cv.Point(x, y);
+            cv.circle(crcdst, center, radius, colors[i % 6]);
+         }
+         const alpha = 0.5;
+         const overlay = new cv.Mat();
+         cv.addWeighted(gray, alpha, crcdst, 1 - alpha, 0, overlay);
+         cv.imshow('circlesOutput', crcdst);
+         crcdst.delete();
+         overlay.delete();
+
 
          // Extract color from circle
          capColor = extractColorFromCircle(src, circle);
@@ -130,7 +175,7 @@ async function detectAndProcessWithOpenCV(imageBlob) {
          detected,
       };
    } catch (error) {
-      console.error('OpenCV processing error:', error);
+      console.error('OpenCV processing error:', cv.exceptionFromPtr(error).msg);
       throw error;
    }
 }
@@ -140,33 +185,52 @@ async function detectAndProcessWithOpenCV(imageBlob) {
  */
 function extractColorFromCircle(mat, circle) {
    const [x, y, radius] = circle;
-   const roiSize = Math.ceil(radius * 2);
+   const roiSize = radius * 2;
+   const roiX = x - radius;
+   const roiY = y - radius;
+
+   const safeX = Math.max(0, Math.min(roiX, mat.cols - 1));
+   const safeY = Math.max(0, Math.min(roiY, mat.rows - 1));
+   const safeW = Math.max(1, Math.min(roiSize, mat.cols - safeX));
+   const safeH = Math.max(1, Math.min(roiSize, mat.rows - safeY));
 
    try {
-      const roi = mat.roi(new cv.Rect(
-         Math.max(0, Math.round(x - radius)),
-         Math.max(0, Math.round(y - radius)),
-         roiSize,
-         roiSize
-      ));
+      const roi = mat.roi(new cv.Rect(safeX, safeY, safeW, safeH));
 
-      // Sample pixels and find dominant color
-      let r = 0, g = 0, b = 0;
-      const data = roi.data32S;
+      const roiRgba = new cv.Mat();
+      cv.cvtColor(roi, roiRgba, cv.COLOR_BGR2RGBA);
 
-      for (let i = 0; i < Math.min(100, data.length); i += 4) {
-         b += data[i];
-         g += data[i + 1];
-         r += data[i + 2];
+      const data = roiRgba.data;
+      const roiCenterX = roi.cols / 2;
+      const roiCenterY = roi.rows / 2;
+      let r = 0, g = 0, b = 0, count = 0;
+
+      for (let row = 0; row < roi.rows; row++) {
+         for (let col = 0; col < roi.cols; col++) {
+            const dx = col - roiCenterX;
+            const dy = row - roiCenterY;
+
+            if (dx * dx + dy * dy <= radius * radius) {
+               const i = (row * roi.cols + col) * 4;
+               r += data[i];
+               g += data[i + 1];
+               b += data[i + 2];
+               count++;
+            }
+         }
       }
 
-      const count = Math.min(100, data.length / 4);
+      cv.imshow('canvasOutput', roi);
+      roi.delete();
+      roiRgba.delete();
+
       r = Math.round(r / count);
       g = Math.round(g / count);
       b = Math.round(b / count);
 
       return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-   } catch {
+   } catch (error) {
+      console.error(cv.exceptionFromPtr(error).msg);
       return '#808080';
    }
 }
@@ -192,7 +256,7 @@ async function cropToCircle(canvas, circle) {
    );
 
    return new Promise(resolve => {
-      cropCanvas.toBlob(resolve, 'image/jpeg', 0.9);
+      cropCanvas.toBlob(resolve, 'image/jpeg', 1);
    });
 }
 

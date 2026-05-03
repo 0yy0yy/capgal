@@ -7,26 +7,7 @@ import { applyTabStates } from './ui/navigation.js';
 import * as store from './data/store.js';
 import { loadAppData } from './data/loading.js';
 import { initCategoryUI } from './ui/categories.js';
-
-/**
- * Show loading screen
- */
-function showLoadingScreen() {
-   const loading = document.getElementById('loadingScreen');
-   if (loading) {
-      loading.classList.add('active');
-   }
-}
-
-/**
- * Hide loading screen
- */
-function hideLoadingScreen() {
-   const loading = document.getElementById('loadingScreen');
-   if (loading) {
-      loading.classList.remove('active');
-   }
-}
+import { showLoadingScreen, hideLoadingScreen } from './helpers/helper.js'
 
 /**
  * Initialize app

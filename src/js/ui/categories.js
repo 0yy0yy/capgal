@@ -149,7 +149,7 @@ export function initCategoryUI() {
    allBtn.type = 'button';
    allBtn.className = 'cat-btn selected';
    allBtn.dataset.cat = 'all';
-   allBtn.textContent = 'ALL caps';
+   allBtn.textContent = 'All caps';
    allLi.appendChild(allBtn);
    categoriesList.appendChild(allLi);
 

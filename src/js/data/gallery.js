@@ -6,6 +6,7 @@ import { replaceCapImage, exportCapImage, deleteCapImage } from './caps.js';
 import { handleAddCategoryClick, deleteCategory } from '../ui/categories.js';
 import { saveAppData } from './saving.js';
 import Modal from '../ui/modal.js';
+import { getWordForCount } from '../helpers/helper.js';
 
 const galleryList = document.getElementById('galleryList');
 const galleryTitle = document.getElementById('galleryTitle');
@@ -29,7 +30,7 @@ export function openGallery(category, focusSearch = false) {
 
    // Title
    const displayName = category === 'all'
-      ? 'ALL caps'
+      ? 'All caps'
       : categoryObj?.name || category;
    galleryTitle.textContent = displayName;
    galleryTitle.contentEditable = category !== 'all';
@@ -163,7 +164,7 @@ export function openGallery(category, focusSearch = false) {
       const r = (rgb >> 16) & 255;
       const g = (rgb >> 8) & 255;
       const b = rgb & 255;
-      gallery.style.background = `rgba(${r}, ${g}, ${b}, 0.04)`;
+      gallery.style.background = `linear-gradient(185deg,rgba(${r}, ${g}, ${b}, 0.05) 0%, rgba(${r}, ${g}, ${b}, 0.2) 100%)`;
    } else {
       gallery.style.background = '';
    }
@@ -201,19 +202,22 @@ export function openGallery(category, focusSearch = false) {
          const selectionManager = getGallerySelectionManager();
          if (selectionManager) {
             const selectedCaps = selectionManager.getSelectedItems();
-            const selectedSet = new Set(selectedCaps);
 
-            store.store.caps.forEach(cap => {
-               if (selectedSet.has(String(cap.id))) {
-                  store.updateCap(cap.id, {
-                     ...cap,
-                     category: 'all'
-                  });
-               }
-            });
+            if (selectedCaps.length > 0) {
+               const selectedSet = new Set(selectedCaps);
 
-            selectionManager.exitSelectionMode();
-            refreshGallery()
+               store.store.caps.forEach(cap => {
+                  if (selectedSet.has(String(cap.id))) {
+                     store.updateCap(cap.id, {
+                        ...cap,
+                        category: 'all'
+                     });
+                  }
+               });
+
+               selectionManager.exitSelectionMode();
+               refreshGallery();
+            }
          }
       };
    }
@@ -266,7 +270,7 @@ async function handleDeleteCategoryFromGallery(categoryId) {
    const capCount = store.store.caps.filter(c => c.category === categoryId).length;
 
    const confirmed = await Modal.confirm({
-      question: `Delete "${categoryObj?.name || 'Category'}"? ${capCount} cap(s) will be moved to "All".`,
+      question: `Delete "${categoryObj?.name || 'this category'}"?\n${capCount} ${getWordForCount(capCount, 'cap')} will be moved to "All caps".`,
       yesLabel: 'Delete',
       noLabel: 'Cancel',
    });

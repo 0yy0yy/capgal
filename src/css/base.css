@@ -63,7 +63,7 @@
    --sidebar-w: 176px;
 
    /* Components */
-   --btn-h: 48px;
+   --btn-h: 36px;
    /* M3 minimum touch target */
    --input-radius: 4px 4px 0 0;
    /* Underline style */
@@ -148,7 +148,7 @@
    --sidebar-w: 176px;
 
    /* Components */
-   --btn-h: 44px;
+   --btn-h: 35px;
    /* Apple minimum */
    --input-radius: 10px;
    /* Fully rounded text fields */
@@ -287,7 +287,6 @@
    --sidebar-w: 176px;
 
    /* Components */
-   --btn-h: 48px;
    --input-radius: 4px 4px 0 0;
    --input-border: 2px solid var(--clr-primary);
    --input-placeholder: #cac4d0;
@@ -362,7 +361,6 @@
    --sidebar-w: 176px;
 
    /* Components */
-   --btn-h: 44px;
    --input-radius: 10px;
    --input-border: 1px solid rgba(84, 84, 88, 0.65);
    --input-focus-border: 2px solid var(--clr-primary);
@@ -469,10 +467,6 @@
 
 [data-theme$="-dark"] #fabs button::before {
    filter: opacity(0.7) invert(1);
-}
-
-[data-theme$="-dark"] #deleteButton {
-   filter: invert(1);
 }
 
 [data-theme$="-dark"] #stickyTop {
@@ -613,6 +607,7 @@ body {
    background: var(--clr-bg);
    color: var(--clr-on-surface);
    height: 100dvh;
+   min-width: 350px;
    overflow: hidden;
 }
 
@@ -720,7 +715,7 @@ main {
 }
 
 #deleteButton::before {
-   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 6 5 6 21 6'/%3E%3Cpath d='M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6'/%3E%3Cpath d='M10 11v6'/%3E%3Cpath d='M14 11v6'/%3E%3Cpath d='M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2'/%3E%3C/svg%3E");
+   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff453a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 6 5 6 21 6'/%3E%3Cpath d='M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6'/%3E%3Cpath d='M10 11v6'/%3E%3Cpath d='M14 11v6'/%3E%3Cpath d='M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2'/%3E%3C/svg%3E");
 }
 
 #addCapButton::before {
@@ -802,7 +797,7 @@ main {
 
 #categories li button:not(.cat-delete-btn) {
    width: 100%;
-   height: var(--btn-h);
+   height: 45px;
    padding: 0 16px;
    border: none;
    background: var(--clr-surface);
@@ -1199,7 +1194,7 @@ main {
 }
 
 #deleteButton:hover {
-   background: rgba(220, 38, 38, 0.10);
+   background: rgba(220, 38, 38, 0.07);
 }
 
 #deleteButton::before {
@@ -1230,9 +1225,10 @@ main {
 }
 
 #detailsImage {
-   width: 100%;
-   aspect-ratio: 4/3;
-   object-fit: cover;
+   width: auto;
+   max-height: 100%;
+   aspect-ratio: 1;
+   object-fit: contain;
    border-radius: var(--radius-md);
    box-shadow: var(--shadow-md);
    cursor: pointer;
@@ -1246,6 +1242,9 @@ main {
 #capImage {
    position: relative;
    overflow: hidden;
+   max-height: 45%;
+   display: flex;
+   justify-content: center;
 }
 
 .image-actions {
@@ -1409,6 +1408,7 @@ main {
 .loading-screen:not(.active) {
    opacity: 0;
    pointer-events: none;
+   /* display: none; */
 }
 
 .loading-spinner {

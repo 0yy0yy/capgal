@@ -20,6 +20,7 @@
  */
 
 import * as camera from '../camera/camera.js';
+import { tryHeicConversion } from '../helpers/helper.js';
 
 const Modal = (() => {
    /* ─── State ──────────────────────────────────────────────────────────── */
@@ -71,6 +72,7 @@ const Modal = (() => {
          width: 100%;
          max-width: 480px;
          font-family: 'Syne', sans-serif;
+         font-variant-numeric: lining-nums;
          animation: mdl-box-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
          overflow: hidden;
       }
@@ -772,7 +774,7 @@ const Modal = (() => {
     * @param {string} [opts.noLabel='No']
     * @returns {Promise<boolean>}  true = yes, false = no, null = dismissed
     */
-   const confirm = ({ question, yesLabel = 'Yes', noLabel = 'No' } = {}) => {
+   const confirm = ({ question, yesLabel = 'Yes', noLabel = null } = {}) => {
       return new Promise(resolve => {
          _activeResolve = resolve;
 
@@ -788,15 +790,17 @@ const Modal = (() => {
 
          const footer = el('div', 'mdl-footer');
 
-         const noBtn = el('button', 'mdl-btn mdl-btn-ghost');
-         noBtn.textContent = noLabel;
-         noBtn.addEventListener('click', () => _resolve(false));
-
          const yesBtn = el('button', 'mdl-btn mdl-btn-danger');
          yesBtn.textContent = yesLabel;
          yesBtn.addEventListener('click', () => _resolve(true));
 
-         footer.appendChild(noBtn);
+         if (noLabel) {
+            const noBtn = el('button', 'mdl-btn mdl-btn-ghost');
+            noBtn.textContent = noLabel;
+            noBtn.addEventListener('click', () => _resolve(false));
+            footer.appendChild(noBtn);
+         }
+
          footer.appendChild(yesBtn);
          frag.appendChild(footer);
 
@@ -891,7 +895,7 @@ const Modal = (() => {
     * @param {Blob|File|null} pendingImage           pre-loaded image
     * @param {Function} errorEl                      error display element
     */
-   const buildCapForm = (categories, pendingImage, errorEl) => {
+   const buildCapForm = async (categories, pendingImage, errorEl) => {
       const container = document.createDocumentFragment();
       let imageFile = pendingImage || null;
 
@@ -936,7 +940,7 @@ const Modal = (() => {
 
       container.appendChild(imageField);
 
-      const showImagePreview = (src) => {
+      const showImagePreview = async (src) => {
          imgPreview.src = src;
          imgPreview.style.display = 'block';
          slotIcon.style.display = 'none';
@@ -945,7 +949,8 @@ const Modal = (() => {
 
       // If a pending image was pre-loaded, show it immediately
       if (pendingImage) {
-         showImagePreview(URL.createObjectURL(pendingImage));
+         imageFile = await tryHeicConversion(pendingImage);
+         showImagePreview(URL.createObjectURL(imageFile)); // convert the image if heic -- todo
       }
 
       // Handle camera capture
@@ -953,8 +958,8 @@ const Modal = (() => {
          try {
             const capturedBlob = await camera.showCameraModal();
             if (capturedBlob) {
-               imageFile = capturedBlob;
-               showImagePreview(URL.createObjectURL(capturedBlob));
+               imageFile = await tryHeicConversion(capturedBlob);
+               showImagePreview(URL.createObjectURL(imageFile));
             }
          } catch (error) {
             console.error('Camera error:', error);
@@ -967,24 +972,24 @@ const Modal = (() => {
          fileInput.click();
       }); */
 
-      fileInput.addEventListener('change', () => {
+      fileInput.addEventListener('change', async () => {
          const f = fileInput.files[0];
          if (f) {
-            imageFile = f;
-            showImagePreview(URL.createObjectURL(f));
+            imageFile = await tryHeicConversion(f);
+            showImagePreview(URL.createObjectURL(imageFile));
          }
       });
 
       // Drag & drop
       imageSlot.addEventListener('dragover', e => { e.preventDefault(); imageSlot.style.borderColor = '#1a1a1a'; });
       imageSlot.addEventListener('dragleave', () => { imageSlot.style.borderColor = ''; });
-      imageSlot.addEventListener('drop', e => {
+      imageSlot.addEventListener('drop', async (e) => {
          e.preventDefault();
          imageSlot.style.borderColor = '';
          const f = e.dataTransfer.files[0];
          if (f && f.type.startsWith('image/')) {
-            imageFile = f;
-            showImagePreview(URL.createObjectURL(f));
+            imageFile = await tryHeicConversion(f);
+            showImagePreview(URL.createObjectURL(imageFile));
          }
       });
 
@@ -995,7 +1000,7 @@ const Modal = (() => {
       titleField.appendChild(label('Cap title', false));
       const titleInput = el('input', 'mdl-input');
       titleInput.type = 'text';
-      titleInput.placeholder = 'Enter cap name (optional)';
+      titleInput.placeholder = 'Enter cap name';
       titleInput.maxLength = 100;
       titleField.appendChild(titleInput);
       container.appendChild(titleField);
@@ -1020,7 +1025,7 @@ const Modal = (() => {
 
       const placeholderOpt = el('option');
       placeholderOpt.value = '';
-      placeholderOpt.textContent = '— Select a category —';
+      placeholderOpt.textContent = '— Select a category — (optional)';
       placeholderOpt.disabled = true;
       placeholderOpt.selected = true;
       tagSelect.appendChild(placeholderOpt);
@@ -1134,7 +1139,7 @@ const Modal = (() => {
          return Promise.reject(new Error(`Modal.addItem: type must be 'category' or 'cap', got '${type}'`));
       }
 
-      return new Promise(resolve => {
+      return new Promise(async (resolve) => {
          _activeResolve = resolve;
 
          const frag = document.createDocumentFragment();
@@ -1173,7 +1178,7 @@ const Modal = (() => {
 
          } else {
             // type === 'cap'
-            const { container, getData } = buildCapForm(categories, _pendingImage, errorEl);
+            const { container, getData } = await buildCapForm(categories, _pendingImage, errorEl);
             _pendingImage = null; // consumed
             body.appendChild(container);
             body.appendChild(errorEl);
