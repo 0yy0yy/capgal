@@ -33,6 +33,7 @@ export function openGallery(category, focusSearch = false) {
       ? 'All caps'
       : categoryObj?.name || category;
    galleryTitle.textContent = displayName;
+   galleryTitle.title = "Gallery's title";
    galleryTitle.contentEditable = category !== 'all';
 
    // Make title editable (save on blur)
@@ -83,6 +84,24 @@ export function openGallery(category, focusSearch = false) {
       const selectingDiv = filterRow.querySelector('#selecting');
       filtersDiv.innerHTML = '';
 
+      const updateSelectButtonCompactState = () => {
+         const hasThreeOrMoreFilters = filtersDiv.querySelectorAll('.filter-chip:not(.filter-chip-plus)').length >= 3;
+         const selectButtons = selectingDiv.querySelectorAll('.selecting-chip');
+         selectButtons.forEach(btn => {
+            if (hasThreeOrMoreFilters) {
+               const index = Array.from(selectButtons).indexOf(btn);
+               //if (index !== 0) {
+               btn.classList.add('compact');
+               if (index === 1) btn.setAttribute('data-icon', '✔'); // select all
+               else if (index === 2) btn.setAttribute('data-icon', '𐄂'); // deselect all
+               //}
+            } else {
+               btn.classList.remove('compact');
+               btn.removeAttribute('data-icon');
+            }
+         });
+      };
+
       if (category === 'all') {
          filtersDiv.style.display = 'flex';
          filterRow.style.justifyContent = 'space-between';
@@ -125,6 +144,8 @@ export function openGallery(category, focusSearch = false) {
                      });
                      // Re-initialize selection on filtered list
                      updateGallerySelection();
+                     // Update select button compact state
+                     updateSelectButtonCompactState();
                   }
                };
                filtersDiv.appendChild(chip);
@@ -135,15 +156,21 @@ export function openGallery(category, focusSearch = false) {
          const plusChip = document.createElement('button');
          plusChip.className = 'filter-chip filter-chip-plus';
          plusChip.textContent = '+';
+         plusChip.title = 'Add new category';
          plusChip.onclick = async () => {
             await handleAddCategoryClick();
             addLastCategoryToFilters();
+            updateSelectButtonCompactState();
          };
          filtersDiv.prepend(plusChip);
+         // Initial compact state check
+         updateSelectButtonCompactState();
       } else {
          // Non-ALL categories should show filter row with remove button in selection mode
          filtersDiv.style.display = 'none';
          filterRow.style.justifyContent = 'flex-end';
+
+         updateSelectButtonCompactState();
 
          // Filter to show only the appropriate caps
          galleryList.querySelectorAll('li').forEach(li => {
@@ -170,7 +197,7 @@ export function openGallery(category, focusSearch = false) {
    }
 
    // Initialize selection mode for gallery items
-   category === 'all' ? updateGallerySelection() : updateGallerySelection(true);
+   category === 'all' ? updateGallerySelection(false, true) : updateGallerySelection(true);
 
    // Click handlers (with selection mode integration)
    galleryList.querySelectorAll('li').forEach(li => {
@@ -224,7 +251,7 @@ export function openGallery(category, focusSearch = false) {
 
    if (selectAllBtn) {
       selectAllBtn.onclick = () => {
-         const selectionManager = getGallerySelectionManager(store.currentCategory !== 'all');
+         const selectionManager = getGallerySelectionManager(store.currentCategory !== 'all', store.currentCategory === 'all');
          if (selectionManager) {
             if (selectionManager.selectableItems.length === 0) {
                selectionManager.isSelectionMode = true;
@@ -298,10 +325,13 @@ export function openDetails(id) {
    // Set details UI
    const detailsTitle = document.getElementById('detailsTitle');
    detailsTitle.textContent = cap.title;
+   detailsTitle.title = "Cap's title";
    detailsTitle.onblur = () => {
-      cap.title = detailsTitle.textContent;
-      store.store.caps.find(c => c.id === id).title = cap.title;
-      saveAppData();
+      const currentCap = store.store.caps.find(c => c.id === id);
+      if (currentCap) {
+         currentCap.title = detailsTitle.textContent;
+         saveAppData();
+      }
    };
 
    // Set up category dropdown
@@ -318,17 +348,21 @@ export function openDetails(id) {
    });
 
    detailsCategory.onchange = () => {
-      cap.category = detailsCategory.value || 'all';
-      store.store.caps.find(c => c.id === id).category = cap.category;
-      saveAppData();
+      const currentCap = store.store.caps.find(c => c.id === id);
+      if (currentCap) {
+         currentCap.category = detailsCategory.value || 'all';
+         saveAppData();
+      }
    };
 
    const detailsDesc = document.getElementById('detailsDesc');
    detailsDesc.value = cap.description || '';
    detailsDesc.onblur = () => {
-      cap.description = detailsDesc.value;
-      store.store.caps.find(c => c.id === id).description = detailsDesc.value;
-      saveAppData();
+      const currentCap = store.store.caps.find(c => c.id === id);
+      if (currentCap) {
+         currentCap.description = detailsDesc.value;
+         saveAppData();
+      }
    };
 
    const detailsImage = document.getElementById('detailsImage');

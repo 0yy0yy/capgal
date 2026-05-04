@@ -20,7 +20,8 @@
  */
 
 import * as camera from '../camera/camera.js';
-import { tryHeicConversion } from '../helpers/helper.js';
+import { tryHeicConversion, showLoadingScreen, updateLoadingScreen, hideLoadingScreen } from '../helpers/helper.js';
+import { processCapImage } from '../data/image-processor.js';
 
 const Modal = (() => {
    /* ─── State ──────────────────────────────────────────────────────────── */
@@ -41,7 +42,7 @@ const Modal = (() => {
       .mdl-overlay {
          position: fixed;
          inset: 0;
-         z-index: 9999;
+         z-index: 9998;
          background: rgba(10, 10, 12, 0.72);
          backdrop-filter: blur(6px);
          -webkit-backdrop-filter: blur(6px);
@@ -774,13 +775,13 @@ const Modal = (() => {
     * @param {string} [opts.noLabel='No']
     * @returns {Promise<boolean>}  true = yes, false = no, null = dismissed
     */
-   const confirm = ({ question, yesLabel = 'Yes', noLabel = null } = {}) => {
+   const confirm = ({ question, yesLabel = 'Yes', noLabel = null, headerText = null } = {}) => {
       return new Promise(resolve => {
          _activeResolve = resolve;
 
          const frag = document.createDocumentFragment();
 
-         frag.appendChild(makeHeader('Confirmation', 'Are you sure?', true));
+         frag.appendChild(makeHeader('Confirmation', headerText ? headerText : 'Are you sure?', true));
 
          const body = el('div', 'mdl-body');
          const q = el('div', 'mdl-question');
@@ -827,9 +828,9 @@ const Modal = (() => {
       container.appendChild(field(label('Category name', true), nameInput));
 
       // Color
-      let currentColor = '#3B82F6';
+      let currentColor = '#808080';
       const colorField = el('div', 'mdl-field');
-      colorField.appendChild(label('Accent color', true));
+      colorField.appendChild(label('Accent color'));
 
       const colorRow = el('div', 'mdl-color-row');
 
@@ -898,10 +899,11 @@ const Modal = (() => {
    const buildCapForm = async (categories, pendingImage, errorEl) => {
       const container = document.createDocumentFragment();
       let imageFile = pendingImage || null;
+      let isProcessing = false;
 
       /* ── Image slot ── */
       const imageField = el('div', 'mdl-field');
-      imageField.appendChild(label('Cap image'));
+      imageField.appendChild(label('Cap image', true));
 
       const imageSlot = el('div', 'mdl-image-slot');
       const fileInput = el('input');
@@ -928,14 +930,8 @@ const Modal = (() => {
       const cameraRow = el('div', 'mdl-camera-row');
       const cameraBtn = el('button', 'mdl-camera-btn');
       cameraBtn.innerHTML = '<em>📸</em> Take Photo';
-      /* const uploadBtn = el('button', 'mdl-camera-btn mdl-camera-btn-secondary');
-      uploadBtn.innerHTML = '📁 Upload File'; */
 
       cameraRow.appendChild(cameraBtn);
-      //const inlineError = makeError();
-      //const { container: inlineFields, getData: getInlineCat, focusFirst: focusInlineFirst } = buildCategoryForm(inlineError);
-      //cameraRow.appendChild(inlineFields);
-      //cameraRow.appendChild(inlineError);
       imageField.appendChild(cameraRow);
 
       container.appendChild(imageField);
@@ -947,19 +943,53 @@ const Modal = (() => {
          slotHint.style.display = 'none';
       };
 
-      // If a pending image was pre-loaded, show it immediately
+      // Process image and show preview
+      const processAndPreviewImage = async (file) => {
+         if (!file) return;
+
+         isProcessing = true;
+         showLoadingScreen('Processing image...');
+
+         try {
+            updateLoadingScreen('Converting format...');
+            const convertedImage = await tryHeicConversion(file);
+
+            updateLoadingScreen('Detecting cap circle...');
+            const processed = await processCapImage(convertedImage);
+
+            updateLoadingScreen('Preparing preview...');
+            imageFile = convertedImage; // Store the original converted file
+
+            // Show the processed image preview
+            const processedBlobUrl = URL.createObjectURL(processed.imageBlob);
+            await showImagePreview(processedBlobUrl);
+
+            hideLoadingScreen();
+            updateLoadingScreen('Image ready!');
+
+         } catch (error) {
+            console.error('Image processing error:', error);
+            hideLoadingScreen();
+            errorEl.show('Failed to process image. Using original.');
+            imageFile = await tryHeicConversion(file);
+            showImagePreview(URL.createObjectURL(imageFile));
+         } finally {
+            isProcessing = false;
+         }
+      };
+
+      // If a pending image was pre-loaded, process it
       if (pendingImage) {
-         imageFile = await tryHeicConversion(pendingImage);
-         showImagePreview(URL.createObjectURL(imageFile)); // convert the image if heic -- todo
+         processAndPreviewImage(pendingImage);
       }
 
       // Handle camera capture
       cameraBtn.addEventListener('click', async () => {
+         if (isProcessing) return;
          try {
             const capturedBlob = await camera.showCameraModal();
             if (capturedBlob) {
-               imageFile = await tryHeicConversion(capturedBlob);
-               showImagePreview(URL.createObjectURL(imageFile));
+               await processAndPreviewImage(capturedBlob);
             }
          } catch (error) {
             console.error('Camera error:', error);
@@ -967,16 +997,11 @@ const Modal = (() => {
          }
       });
 
-      // Handle file upload
-      /* uploadBtn.addEventListener('click', () => {
-         fileInput.click();
-      }); */
-
       fileInput.addEventListener('change', async () => {
+         if (isProcessing) return;
          const f = fileInput.files[0];
          if (f) {
-            imageFile = await tryHeicConversion(f);
-            showImagePreview(URL.createObjectURL(imageFile));
+            await processAndPreviewImage(f);
          }
       });
 
@@ -984,12 +1009,12 @@ const Modal = (() => {
       imageSlot.addEventListener('dragover', e => { e.preventDefault(); imageSlot.style.borderColor = '#1a1a1a'; });
       imageSlot.addEventListener('dragleave', () => { imageSlot.style.borderColor = ''; });
       imageSlot.addEventListener('drop', async (e) => {
+         if (isProcessing) return;
          e.preventDefault();
          imageSlot.style.borderColor = '';
          const f = e.dataTransfer.files[0];
          if (f && f.type.startsWith('image/')) {
-            imageFile = await tryHeicConversion(f);
-            showImagePreview(URL.createObjectURL(imageFile));
+            await processAndPreviewImage(f);
          }
       });
 
@@ -1100,6 +1125,13 @@ const Modal = (() => {
 
       /* ── getData ── */
       const getData = () => {
+         // Validate image is present
+         if (!imageFile) {
+            errorEl.show('Cap image is required. Please upload or take a photo.');
+            fileInput.focus();
+            return null;
+         }
+
          const tagVal = tagSelect.value;
          // Allow empty tag selection - will default to 'all' in caps.js
 

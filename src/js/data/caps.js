@@ -4,7 +4,8 @@ import * as store from './store.js';
 import { saveAppData } from './saving.js';
 import { processCapImage } from './image-processor.js';
 import { openGallery } from './gallery.js';
-import { getWordForCount, tryHeicConversion } from '../helpers/helper.js';
+import { getWordForCount, tryHeicConversion, clampToPalette, showLoadingScreen, updateLoadingScreen, hideLoadingScreen } from '../helpers/helper.js';
+import * as camera from '../camera/camera.js';
 
 /**
  * Delete a cap from collection (with confirmation)
@@ -40,14 +41,21 @@ function fileToBase64(file) {
  */
 export async function saveCap(capData) {
    try {
+      showLoadingScreen('Saving cap to database...');
+
       let imageBase64 = null;
       let capColor = '#808080';
 
       if (capData.image) {
-         const convertedJpegImage = await tryHeicConversion(capData.image);
+         //updateLoadingScreen('Converting image format...');
+         //const convertedJpegImage = await tryHeicConversion(capData.image);
+
+         //updateLoadingScreen('Processing image...');
          const processed = await processCapImage(convertedJpegImage);
+
+         updateLoadingScreen('Encoding image...');
          imageBase64 = await fileToBase64(processed.imageBlob);
-         capColor = processed.capColor;
+         capColor = clampToPalette(processed.capColor);
       }
 
       // Add to store
@@ -70,9 +78,11 @@ export async function saveCap(capData) {
       }
 
       await saveAppData();
+      hideLoadingScreen();
       return newCap;
    } catch (error) {
       console.error('Error saving cap:', error);
+      hideLoadingScreen();
       throw error;
    }
 }
@@ -189,41 +199,81 @@ export async function addCapsInBatch() {
  * Replace cap image
  */
 export async function replaceCapImage(capId) {
-   const input = document.createElement('input');
-   input.type = 'file';
-   input.accept = 'image/*';
-
-   return new Promise((resolve) => {
-      input.addEventListener('change', async (e) => {
-         const file = e.target.files?.[0];
-         if (!file) {
-            resolve(false);
-            return;
-         }
-
-         try {
-            const processed = await processCapImage(file);
-            const imageBase64 = await fileToBase64(processed.imageBlob);
-
-            const cap = store.store.caps.find(c => c.id === capId);
-            if (cap) {
-               cap.imageBase64 = imageBase64;
-               cap.color = processed.capColor;
-               cap.updatedAt = new Date().toISOString();
-            }
-
-            await saveAppData();
-            // Refresh gallery to show updated image immediately
-            openGallery(store.currentCategory);
-            resolve(true);
-         } catch (error) {
-            console.error('Error replacing image:', error);
-            resolve(false);
-         }
-      });
-
-      input.click();
+   // Show modal asking user to choose source
+   const choice = await Modal.confirm({
+      headerText: 'Choose action',
+      question: 'Where would you like to get the new image from?',
+      yesLabel: 'Device Storage',
+      noLabel: 'Take Photo',
    });
+
+   // noLabel is clicked = take photo
+   // yesLabel is clicked = device storage
+   // null = cancelled
+
+   let imageFile = null;
+
+   try {
+      if (choice === true) {
+         // Device storage
+         const input = document.createElement('input');
+         input.type = 'file';
+         input.accept = 'image/*';
+
+         imageFile = await new Promise((resolve) => {
+            input.addEventListener('change', (e) => {
+               resolve(e.target.files?.[0] || null);
+            });
+            input.click();
+         });
+      } else if (choice === false) {
+         // Take photo with camera
+         try {
+            const capturedBlob = await camera.showCameraModal();
+            imageFile = capturedBlob;
+         } catch (error) {
+            console.error('Camera error:', error);
+            alert('Could not access camera. Please check permissions.');
+            return false;
+         }
+      } else {
+         // User cancelled
+         return false;
+      }
+
+      if (!imageFile) {
+         return false;
+      }
+
+      showLoadingScreen('Processing image...');
+      updateLoadingScreen('Converting format...');
+
+      const convertedJpegImage = await tryHeicConversion(imageFile);
+
+      updateLoadingScreen('Detecting cap circle...');
+      const processed = await processCapImage(convertedJpegImage);
+
+      updateLoadingScreen('Encoding image...');
+      const imageBase64 = await fileToBase64(processed.imageBlob);
+
+      const cap = store.store.caps.find(c => c.id === capId);
+      if (cap) {
+         cap.imageBase64 = imageBase64;
+         cap.color = clampToPalette(processed.capColor);
+         cap.updatedAt = new Date().toISOString();
+      }
+
+      await saveAppData();
+
+      // Refresh gallery to show updated image immediately
+      openGallery(store.currentCategory); // PROBLEM - todo: this adds additional stack on the navstac but it should replace the gallery and details wuth the new ones to not repeat navigation on going back the nav stack
+      hideLoadingScreen();
+      return true;
+   } catch (error) {
+      console.error('Error replacing image:', error);
+      hideLoadingScreen();
+      return false;
+   }
 }
 
 /**

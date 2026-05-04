@@ -498,6 +498,10 @@
    background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path fill="%23e6e1e5" d="M2 4l4 4 4-4z"/></svg>');
 }
 
+[data-theme$="-dark"] .selecting-chip.compact:not(.stick-down)::before {
+   filter: invert(1) opacity(0.5);
+}
+
 
 /* Safe area insets for modern devices */
 body {
@@ -1040,7 +1044,7 @@ main {
    font-size: 13px;
    font-weight: 500;
    cursor: pointer;
-   transition: all var(--dur) var(--ease);
+   /* transition: all var(--dur) var(--ease); */
 }
 
 .filter-chip.active {
@@ -1069,11 +1073,73 @@ main {
    box-shadow: var(--shadow-sm);
 }
 
+/* Hide text for selecting chips when filters are active */
+.selecting-chip.compact {
+   position: relative;
+   padding: 6px 10px;
+   font-size: 0;
+   width: 36px;
+   height: 36px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   min-width: 36px;
+}
+
+.selecting-chip.compact::after {
+   content: attr(data-icon);
+   font-size: 16px;
+   line-height: 16px;
+   display: contents;
+}
+
+.selecting-chip.compact::before {
+   content: "";
+   position: absolute;
+   inset: 0;
+   background-repeat: no-repeat;
+   background-position: right bottom;
+   background-size: 90%;
+   background-image: url('data:image/svg+xml,<svg width="800" height="800" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.496 5.627A2.25 2.25 0 0 1 22 7.75v10A4.25 4.25 0 0 1 17.75 22h-10a2.25 2.25 0 0 1-2.123-1.504l2.097.004H17.75a2.75 2.75 0 0 0 2.75-2.75v-10l-.004-.051zM17.246 2a2.25 2.25 0 0 1 2.25 2.25v12.997a2.25 2.25 0 0 1-2.25 2.25H4.25A2.25 2.25 0 0 1 2 17.247V4.25A2.25 2.25 0 0 1 4.25 2zm0 1.5H4.25a.75.75 0 0 0-.75.75v12.997c0 .414.336.75.75.75h12.997a.75.75 0 0 0 .75-.75V4.25a.75.75 0 0 0-.75-.75" fill="currentcolor" /></svg>');
+}
+
+.selecting-chip.stick-down.compact::before {
+   content: "";
+   position: absolute;
+   inset: 0;
+   background-repeat: no-repeat;
+   background-position: center;
+   background-size: 50%;
+   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff453a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 6 5 6 21 6'/%3E%3Cpath d='M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6'/%3E%3Cpath d='M10 11v6'/%3E%3Cpath d='M14 11v6'/%3E%3Cpath d='M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2'/%3E%3C/svg%3E");
+}
+
+/* .selecting-chip.stick-left.compact::before {
+   content: "";
+   position: absolute;
+   inset: 0;
+   background-repeat: no-repeat;
+   background-position: center;
+   background-size: 50%;
+   background-image: url('data:image/svg+xml,<svg width="800" height="800" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M23 4a3 3 0 0 0-3-3H4a3 3 0 0 0-3 3v16a3 3 0 0 0 3 3h16a3 3 0 0 0 3-3zm-2 0a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1z" fill="currentcolor" /><path d="M16 11a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2z" fill="currentcolor" /></svg>');
+} */
+
 .stick-left {
    color: red;
    display: none;
    position: absolute;
    left: 12px;
+}
+
+.stick-down {}
+
+#showForTheDeleteButton {
+   border-color: var(--clr-on-surface);
+   color: var(--clr-on-surface);
+   opacity: 0.3;
+}
+
+#showForTheDeleteButton:has(+ .selecting-chip.stick-down[hidden]) {
+   display: none;
 }
 
 #stickyTop {
@@ -1208,7 +1274,7 @@ main {
 }
 
 /* hide for ALL category */
-#deleteButton[hidden] {
+[hidden] {
    display: none;
 }
 
@@ -1399,10 +1465,31 @@ main {
    display: flex;
    align-items: center;
    justify-content: center;
-   background: var(--clr-bg);
    opacity: 1;
    pointer-events: auto;
    transition: opacity 0.3s ease-out;
+
+   background: linear-gradient(0deg, var(--clr-surface), var(--clr-bg), var(--clr-surface-2));
+   background-size: 200% 200%;
+   /* -webkit-animation: Animation 5s ease infinite;
+   -moz-animation: Animation 5s ease infinite; */
+   animation: Animation 4.5s ease infinite;
+}
+
+/* @-webkit-keyframes Animation,
+@-moz-keyframes Animation, */
+@keyframes Animation {
+   0% {
+      background-position: 20% 0%
+   }
+
+   50% {
+      background-position: 85% 100%
+   }
+
+   100% {
+      background-position: 20% 0%
+   }
 }
 
 .loading-screen:not(.active) {

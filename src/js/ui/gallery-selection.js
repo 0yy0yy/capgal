@@ -6,8 +6,9 @@ import { SelectionManager } from './selectionManager.js';
 
 let gallerySelectionManager = null;
 const removeButton = document.getElementsByClassName("selecting-chip stick-left")[0];
+const deleteButton = document.getElementsByClassName("selecting-chip stick-down")[0];
 
-export function initGallerySelection(showRemoveButton = false) {
+export function initGallerySelection(showRemoveButton = false, showDeleteButton = false) {
    const galleryList = document.getElementById('galleryList');
 
    if (!galleryList) return; // Gallery not yet rendered
@@ -37,6 +38,10 @@ export function initGallerySelection(showRemoveButton = false) {
             removeButton.style.display = isActive ? 'block' : 'none';
          }
 
+         if (showDeleteButton) {
+            isActive ? deleteButton.removeAttribute("hidden") : deleteButton.setAttribute("hidden", "");
+         }
+
          console.log('Selection mode:', isActive ? 'ON' : 'OFF');
       }
    });
@@ -52,20 +57,24 @@ export function initGallerySelection(showRemoveButton = false) {
  * Re-initialize selection manager when gallery items change
  * Call this after gallery items are rendered
  */
-export function updateGallerySelection(showRemoveButton = false) {
+export function updateGallerySelection(showRemoveButton = false, showDeleteButton = false) {
    if (gallerySelectionManager) {
       gallerySelectionManager.deselectAll();
    }
-   initGallerySelection(showRemoveButton);
+   initGallerySelection(showRemoveButton, showDeleteButton);
 }
 
 /**
  * Get the current selection manager instance
  */
-export function getGallerySelectionManager(showRemoveButton = false) {
+export function getGallerySelectionManager(showRemoveButton = false, showDeleteButton = false) {
    //Show/hide the remove button
    if (showRemoveButton) {
       removeButton.style.display = gallerySelectionManager ? 'block' : 'none';
+   }
+
+   if (showDeleteButton) {
+      gallerySelectionManager ? deleteButton.removeAttribute("hidden") : deleteButton.setAttribute("hidden", "");
    }
 
    return gallerySelectionManager;

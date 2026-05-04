@@ -13,8 +13,6 @@ import { showLoadingScreen, hideLoadingScreen } from './helpers/helper.js'
  * Initialize app
  */
 async function initApp() {
-   showLoadingScreen();
-
    try {
       // Load user data from storage
       const hasData = await loadAppData();
@@ -51,6 +49,7 @@ async function initApp() {
       console.error('Error initializing app:', error);
       alert('Failed to initialize app');
    } finally {
+      // Hide loading screen
       hideLoadingScreen();
    }
 }

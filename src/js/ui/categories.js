@@ -52,6 +52,17 @@ export async function handleAddCategoryClick() {
 
    // Refresh UI
    initCategoryUI();
+
+   // Add it to the options if in details view
+   if (store.getNavStackTop() === 'details') {
+      const detailsCategory = document.getElementById('detailsCategory');
+      if (detailsCategory) {
+         const opt = document.createElement('option');
+         opt.value = newCategory.id;
+         opt.textContent = newCategory.name;
+         detailsCategory.appendChild(opt);
+      }
+   }
 }
 
 export function initCategoryButtons() {

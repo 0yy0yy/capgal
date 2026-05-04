@@ -56,10 +56,6 @@ export async function convertHeicToJpgIfNeeded(imageBlob) {
  */
 export async function processCapImage(imageBlob) {
    try {
-      // Convert HEIC to JPG if needed
-      //let processBlob = await convertHeicToJpgIfNeeded(imageBlob);
-
-      // Try OpenCV detection if available
       if (typeof cv !== 'undefined' && cv.Mat) {
          return await detectAndProcessWithOpenCV(imageBlob);
       }

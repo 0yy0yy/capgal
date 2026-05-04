@@ -23,7 +23,7 @@
    </div>
 
    <!-- ── LOADING SCREEN ── -->
-   <div id="loadingScreen" class="loading-screen">
+   <div id="loadingScreen" class="loading-screen active">
       <div class="loading-spinner">
          <svg class="bottle-cap-loader" viewBox="0 0 69 69" xmlns="http://www.w3.org/2000/svg">
             <path
@@ -79,7 +79,7 @@
                   Categories
                </button>
                <h1 id="galleryTitle">ALL</h1>
-               <input type="color" id="galleryColor" />
+               <input type="color" id="galleryColor" title="Change category's color" />
                <button type="button" id="deleteButton" title="Delete category" hidden></button>
             </div>
             <div class="gallery-scroll">
@@ -93,16 +93,17 @@
                      </div>
 
                      <div id="selecting">
-                        <button class="selecting-chip stick-left">Remove</button>
-                        <!-- <button class="selecting-chip stick-left">Delete cap(s)</button> -->
-                        <button class="selecting-chip">Select all</button>
-                        <button class="selecting-chip">Deselect all</button>
+                        <button class="selecting-chip stick-left" title="Remove caps from this category">Remove</button>
+                        <button class="selecting-chip" title="Select all caps">Select all</button>
+                        <button class="selecting-chip" title="Deselect all selected caps">Deselect all</button>
+
+                        <hr id="showForTheDeleteButton">
+                        <button class="selecting-chip stick-down" hidden title="Delete selected caps">Delete
+                           cap(s)</button>
                      </div>
                   </div>
                </div>
-               <ul id="galleryList">
-                  <!-- items injected by JS -->
-               </ul>
+               <ul id="galleryList"></ul>
             </div>
          </section>
 
