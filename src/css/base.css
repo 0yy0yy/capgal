@@ -1275,7 +1275,7 @@ main {
 
 /* hide for ALL category */
 [hidden] {
-   display: none;
+   display: none !important;
 }
 
 /* =====================================================

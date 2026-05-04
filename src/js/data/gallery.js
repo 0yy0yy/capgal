@@ -90,11 +90,11 @@ export function openGallery(category, focusSearch = false) {
          selectButtons.forEach(btn => {
             if (hasThreeOrMoreFilters) {
                const index = Array.from(selectButtons).indexOf(btn);
-               //if (index !== 0) {
-               btn.classList.add('compact');
-               if (index === 1) btn.setAttribute('data-icon', '✔'); // select all
-               else if (index === 2) btn.setAttribute('data-icon', '𐄂'); // deselect all
-               //}
+               if (index !== 0) {
+                  btn.classList.add('compact');
+                  if (index === 1) btn.setAttribute('data-icon', '✔'); // select all
+                  else if (index === 2) btn.setAttribute('data-icon', '𐄂'); // deselect all
+               }
             } else {
                btn.classList.remove('compact');
                btn.removeAttribute('data-icon');
