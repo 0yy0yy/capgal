@@ -1,6 +1,7 @@
 // ── Tab navigation (the core transition engine) ─────────────────────────────
 import * as store from '../data/store.js';
 import { updateGalleryList } from '../data/gallery.js'
+import { pauseMarqueeScroll } from '../helpers/helper.js';
 
 const tabEls = {
    categories: document.getElementById('categories'),
@@ -24,6 +25,11 @@ export function pushTab(name) {
    if (store.navStack[store.navStack.length - 1] === name) return;
    store.navStack.push(name);
    applyTabStates();
+
+   if (name === 'details') {
+      pauseMarqueeScroll();
+   }
+   //else if (name === 'gallery') {}
 }
 
 export function popTab() {
@@ -33,5 +39,7 @@ export function popTab() {
 
    if (closingView === 'details') {
       updateGalleryList();
+   } else if (closingView === 'gallery') {
+      pauseMarqueeScroll();
    }
 }

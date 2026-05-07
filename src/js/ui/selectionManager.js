@@ -20,11 +20,13 @@ export class SelectionManager {
       let longPressTriggered = false;
       let startEvent = null;
       let timer = null;
+      let justToggledSelection = false;
 
       const start = (e) => {
          // Store the start event coordinates
          startEvent = e;
          longPressTriggered = false;
+         justToggledSelection = false;
 
          timer = setTimeout(() => {
             longPressTriggered = true;
@@ -40,7 +42,11 @@ export class SelectionManager {
 
          // If long press wasn't triggered and we're in selection mode, handle click
          if (!longPressTriggered && this.isSelectionMode && e.type === 'pointerup') {
+            justToggledSelection = true;
             this.toggleItemSelection(item, e);
+            // Prevent click event from firing after this
+            e.preventDefault();
+            e.stopPropagation();
          }
 
          startEvent = null;
@@ -58,10 +64,21 @@ export class SelectionManager {
          }
       };
 
+      const clickHandler = (e) => {
+         // If we just toggled selection, prevent the click from opening details
+         if (justToggledSelection) {
+            e.preventDefault();
+            e.stopPropagation();
+            justToggledSelection = false;
+            return;
+         }
+      };
+
       element.addEventListener('pointerdown', start);
       element.addEventListener('pointerup', cancel);
       element.addEventListener('pointerleave', cancel);
       element.addEventListener('pointermove', move);
+      element.addEventListener('click', clickHandler);
 
       // Prevent context menu
       element.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -87,11 +104,6 @@ export class SelectionManager {
       }
 
       this.onSelectionChange(Array.from(this.selectedItems));
-
-      // Exit selection mode if no items selected
-      if (this.selectedItems.size === 0 && this.isSelectionMode) {
-         this.exitSelectionMode();
-      }
    }
 
    exitSelectionMode() {
@@ -109,6 +121,12 @@ export class SelectionManager {
    }
 
    selectAll() {
+      // Ensure we're in selection mode
+      if (!this.isSelectionMode) {
+         this.isSelectionMode = true;
+         this.onSelectionModeChange(true);
+      }
+
       this.selectableItems.forEach(item => {
          if (!this.selectedItems.has(item.id) && !item.element.classList.contains('hidden')) {
             this.selectedItems.add(item.id);

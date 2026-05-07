@@ -1,7 +1,7 @@
 // ── UI Controls (Settings, Theme, Sidebar, Back Buttons) ──────────────────
 import * as store from '../data/store.js';
 import { popTab } from './navigation.js';
-import { openGallery, addLastCategoryToFilters } from '../data/gallery.js';
+import { openGallery, addLastCategoryToFilters, refreshGallery } from '../data/gallery.js';
 import { handleAddCategoryClick, initCategoryButtons, initCategoryDeleteHandlers, initCategoryUI } from './categories.js';
 import { addCapsInBatch } from '../data/caps.js';
 import { saveAppData } from '../data/saving.js';
@@ -28,22 +28,40 @@ export function closeSettings() {
    store.setSettingsOpen(false);
 }
 
-export function initSettingsHandlers() {
+export async function initSettingsHandlers() {
    document.getElementById('settingsButton').addEventListener('click', openSettings);
    document.getElementById('settingsClose').addEventListener('click', closeSettings);
    settingsBackdrop.addEventListener('click', closeSettings);
 
-   // Initialize settings controls
-   initToggleSwitch('toggleShowCapNames', store.store.userSettings.showCapNames, (value) => {
-      store.store.userSettings.showCapNames = value;
-      saveAppData();
-      // Refresh gallery to show/hide cap names immediately
-      openGallery(store.currentCategory);
+   // Make details exclusive (when one opens, close the other)
+   const settingsDetails = document.querySelectorAll('#settings details');
+   settingsDetails.forEach(detail => {
+      detail.addEventListener('toggle', (e) => {
+         if (e.target.open) {
+            // Close all other details
+            settingsDetails.forEach(d => {
+               if (d !== e.target) d.open = false;
+            });
+         }
+      });
    });
 
-   initToggleSwitch('toggleAutoSave', store.store.userSettings.autoSave, (value) => {
+   // Initialize settings controls
+   initToggleSwitch('toggleShowCapNames', store.store.userSettings.showCapNames, async (value) => {
+      store.store.userSettings.showCapNames = value;
+      await saveAppData();
+      // Refresh gallery to show/hide cap names immediately
+      refreshGallery();
+   });
+
+   initToggleSwitch('toggleUseAutoCapFinder', store.store.userSettings.useAutoCapFinder, async (value) => {
+      store.store.userSettings.useAutoCapFinder = value;
+      await saveAppData();
+   });
+
+   initToggleSwitch('toggleAutoSave', store.store.userSettings.autoSave, async (value) => {
       store.store.userSettings.autoSave = value;
-      saveAppData();
+      await saveAppData();
    });
 
    // GitHub token with masking
@@ -71,17 +89,17 @@ export function initSettingsHandlers() {
       };
 
       githubTokenInput.addEventListener('focus', updateTokenDisplay);
-      githubTokenInput.addEventListener('blur', () => {
+      githubTokenInput.addEventListener('blur', async () => {
          githubTokenInput.dataset.fullToken = githubTokenInput.value;
          store.store.userSettings.githubToken = githubTokenInput.value;
-         saveAppData();
+         await saveAppData();
          // Show auto-save toggle if token is now set
          const autoSaveContainer = autoSaveInput?.closest('.setting-row');
          if (autoSaveContainer) {
             autoSaveContainer.style.display = githubTokenInput.value ? 'flex' : 'none';
             if (!store.store.userSettings.githubToken) {
                autoSaveInput.checked = false;
-               store.updateUserSettings({ autoSave: false });
+               await store.updateUserSettings({ autoSave: false });
             }
          }
          updateTokenDisplay();
@@ -96,21 +114,21 @@ export function initSettingsHandlers() {
       autoSaveContainer.style.display = store.store.userSettings.githubToken ? 'flex' : 'none';
       if (!store.store.userSettings.githubToken) {
          autoSaveInput.checked = false;
-         store.updateUserSettings({ autoSave: false });
+         await store.updateUserSettings({ autoSave: false });
       }
    }
 
    // Open gallery by default toggle
-   initToggleSwitch('toggleOpenGalleryByDefault', store.store.userSettings.openGalleryByDefault, (value) => {
+   initToggleSwitch('toggleOpenGalleryByDefault', store.store.userSettings.openGalleryByDefault, async (value) => {
       store.store.userSettings.openGalleryByDefault = value;
-      saveAppData();
+      await saveAppData();
    });
 
    // Gallery background texture selector
    const textureSelect = document.getElementById('galleryTextureSelect');
    if (textureSelect) {
       textureSelect.value = store.store.userSettings.galleryBackgroundTexture || 'none';
-      textureSelect.addEventListener('change', (e) => {
+      textureSelect.addEventListener('change', async (e) => {
          const texture = e.target.value;
          store.store.userSettings.galleryBackgroundTexture = texture;
 
@@ -126,7 +144,7 @@ export function initSettingsHandlers() {
             }
          }
 
-         saveAppData();
+         await saveAppData();
       });
    }
 
@@ -134,7 +152,7 @@ export function initSettingsHandlers() {
    document.getElementById('importFromDeviceBtn')?.addEventListener('click', async () => {
       const success = await importFromDevice();
       if (success) {
-         alert('Data imported successfully!');
+         await saveAppData();
          closeSettings();
          location.reload();
       }
@@ -143,7 +161,7 @@ export function initSettingsHandlers() {
    document.getElementById('importFromGitHubBtn')?.addEventListener('click', async () => {
       const success = await importFromGitHub();
       if (success) {
-         alert('Data imported from GitHub!');
+         await saveAppData();
          closeSettings();
          location.reload();
       }
@@ -171,7 +189,7 @@ function initToggleSwitch(elementId, initialState, onChange) {
 // ── Theme switcher ──────────────────────────────────────────────────────────
 export function initThemeSwitcher() {
    document.querySelectorAll('.theme-btn[data-theme-pref]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
          document.querySelectorAll('.theme-btn[data-theme-pref]').forEach(b => b.classList.remove('selected'));
          btn.classList.add('selected');
          const selectedStyle = document.documentElement.getAttribute('data-theme').split('-')[0];
@@ -183,7 +201,7 @@ export function initThemeSwitcher() {
             document.documentElement.setAttribute('data-theme', selectedStyle);
          }
          store.store.userSettings.theme = selectedPref;
-         saveAppData();
+         await saveAppData();
       });
    });
 
@@ -196,7 +214,7 @@ export function initThemeSwitcher() {
 // ── Theme styles switcher ──────────────────────────────────────────────────────────
 export function initThemeStyleSwitcher() {
    document.querySelectorAll('.theme-btn[data-theme-val]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
          document.querySelectorAll('.theme-btn[data-theme-val]').forEach(b => b.classList.remove('selected'));
          btn.classList.add('selected');
          const selectedTheme = document.documentElement.getAttribute('data-theme').split('-')[1];
@@ -206,7 +224,7 @@ export function initThemeStyleSwitcher() {
             document.documentElement.setAttribute('data-theme', btn.dataset.themeVal);
          }
          store.store.userSettings.appearance = btn.dataset.themeVal;
-         saveAppData();
+         await saveAppData();
       });
    });
 }

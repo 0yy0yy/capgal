@@ -1,5 +1,4 @@
-// ── Image processing with OpenCV.js ──────────────────────────────────────────
-
+import { updateLoadingScreen } from '../helpers/helper.js';
 /**
  * Wait for OpenCV.js to load (checks cv global object)
  */
@@ -53,18 +52,38 @@ export async function convertHeicToJpgIfNeeded(imageBlob) {
 
 /**
  * Process cap image: detect circle, extract color, crop
+ * Respects the useAutoCapFinder setting from userSettings
  */
 export async function processCapImage(imageBlob) {
-   try {
-      if (typeof cv !== 'undefined' && cv.Mat) {
-         return await detectAndProcessWithOpenCV(imageBlob);
+   // Check if auto cap finder is enabled
+   const useAutoCapFinder = await getSetting('useAutoCapFinder');
+
+   if (useAutoCapFinder) {
+      try {
+         if (typeof cv !== 'undefined' && cv.Mat) {
+            return await detectAndProcessWithOpenCV(imageBlob);
+         }
+      } catch (error) {
+         console.warn('OpenCV detection failed, falling back to color extraction:', error);
       }
-   } catch (error) {
-      console.warn('OpenCV detection failed, falling back to color extraction:', error);
    }
 
    // Fallback to simple color extraction
    return await processWithColorExtraction(imageBlob);
+}
+
+/**
+ * Helper function to get user settings
+ */
+async function getSetting(settingKey) {
+   try {
+      // Import dynamically to avoid circular imports
+      const storeModule = await import('./store.js');
+      return storeModule.store.userSettings[settingKey];
+   } catch (error) {
+      console.warn('Failed to get setting:', error);
+      return true; // Default to enabled
+   }
 }
 
 /**
@@ -86,6 +105,7 @@ async function detectAndProcessWithOpenCV(imageBlob) {
       cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
       // Detect circles using Hough Circle Detection
+      updateLoadingScreen('Searching for the cap in the image...');
       let circles = new cv.Mat();
 
       /* Parameters:
@@ -128,7 +148,7 @@ async function detectAndProcessWithOpenCV(imageBlob) {
 
 
          // testing circles lol
-         const crcdst = cv.Mat.zeros(src.rows, src.cols, cv.CV_8U);
+         /* const crcdst = cv.Mat.zeros(src.rows, src.cols, cv.CV_8U);
          const colors = [
             new cv.Scalar(0, 0, 255),     // Red
             new cv.Scalar(0, 255, 0),     // Green
@@ -148,15 +168,17 @@ async function detectAndProcessWithOpenCV(imageBlob) {
          const alpha = 0.5;
          const overlay = new cv.Mat();
          cv.addWeighted(gray, alpha, crcdst, 1 - alpha, 0, overlay);
-         cv.imshow('circlesOutput', crcdst);
-         crcdst.delete();
-         overlay.delete();
+         cv.imshow('circlesOutput', crcdst); */
+         //crcdst.delete();
+         //overlay.delete();
 
 
          // Extract color from circle
+         updateLoadingScreen('Extracting dominant color of the cap...');
          capColor = extractColorFromCircle(src, circle);
 
          // Crop to circle with padding
+         updateLoadingScreen('Cropping image to circle...');
          processedBlob = await cropToCircle(canvas, circle);
       }
 
@@ -216,7 +238,7 @@ function extractColorFromCircle(mat, circle) {
          }
       }
 
-      cv.imshow('canvasOutput', roi);
+      //cv.imshow('canvasOutput', roi);
       roi.delete();
       roiRgba.delete();
 
@@ -232,7 +254,7 @@ function extractColorFromCircle(mat, circle) {
 }
 
 /**
- * Crop image to circle with 2.4x padding
+ * Crop image to circle with padding
  */
 async function cropToCircle(canvas, circle) {
    const [cx, cy, radius] = circle;
@@ -260,6 +282,7 @@ async function cropToCircle(canvas, circle) {
  * Fallback: Process with simple color extraction
  */
 async function processWithColorExtraction(imageBlob) {
+   updateLoadingScreen('Extracting dominant color of the cap...');
    const bitmap = await createImageBitmap(imageBlob);
 
    // Sample the center for dominant color
@@ -299,34 +322,4 @@ async function processWithColorExtraction(imageBlob) {
          detected: false,
       });
    });
-}
-
-/**
- * Extract dominant color from any image blob
- */
-export async function extractDominantColor(imageBlob) {
-   const bitmap = await createImageBitmap(imageBlob);
-   const canvas = document.createElement('canvas');
-   canvas.width = 50;
-   canvas.height = 50;
-
-   const ctx = canvas.getContext('2d');
-   ctx.drawImage(bitmap, 0, 0, 50, 50);
-
-   const imageData = ctx.getImageData(0, 0, 50, 50);
-   const data = imageData.data;
-
-   let r = 0, g = 0, b = 0;
-   for (let i = 0; i < data.length; i += 4) {
-      r += data[i];
-      g += data[i + 1];
-      b += data[i + 2];
-   }
-
-   const count = data.length / 4;
-   r = Math.round(r / count);
-   g = Math.round(g / count);
-   b = Math.round(b / count);
-
-   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }

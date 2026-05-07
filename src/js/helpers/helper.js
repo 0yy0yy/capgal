@@ -1,4 +1,5 @@
 import { convertHeicToJpgIfNeeded } from '../data/image-processor.js'
+import { currentCategory } from '../data/store.js';
 
 const COLOR_WHEEL_24 = [
    "#FF0000", // 0°   red
@@ -129,4 +130,64 @@ export function hideLoadingScreen() {
    if (loading) {
       loading.classList.remove('active');
    }
+}
+
+
+export function setMarqueeScroll(defaultSpeed = 0.3) {
+   const marquees = document.querySelectorAll('.marquee-content');
+
+   marquees.forEach((marquee) => {
+      const text = marquee.dataset.text;
+      marquee.innerHTML = `${text}  ——  ${text}`;
+
+      let pos = 0;
+      let isPaused = false;
+      const speed = defaultSpeed;
+
+      function animate() {
+         if (!isPaused) {
+            pos -= speed;
+
+            if (Math.abs(pos) >= marquee.scrollWidth / 1.5) {
+               pos = 0;
+            }
+
+            marquee.style.transform = `translateX(${pos}px)`;
+         }
+
+         requestAnimationFrame(animate);
+      }
+
+      // attach controls directly to the element
+      marquee.marqueeControl = {
+         pause: () => { isPaused = true; },
+         play: () => { isPaused = false; },
+         toggle: () => { isPaused = !isPaused; }
+      };
+
+      animate();
+   });
+}
+
+export function pauseMarqueeScroll() {
+   const marquees = document.querySelectorAll('.marquee-content');
+   marquees.forEach(marquee => marquee.marqueeControl.pause());
+}
+
+export function playMarqueeScroll() {
+   const marquees = document.querySelectorAll('.marquee-content');
+   marquees.forEach(marquee => marquee.marqueeControl.play());
+}
+
+export function toggleMarqueeScroll() {
+   const marquees = document.querySelectorAll('.marquee-content');
+   marquees.forEach(marquee => marquee.marqueeControl.toggle());
+}
+
+/**
+ * Check if a filter is currently active (i.e., showing only certain categories)
+ * Returns true if filters are active and visible, false otherwise
+ */
+export function isAllCategorySelected() {
+   return currentCategory === 'all';
 }

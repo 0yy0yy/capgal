@@ -202,7 +202,7 @@
    -webkit-backdrop-filter: var(--backdrop-blur);
 }
 
-[data-theme="ios"] .sheet-body {
+[data-theme="ios"] .sheet-body details {
    background: var(--blur-bg);
    backdrop-filter: var(--backdrop-blur);
    -webkit-backdrop-filter: var(--backdrop-blur);
@@ -408,7 +408,7 @@
 /* iOS Dark Blur Effects */
 [data-theme="ios-dark"] .tab-header,
 [data-theme="ios-dark"] #topbar,
-[data-theme="ios-dark"] .sheet-body {
+[data-theme="ios-dark"] .sheet-body details {
    background: var(--blur-bg);
    backdrop-filter: var(--backdrop-blur);
    -webkit-backdrop-filter: var(--backdrop-blur);
@@ -1132,6 +1132,7 @@ main {
 
 .stick-down {}
 
+.mdl-footer hr,
 #showForTheDeleteButton {
    border-color: var(--clr-on-surface);
    color: var(--clr-on-surface);
@@ -1185,7 +1186,7 @@ main {
 }
 
 #gallery:has(li:first-child > div.cap-title.visible) li {
-   aspect-ratio: 0.75;
+   aspect-ratio: 0.8;
 }
 
 #gallery li.selected {
@@ -1211,19 +1212,27 @@ main {
 }
 
 .cap-title {
-   padding: 4%;
+   overflow: hidden;
+   white-space: nowrap;
+   position: relative;
 }
 
 .cap-title.visible {
-   color: #0a84ff;
+   filter: invert(1);
+   padding: 3px 5px;
 }
 
 .cap-title.hidden {
    height: 0px;
 }
 
+.marquee-content {
+   display: inline-block;
+   white-space: nowrap;
+}
+
 .cap-image-container {
-   aspect-ratio: 1;
+   aspect-ratio: 1 !important;
 }
 
 #galleryColor {
@@ -1574,17 +1583,78 @@ main {
 .sheet-body {
    flex: 1;
    overflow-y: auto;
-   padding: 20px;
+   padding: 0;
    display: flex;
    flex-direction: column;
-   gap: 20px;
+   gap: 0;
+}
+
+.sheet-body details {
+   border: none;
+   border-top: 1px solid var(--clr-border);
+}
+
+.sheet-body details:first-of-type {
+   border-top: none;
+}
+
+.sheet-body details summary {
+   padding: 16px 20px;
+   cursor: pointer;
+   user-select: none;
+   font-weight: var(--font-weight-med);
+   color: var(--clr-on-surface);
+   background: var(--clr-surface-2);
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   transition: background-color var(--dur) var(--ease);
+}
+
+.sheet-body details summary:hover {
+   background: color-mix(in srgb, var(--clr-surface-2) 85%, var(--clr-primary) 15%);
+}
+
+.sheet-body details summary::marker {
+   content: none;
+}
+
+.sheet-body details summary::before {
+   content: '▶';
+   display: inline-block;
+   transition: transform var(--dur) var(--ease);
+   margin-right: 8px;
+   font-size: 12px;
+   opacity: 0.6;
+}
+
+.sheet-body details[open] summary::before {
+   transform: rotate(90deg);
+}
+
+.sheet-body details[open] {
+   display: flex;
+   flex-direction: column;
+}
+
+.sheet-body details:not([open]) .setting-row,
+.sheet-body details:not([open]) hr {
+   display: none;
+}
+
+.sheet-body details div.setting-row {
+   margin: 20px 5px;
+}
+
+.sheet-body details div.setting-row:first-of-type {
+   margin: 0px 5px 20px 5px;
 }
 
 /* Theme switcher inside settings */
 .setting-row {
    display: flex;
    flex-direction: column;
-   gap: 12px;
+   gap: 10px;
 }
 
 .inline-row {
@@ -1692,6 +1762,16 @@ main {
       padding: 8px 12px;
       font-size: 12px;
    }
+
+   .tab-header {
+      padding: 12px var(--lsp);
+   }
+
+   .tab-header .back-btn {
+      padding: 8px 8px 8px 0px;
+   }
+
+   .filter-chip.filter-chip-plus {}
 }
 
 /* =====================================================
@@ -1711,7 +1791,7 @@ main {
 
 /* Smooth scrolling for all scrollable areas */
 .gallery-scroll,
-.sheet-body,
+.sheet-body details,
 #categories ul,
 .details-body {
    scroll-behavior: smooth;
@@ -1798,4 +1878,25 @@ main {
    outline: none;
    border-color: var(--clr-primary);
    box-shadow: 0 0 0 3px rgba(var(--clr-primary-rgb, 63, 81, 181), 0.1);
+}
+
+details {
+   border: 1px solid #aaaaaa;
+   border-radius: 4px;
+   padding: 0.5em 0.5em 0;
+}
+
+summary {
+   font-weight: bold;
+   margin: -0.5em -0.5em 0;
+   padding: 0.5em;
+}
+
+details[open] {
+   padding: 0.5em;
+}
+
+details[open] summary {
+   border-bottom: 1px solid #aaaaaa;
+   margin-bottom: 0.5em;
 }

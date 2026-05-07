@@ -39,10 +39,10 @@ export async function deleteCategory(categoryId) {
 
 export async function handleAddCategoryClick() {
    const result = await Modal.addItem({ type: 'category' });
-   if (!result) return;
+   if (!result) return false;
 
    const newCategory = {
-      id: result.name.toLowerCase().replace(/\s+/g, '-') + Date.now(),
+      id: result.name.toLowerCase().replace(/\s+/g, '-') + String(Date.now()),
       name: result.name,
       color: result.color,
    };
@@ -63,6 +63,7 @@ export async function handleAddCategoryClick() {
          detailsCategory.appendChild(opt);
       }
    }
+   return true;
 }
 
 export function initCategoryButtons() {
@@ -110,6 +111,11 @@ export function initCategoryDeleteHandlers() {
          if (timer) clearTimeout(timer);
       });
    });
+}
+
+export function updateCategoryTitles(category) {
+   const buttonToUpdate = document.querySelector(`#categories li button[data-cat=${category.id}]`);
+   buttonToUpdate.textContent = category.name;
 }
 
 function showDeleteButton(li, catId) {

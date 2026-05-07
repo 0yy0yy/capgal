@@ -10,7 +10,7 @@
  *     → Promise<CategoryResult | CapResult | null>   (null = cancelled)
  *
  *   CategoryResult: { name: string, color: string }
- *   CapResult:      { image: File|Blob|null, tag: string|'__new__', tagName?: string, description: string }
+ *   CapResult:      { image: File|Blob|null, category: string|'__new__', tagName?: string, description: string }
  *
  * External image integration:
  *   Before opening a cap modal you can pre-load an image via:
@@ -26,6 +26,8 @@ import { processCapImage } from '../data/image-processor.js';
 const Modal = (() => {
    /* ─── State ──────────────────────────────────────────────────────────── */
    let _pendingImage = null;     // set from outside before opening cap modal
+   let _pendingImageName = null;
+   let _capColor = null;         // temporary hex color of the pending cap
    let _activeResolve = null;    // promise resolver for current modal
    let _overlay = null;          // current DOM overlay
 
@@ -795,8 +797,9 @@ const Modal = (() => {
          yesBtn.textContent = yesLabel;
          yesBtn.addEventListener('click', () => _resolve(true));
 
+         let noBtn = null;
          if (noLabel) {
-            const noBtn = el('button', 'mdl-btn mdl-btn-ghost');
+            noBtn = el('button', 'mdl-btn mdl-btn-ghost');
             noBtn.textContent = noLabel;
             noBtn.addEventListener('click', () => _resolve(false));
             footer.appendChild(noBtn);
@@ -805,7 +808,25 @@ const Modal = (() => {
          footer.appendChild(yesBtn);
          frag.appendChild(footer);
 
-         mount(frag);
+         const box = mount(frag);
+
+         // Add keyboard shortcuts for confirmation dialogs
+         const keyHandler = (e) => {
+            if (e.key === 'Enter') {
+               e.preventDefault();
+               yesBtn.click();
+            } else if (e.key === 'Escape' && noBtn) {
+               e.preventDefault();
+               noBtn.click();
+            }
+         };
+
+         document.addEventListener('keydown', keyHandler);
+         const originalOnKey = _overlay._onKey;
+         _overlay._onKey = (e) => {
+            keyHandler(e);
+            if (e.key !== 'Escape') originalOnKey(e);
+         };
       });
    };
 
@@ -943,38 +964,46 @@ const Modal = (() => {
          slotHint.style.display = 'none';
       };
 
+      const titleInput = el('input', 'mdl-input');
+
       // Process image and show preview
       const processAndPreviewImage = async (file) => {
          if (!file) return;
 
-         isProcessing = true;
          showLoadingScreen('Processing image...');
+         isProcessing = true;
 
+         titleInput.value = _pendingImageName ? _pendingImageName : (file.name ? file.name : String(Date.now()));
+
+         let convertedImage = null;
          try {
             updateLoadingScreen('Converting format...');
-            const convertedImage = await tryHeicConversion(file);
+            convertedImage = await tryHeicConversion(file);
 
-            updateLoadingScreen('Detecting cap circle...');
+            updateLoadingScreen(`Detecting bottle cap in image '${titleInput.value}'...`);
             const processed = await processCapImage(convertedImage);
 
             updateLoadingScreen('Preparing preview...');
-            imageFile = convertedImage; // Store the original converted file
+            imageFile = processed.imageBlob;
+            _capColor = processed.capColor;
 
             // Show the processed image preview
             const processedBlobUrl = URL.createObjectURL(processed.imageBlob);
             await showImagePreview(processedBlobUrl);
 
-            hideLoadingScreen();
             updateLoadingScreen('Image ready!');
+            errorEl.hide();
 
          } catch (error) {
+            updateLoadingScreen('FAILED to process the image, using the original one...');
             console.error('Image processing error:', error);
-            hideLoadingScreen();
             errorEl.show('Failed to process image. Using original.');
-            imageFile = await tryHeicConversion(file);
+            imageFile = convertedImage ? convertedImage : file;
+            _capColor = null;
             showImagePreview(URL.createObjectURL(imageFile));
          } finally {
             isProcessing = false;
+            hideLoadingScreen();
          }
       };
 
@@ -1023,7 +1052,6 @@ const Modal = (() => {
       /* ── Cap title ── */
       const titleField = el('div', 'mdl-field');
       titleField.appendChild(label('Cap title', false));
-      const titleInput = el('input', 'mdl-input');
       titleInput.type = 'text';
       titleInput.placeholder = 'Enter cap name';
       titleInput.maxLength = 100;
@@ -1147,8 +1175,10 @@ const Modal = (() => {
          errorEl.hide();
          return {
             image: imageFile,
+            capColor: _capColor || '#808080',
+            imageProcessed: _capColor ? true : false,
             title: titleInput.value.trim(),
-            tag: tagVal || 'all', // Default to 'all' if not selected
+            category: tagVal || 'all', // Default to 'all' if not selected
             ...(newCategory ? { newCategory } : {}),
             description,
          };
@@ -1166,7 +1196,7 @@ const Modal = (() => {
     * @param {Array<{id, name, color}>} [opts.categories]  required when type='cap'
     * @returns {Promise<CategoryResult|CapResult|null>}
     */
-   const addItem = ({ type, categories = [] } = {}) => {
+   const addItem = ({ type, categories = [], headerText = null } = {}) => {
       if (type !== 'category' && type !== 'cap') {
          return Promise.reject(new Error(`Modal.addItem: type must be 'category' or 'cap', got '${type}'`));
       }
@@ -1178,7 +1208,7 @@ const Modal = (() => {
 
          const titles = { category: 'New Category', cap: 'Add Cap' };
          const labels_ = { category: 'Add item', cap: 'Add item' };
-         frag.appendChild(makeHeader(labels_[type], titles[type], true));
+         frag.appendChild(makeHeader(labels_[type], headerText ? headerText : titles[type], true));
 
          const body = el('div', 'mdl-body mdl-body-scroll');
          const errorEl = makeError();
@@ -1212,8 +1242,8 @@ const Modal = (() => {
             // type === 'cap'
             const { container, getData } = await buildCapForm(categories, _pendingImage, errorEl);
             _pendingImage = null; // consumed
-            body.appendChild(container);
             body.appendChild(errorEl);
+            body.appendChild(container);
             frag.appendChild(body);
 
             const footer = el('div', 'mdl-footer');
@@ -1237,7 +1267,6 @@ const Modal = (() => {
                      _resolve({
                         isMultiple: true,
                         files: files,
-                        tag: '__new__', // For multiple, user sets tag later or per item
                         image: null,
                         description: '',
                      });
@@ -1274,8 +1303,28 @@ const Modal = (() => {
     *
     * @param {Blob|File} blobOrFile
     */
-   const setPendingImage = (blobOrFile) => {
-      _pendingImage = blobOrFile;
+   const setPendingImage = async (blobOrFile) => {
+      showLoadingScreen('Processing image...');
+      let convertedImage = null;
+      _pendingImageName = blobOrFile.name ? blobOrFile.name : String(Date.now());
+      try {
+         updateLoadingScreen('Converting format...');
+         convertedImage = await tryHeicConversion(blobOrFile);
+
+         updateLoadingScreen(`Detecting bottle cap in image '${_pendingImageName}'...`);
+         const processed = await processCapImage(convertedImage);
+
+         updateLoadingScreen('Preparing preview...');
+         _pendingImage = processed.imageBlob;
+         _capColor = processed.capColor;
+      } catch (error) {
+         updateLoadingScreen('FAILED to process the image, using the original one...');
+         console.error('Image processing error:', error);
+         errorEl.show('Failed to process image. Using original.');
+         imageFile = convertedImage ? convertedImage : blobOrFile;
+         _pendingImage = imageFile;
+         _capColor = null;
+      }
    };
 
    /* ═══════════════════════════════════════════════════════════════════════

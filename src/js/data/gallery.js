@@ -2,11 +2,11 @@
 import * as store from '../data/store.js';
 import { pushTab, popTab } from '../ui/navigation.js';
 import { updateGallerySelection, exitGallerySelectionMode, getGallerySelectionManager } from '../ui/gallery-selection.js';
-import { replaceCapImage, exportCapImage, deleteCapImage } from './caps.js';
-import { handleAddCategoryClick, deleteCategory } from '../ui/categories.js';
+import { replaceCapImage, exportCapImage, deleteCapImage, deleteSelectedCaps } from './caps.js';
+import { handleAddCategoryClick, deleteCategory, updateCategoryTitles } from '../ui/categories.js';
 import { saveAppData } from './saving.js';
 import Modal from '../ui/modal.js';
-import { getWordForCount } from '../helpers/helper.js';
+import { getWordForCount, setMarqueeScroll, isAllCategorySelected } from '../helpers/helper.js';
 
 const galleryList = document.getElementById('galleryList');
 const galleryTitle = document.getElementById('galleryTitle');
@@ -19,9 +19,10 @@ const deleteBtn = document.getElementById('gallery')?.querySelector('#deleteButt
 export function openGallery(category, focusSearch = false) {
    store.setCurrentCategory(category);
 
-   // Handle delete button
+   // Handle delete button - hide it if we're in 'all' category or if a filter is active
    if (deleteBtn) {
-      deleteBtn.hidden = (category === 'all');
+      const shouldHideDelete = isAllCategorySelected();
+      deleteBtn.hidden = shouldHideDelete;
       deleteBtn.onclick = () => handleDeleteCategoryFromGallery(category);
    }
 
@@ -38,11 +39,12 @@ export function openGallery(category, focusSearch = false) {
 
    // Make title editable (save on blur)
    if (category !== 'all') {
-      galleryTitle.onblur = () => {
+      galleryTitle.onblur = async () => {
          const newName = galleryTitle.textContent.trim();
          if (newName && categoryObj) {
             categoryObj.name = newName;
-            saveAppData();
+            await saveAppData();
+            updateCategoryTitles(categoryObj);
          }
       };
    }
@@ -50,9 +52,9 @@ export function openGallery(category, focusSearch = false) {
    // Set and update color input
    if (categoryObj) {
       galleryColor.value = categoryObj.color;
-      galleryColor.oninput = (e) => {
+      galleryColor.oninput = async (e) => {
          categoryObj.color = e.target.value;
-         saveAppData();
+         await saveAppData();
          // Update gallery background
          const gallery = document.getElementById('gallery');
          if (gallery) {
@@ -68,12 +70,12 @@ export function openGallery(category, focusSearch = false) {
 
    // Render items
    galleryList.innerHTML = store.store.caps.map(cap => `
-      <li data-category="${cap.category}" data-id="${cap.id}" style="background:${cap.color}" title="${cap.title}">
+      <li data-category="${cap.category}" data-id="${cap.id}" style="background:${cap.color}; color:${cap.color}" title="${cap.title}">
         <div class="cap-image-container">
           ${cap.imageBase64 ? `<img src="data:image/jpeg;base64,${cap.imageBase64}" alt="${cap.title}" />` : '<div class="no-image">📷</div>'}
         </div>
         <div class="cap-title ${store.store.userSettings.showCapNames ? 'visible' : 'hidden'}">
-          ${cap.title}
+          <div class="marquee-content" data-text="${cap.title}"></div>
         </div>
       </li>
     `).join('');
@@ -114,18 +116,19 @@ export function openGallery(category, focusSearch = false) {
                chip.style.borderColor = cat.color;
                chip.dataset.id = cat.id;
                // Click to filter, not navigate - show only caps with this category
-               chip.onclick = () => {
-                  const selectionManager = getGallerySelectionManager();
+               chip.onclick = async () => {
+                  const allSelected = isAllCategorySelected();
+                  const selectionManager = getGallerySelectionManager(!allSelected, allSelected);
 
                   // If in selection mode, assign category to selected items
                   if (selectionManager && selectionManager.selectedItems.size > 0) {
                      selectionManager.selectedItems.forEach(capId => {
-                        const capToUpdate = store.store.caps.find(c => c.id === parseInt(capId));
+                        const capToUpdate = store.store.caps.find(c => c.id === capId);
                         if (capToUpdate) {
                            capToUpdate.category = cat.id;
                         }
                      });
-                     saveAppData();
+                     await saveAppData();
                      exitGallerySelectionMode();
                      openGallery('all');
                   } else {
@@ -143,9 +146,15 @@ export function openGallery(category, focusSearch = false) {
                         if (c !== chip) c.classList.remove('active');
                      });
                      // Re-initialize selection on filtered list
-                     updateGallerySelection();
+                     const allSelected = isAllCategorySelected();
+                     updateGallerySelection(!allSelected, allSelected);
                      // Update select button compact state
                      updateSelectButtonCompactState();
+                     // Update delete button visibility when filter changes
+                     if (deleteBtn) {
+                        const shouldHideDelete = isAllCategorySelected();
+                        deleteBtn.hidden = shouldHideDelete;
+                     }
                   }
                };
                filtersDiv.appendChild(chip);
@@ -158,9 +167,11 @@ export function openGallery(category, focusSearch = false) {
          plusChip.textContent = '+';
          plusChip.title = 'Add new category';
          plusChip.onclick = async () => {
-            await handleAddCategoryClick();
-            addLastCategoryToFilters();
-            updateSelectButtonCompactState();
+            const status = await handleAddCategoryClick();
+            if (status) {
+               addLastCategoryToFilters();
+               updateSelectButtonCompactState();
+            }
          };
          filtersDiv.prepend(plusChip);
          // Initial compact state check
@@ -197,23 +208,28 @@ export function openGallery(category, focusSearch = false) {
    }
 
    // Initialize selection mode for gallery items
-   category === 'all' ? updateGallerySelection(false, true) : updateGallerySelection(true);
+   isAllCategorySelected() ? updateGallerySelection(false, true) : updateGallerySelection(true);
 
    // Click handlers (with selection mode integration)
    galleryList.querySelectorAll('li').forEach(li => {
       li.onclick = (e) => {
-         const selectionManager = getGallerySelectionManager();
-         // If in selection mode, toggle selection. Otherwise, open details.
-         if (selectionManager && selectionManager.isSelectionMode) {
-            // Prevent opening details, let selection manager handle it
-            e.stopPropagation();
-         } else {
-            const capId = parseInt(li.dataset.id, 10);
-            const cap = store.store.caps.find(c => c.id === capId);
-            if (cap) {
-               store.setCurrentCategory(category);
-               openDetails(capId);
+         const allSelected = isAllCategorySelected();
+         const selectionManager = getGallerySelectionManager(!allSelected, allSelected);
+         if (selectionManager.isSelectionMode) {
+            if (selectionManager.selectedItems.size === 0) {
+               selectionManager.exitSelectionMode();
+            } else {
+               e.preventDefault();
+               e.stopPropagation();
             }
+            return;
+         }
+         // otherwise open detail view
+         const capId = li.dataset.id;
+         const cap = store.store.caps.find(c => c.id === capId);
+         if (cap) {
+            store.setCurrentCategory(category);
+            openDetails(capId);
          }
       };
    });
@@ -223,24 +239,25 @@ export function openGallery(category, focusSearch = false) {
    const removeSelectedBtn = selectingChips[0];
    const selectAllBtn = selectingChips[1];
    const deselectAllBtn = selectingChips[2];
+   const deleteSelectedBtn = selectingChips[3];
 
    if (removeSelectedBtn) {
-      removeSelectedBtn.onclick = () => {
-         const selectionManager = getGallerySelectionManager();
+      removeSelectedBtn.onclick = async () => {
+         const selectionManager = getGallerySelectionManager(true);
          if (selectionManager) {
             const selectedCaps = selectionManager.getSelectedItems();
 
             if (selectedCaps.length > 0) {
                const selectedSet = new Set(selectedCaps);
 
-               store.store.caps.forEach(cap => {
+               for (const cap of store.store.caps) {
                   if (selectedSet.has(String(cap.id))) {
-                     store.updateCap(cap.id, {
+                     await store.updateCap(cap.id, {
                         ...cap,
                         category: 'all'
                      });
                   }
-               });
+               }
 
                selectionManager.exitSelectionMode();
                refreshGallery();
@@ -251,7 +268,8 @@ export function openGallery(category, focusSearch = false) {
 
    if (selectAllBtn) {
       selectAllBtn.onclick = () => {
-         const selectionManager = getGallerySelectionManager(store.currentCategory !== 'all', store.currentCategory === 'all');
+         const allSelected = isAllCategorySelected();
+         const selectionManager = getGallerySelectionManager(!allSelected, allSelected);
          if (selectionManager) {
             if (selectionManager.selectableItems.length === 0) {
                selectionManager.isSelectionMode = true;
@@ -264,11 +282,25 @@ export function openGallery(category, focusSearch = false) {
 
    if (deselectAllBtn) {
       deselectAllBtn.onclick = () => {
-         const selectionManager = getGallerySelectionManager();
+         const allSelected = isAllCategorySelected();
+         const selectionManager = getGallerySelectionManager(!allSelected, allSelected);
          if (selectionManager) {
             selectionManager.exitSelectionMode();
          }
       };
+   }
+
+   if (deleteSelectedBtn) {
+      deleteSelectedBtn.onclick = async () => {
+         const allSelected = isAllCategorySelected();
+         const selectionManager = getGallerySelectionManager(!allSelected, allSelected);
+         if (selectionManager) {
+            if (selectionManager.selectedItems.size !== 0) {
+               await deleteSelectedCaps([...selectionManager.selectedItems]);
+               refreshGallery();
+            }
+         }
+      }
    }
 
    // Apply texture background if set
@@ -281,6 +313,8 @@ export function openGallery(category, focusSearch = false) {
          gallery.classList.add(textureClass);
       }
    }
+
+   setMarqueeScroll();
 
    pushTab('gallery');
 
@@ -312,9 +346,15 @@ async function handleDeleteCategoryFromGallery(categoryId) {
 /**
  * Refresh gallery colors after update
  */
-function refreshGallery() {
+export function refreshGallery() {
    // Re-render current gallery to update colors
    const currentCat = store.currentCategory;
+   const numberOfViewsOnStack = store.navStack.length;
+   if (numberOfViewsOnStack === 2) {
+      store.setNavStack(['categories', 'gallery']);
+   } else if (numberOfViewsOnStack === 3) {
+      store.setNavStack(['categories']);
+   }
    openGallery(currentCat);
 }
 
@@ -326,11 +366,11 @@ export function openDetails(id) {
    const detailsTitle = document.getElementById('detailsTitle');
    detailsTitle.textContent = cap.title;
    detailsTitle.title = "Cap's title";
-   detailsTitle.onblur = () => {
+   detailsTitle.onblur = async () => {
       const currentCap = store.store.caps.find(c => c.id === id);
       if (currentCap) {
          currentCap.title = detailsTitle.textContent;
-         saveAppData();
+         await saveAppData();
       }
    };
 
@@ -347,21 +387,21 @@ export function openDetails(id) {
       detailsCategory.appendChild(opt);
    });
 
-   detailsCategory.onchange = () => {
+   detailsCategory.onchange = async () => {
       const currentCap = store.store.caps.find(c => c.id === id);
       if (currentCap) {
          currentCap.category = detailsCategory.value || 'all';
-         saveAppData();
+         await saveAppData();
       }
    };
 
    const detailsDesc = document.getElementById('detailsDesc');
    detailsDesc.value = cap.description || '';
-   detailsDesc.onblur = () => {
+   detailsDesc.onblur = async () => {
       const currentCap = store.store.caps.find(c => c.id === id);
       if (currentCap) {
          currentCap.description = detailsDesc.value;
-         saveAppData();
+         await saveAppData();
       }
    };
 
@@ -415,8 +455,9 @@ export function openDetails(id) {
       if (confirmed) {
          store.store.caps = store.store.caps.filter(c => c.id !== id);
          await saveAppData();
-         popTab();
-         openGallery(store.currentCategory);
+         /* popTab();
+         openGallery(store.currentCategory); */
+         refreshGallery();
       }
    };
 
@@ -492,18 +533,19 @@ export function addLastCategoryToFilters() {
    chip.textContent = cat.name;
    chip.style.borderColor = cat.color;
    // Click to filter, not navigate - show only caps with this category
-   chip.onclick = () => {
-      const selectionManager = getGallerySelectionManager();
+   chip.onclick = async () => {
+      const allSelected = isAllCategorySelected();
+      const selectionManager = getGallerySelectionManager(!allSelected, allSelected);
 
       // If in selection mode, assign category to selected items
       if (selectionManager && selectionManager.selectedItems.size > 0) {
          selectionManager.selectedItems.forEach(capId => {
-            const capToUpdate = store.store.caps.find(c => c.id === parseInt(capId));
+            const capToUpdate = store.store.caps.find(c => c.id === capId);
             if (capToUpdate) {
                capToUpdate.category = cat.id;
             }
          });
-         saveAppData();
+         await saveAppData();
          exitGallerySelectionMode();
          openGallery('all');
       } else {
@@ -521,7 +563,8 @@ export function addLastCategoryToFilters() {
             if (c !== chip) c.classList.remove('active');
          });
          // Re-initialize selection on filtered list
-         updateGallerySelection();
+         const allSelected = isAllCategorySelected();
+         updateGallerySelection(!allSelected, allSelected);
       }
    };
    filtersDiv.appendChild(chip);

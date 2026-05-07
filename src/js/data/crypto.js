@@ -13,11 +13,11 @@ function uint8ToBase64(u8) {
       binary += String.fromCharCode(...u8.subarray(i, i + chunkSize));
    }
 
-   return btoa(binary);
+   return utf8ToBase64(binary);
 }
 
 function base64ToUint8(base64) {
-   const binary = atob(base64);
+   const binary = base64ToUtf8(base64);
    const len = binary.length;
    const bytes = new Uint8Array(len);
 
@@ -28,13 +28,39 @@ function base64ToUint8(base64) {
    return bytes;
 }
 
+function utf8ToBase64(str) {
+   const bytes = new TextEncoder().encode(str);
+
+   let binary = '';
+   const chunkSize = 0x8000;
+
+   for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(
+         ...bytes.subarray(i, i + chunkSize)
+      );
+   }
+
+   return btoa(binary);
+}
+
+function base64ToUtf8(base64) {
+   const binary = atob(base64);
+   const bytes = new Uint8Array(binary.length);
+
+   for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+   }
+
+   return new TextDecoder().decode(bytes);
+}
+
 /**
  * Hash a passphrase using SHA-256 (for GitHub filename)
  */
 export async function hashPassphrase(passphrase) {
    const encoder = new TextEncoder();
    const data = encoder.encode(passphrase);
-   const hashBuffer = await crypto.subtle.digest(HASH_ALGORITHM, data);
+   const hashBuffer = await window.crypto.subtle.digest(HASH_ALGORITHM, data);
 
    // Convert to hex string
    const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -46,7 +72,7 @@ export async function hashPassphrase(passphrase) {
  */
 export async function deriveKey(passphrase, salt) {
    const encoder = new TextEncoder();
-   const passphraseKey = await crypto.subtle.importKey(
+   const passphraseKey = await window.crypto.subtle.importKey(
       'raw',
       encoder.encode(passphrase),
       KEY_DERIVATION_ALGORITHM,
@@ -54,7 +80,7 @@ export async function deriveKey(passphrase, salt) {
       ['deriveBits', 'deriveKey']
    );
 
-   return crypto.subtle.deriveKey(
+   return window.crypto.subtle.deriveKey(
       {
          name: KEY_DERIVATION_ALGORITHM,
          salt: salt,
@@ -66,7 +92,7 @@ export async function deriveKey(passphrase, salt) {
          name: ENCRYPTION_ALGORITHM,
          length: 256,
       },
-      true, // extractable -- If you don’t actually need to export the key, put false
+      false, // extractable if true -- If you don’t actually need to export the key, put false
       ['encrypt', 'decrypt']
    );
 }
@@ -78,8 +104,8 @@ export async function deriveKey(passphrase, salt) {
 export async function encrypt(plaintext, passphrase) {
    try {
       // Generate random salt and IV
-      const salt = crypto.getRandomValues(new Uint8Array(16));
-      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const salt = window.crypto.getRandomValues(new Uint8Array(16));
+      const iv = window.crypto.getRandomValues(new Uint8Array(12));
 
       // Derive key
       const key = await deriveKey(passphrase, salt);
@@ -87,7 +113,7 @@ export async function encrypt(plaintext, passphrase) {
       // Encrypt
       const encoder = new TextEncoder();
       const data = encoder.encode(plaintext);
-      const ciphertext = await crypto.subtle.encrypt(
+      const ciphertext = await window.crypto.subtle.encrypt(
          {
             name: ENCRYPTION_ALGORITHM,
             iv: iv,
@@ -121,8 +147,17 @@ export async function decrypt(encrypted, passphrase) {
       // Derive key
       const key = await deriveKey(passphrase, salt);
 
+      /* console.log({
+         saltLen: encrypted.salt?.length,
+         ivLen: encrypted.iv?.length,
+         ciphertextLen: encrypted.ciphertext?.length,
+         hasNewlines: encrypted.ciphertext?.includes('\n'),
+         hasSpaces: encrypted.ciphertext?.includes(' '),
+      });
+      console.log(typeof encrypted, encrypted); */
+
       // Decrypt
-      const plaintext = await crypto.subtle.decrypt(
+      const plaintext = await window.crypto.subtle.decrypt(
          {
             name: ENCRYPTION_ALGORITHM,
             iv: iv,

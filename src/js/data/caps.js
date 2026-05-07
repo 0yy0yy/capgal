@@ -3,23 +3,60 @@ import Modal from '../ui/modal.js';
 import * as store from './store.js';
 import { saveAppData } from './saving.js';
 import { processCapImage } from './image-processor.js';
-import { openGallery } from './gallery.js';
+import { openGallery, refreshGallery } from './gallery.js';
 import { getWordForCount, tryHeicConversion, clampToPalette, showLoadingScreen, updateLoadingScreen, hideLoadingScreen } from '../helpers/helper.js';
 import * as camera from '../camera/camera.js';
 
 /**
  * Delete a cap from collection (with confirmation)
  */
-export async function deleteCap(capId) {
+export async function deleteCap(capId, showConfirmation = true) {
+   let confirmed = true;
+   if (showConfirmation) {
+      confirmed = await Modal.confirm({
+         question: 'Remove this cap from your collection? This cannot be undone.',
+         yesLabel: 'Yes, delete',
+         noLabel: 'Cancel',
+      });
+   }
+
+   if (confirmed) {
+      store.store.caps = store.store.caps.filter(c => c.id !== capId);
+      await saveAppData();
+      return true;
+   }
+   return false;
+}
+
+/**
+ * Delete selected caps from collection (with confirmation)
+ */
+export async function deleteSelectedCaps(capIds) {
+   const numberOfCapsSelected = capIds.length;
    const confirmed = await Modal.confirm({
-      question: 'Remove this cap from your collection? This cannot be undone.',
+      question: `Remove ${numberOfCapsSelected} selected ${getWordForCount(numberOfCapsSelected, 'cap')} from your collection? This cannot be undone.`,
       yesLabel: 'Yes, delete',
       noLabel: 'Cancel',
    });
 
    if (confirmed) {
-      store.store.caps = store.store.caps.filter(c => c.id !== capId);
-      await saveAppData();
+      try {
+         capIds.forEach(async (capId) => {
+            const status = await deleteCap(capId, false);
+
+            if (!status) {
+               await Modal.confirm({
+                  question: `There was a problem when trying to delete cap with ID = '${capId}'`,
+                  yesLabel: 'OK'
+               });
+            }
+         });
+      } catch {
+         await Modal.confirm({
+            question: `There was a problem when trying to delete cap with ID = '${capId}'`,
+            yesLabel: 'OK'
+         });
+      }
       return true;
    }
    return false;
@@ -45,22 +82,29 @@ export async function saveCap(capData) {
 
       let imageBase64 = null;
       let capColor = '#808080';
+      let processed = null;
 
-      if (capData.image) {
-         //updateLoadingScreen('Converting image format...');
-         //const convertedJpegImage = await tryHeicConversion(capData.image);
+      try {
+         if (!capData.imageProcessed) {
+            updateLoadingScreen('Converting format...');
+            const convertedJpegImage = await tryHeicConversion(capData.image);
 
-         //updateLoadingScreen('Processing image...');
-         const processed = await processCapImage(convertedJpegImage);
-
-         updateLoadingScreen('Encoding image...');
-         imageBase64 = await fileToBase64(processed.imageBlob);
-         capColor = clampToPalette(processed.capColor);
+            updateLoadingScreen(`Detecting bottle cap in image '${capData.title}'...`);
+            processed = await processCapImage(convertedJpegImage);
+         }
+      } catch {
+         updateLoadingScreen('FAILED to process the image, using the original one...');
       }
+
+      updateLoadingScreen('Encoding image...');
+      const img = processed ? processed.imageBlob : capData.image;
+      const color = processed ? processed.capColor : capData.capColor;
+      imageBase64 = await fileToBase64(img);
+      capColor = clampToPalette(color || '#808080');
 
       // Add to store
       const newCap = {
-         id: Date.now(),
+         id: String(Date.now()),
          title: capData.title || '',
          description: capData.description || '',
          category: capData.category || 'all', // Default to 'all' if not specified
@@ -78,12 +122,12 @@ export async function saveCap(capData) {
       }
 
       await saveAppData();
-      hideLoadingScreen();
       return newCap;
    } catch (error) {
       console.error('Error saving cap:', error);
-      hideLoadingScreen();
       throw error;
+   } finally {
+      hideLoadingScreen();
    }
 }
 
@@ -136,15 +180,18 @@ export async function addCapsInBatch() {
             noLabel: 'Add later',
          });
 
-         for (let i = 0; i < result.files.length; i++) {
+         showLoadingScreen('Processing images...');
+
+         for (let i = 0; i < totalFiles; i++) {
             const file = result.files[i];
 
             if (addDetailsNow) {
                // Pre-load and ask for details for each
-               Modal.setPendingImage(file);
+               await Modal.setPendingImage(file);
                const capData = await Modal.addItem({
                   type: 'cap',
                   categories: store.store.categories,
+                  headerText: `Add Cap (${i + 1}/${totalFiles})`
                });
 
                if (!capData) {
@@ -182,6 +229,8 @@ export async function addCapsInBatch() {
             }
          }
 
+         hideLoadingScreen();
+
          // Show summary and refresh
          await Modal.confirm({
             question: `Added ${addedCount} ${getWordForCount(addedCount, 'cap')}!`,
@@ -207,14 +256,10 @@ export async function replaceCapImage(capId) {
       noLabel: 'Take Photo',
    });
 
-   // noLabel is clicked = take photo
-   // yesLabel is clicked = device storage
-   // null = cancelled
-
    let imageFile = null;
 
    try {
-      if (choice === true) {
+      if (choice === true) { // yesLabel: 'Device Storage'
          // Device storage
          const input = document.createElement('input');
          input.type = 'file';
@@ -226,7 +271,7 @@ export async function replaceCapImage(capId) {
             });
             input.click();
          });
-      } else if (choice === false) {
+      } else if (choice === false) { // noLabel: 'Take Photo'
          // Take photo with camera
          try {
             const capturedBlob = await camera.showCameraModal();
@@ -236,8 +281,7 @@ export async function replaceCapImage(capId) {
             alert('Could not access camera. Please check permissions.');
             return false;
          }
-      } else {
-         // User cancelled
+      } else { // User cancelled
          return false;
       }
 
@@ -250,7 +294,8 @@ export async function replaceCapImage(capId) {
 
       const convertedJpegImage = await tryHeicConversion(imageFile);
 
-      updateLoadingScreen('Detecting cap circle...');
+      const fileName = imageFile.name ? imageFile.name : String(Date.now());
+      updateLoadingScreen(`Detecting bottle cap in image '${fileName}'...`);
       const processed = await processCapImage(convertedJpegImage);
 
       updateLoadingScreen('Encoding image...');
@@ -266,13 +311,13 @@ export async function replaceCapImage(capId) {
       await saveAppData();
 
       // Refresh gallery to show updated image immediately
-      openGallery(store.currentCategory); // PROBLEM - todo: this adds additional stack on the navstac but it should replace the gallery and details wuth the new ones to not repeat navigation on going back the nav stack
-      hideLoadingScreen();
+      refreshGallery(); //openGallery(store.currentCategory); // PROBLEM - todo: this adds additional stack on the navstac but it should replace the gallery and details wuth the new ones to not repeat navigation on going back the nav stack
       return true;
    } catch (error) {
       console.error('Error replacing image:', error);
-      hideLoadingScreen();
       return false;
+   } finally {
+      hideLoadingScreen();
    }
 }
 

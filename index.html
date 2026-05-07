@@ -17,10 +17,10 @@
 
 <body>
    <!-- ── CV DEBUG ── -->
-   <div class="debug-canvas" style="display: none;">
+   <!-- <div class="debug-canvas" style="display: none;">
       <canvas id="circlesOutput"></canvas>
       <canvas id="canvasOutput"></canvas>
-   </div>
+   </div> -->
 
    <!-- ── LOADING SCREEN ── -->
    <div id="loadingScreen" class="loading-screen active">
@@ -150,77 +150,90 @@
                <button class="sheet-close" id="settingsClose" aria-label="Close">✕</button>
             </div>
             <div class="sheet-body">
-               <div class="setting-row">
-                  <span class="setting-label">Theme</span>
-                  <div class="settings-buttons">
-                     <button class="theme-btn selected" data-theme-pref="auto">Device</button>
-                     <button class="theme-btn" data-theme-pref="light">Light</button>
-                     <button class="theme-btn" data-theme-pref="dark">Dark</button>
+               <details>
+                  <summary>App settings</summary>
+                  <div class="setting-row">
+                     <span class="setting-label">Theme</span>
+                     <div class="settings-buttons">
+                        <button class="theme-btn selected" data-theme-pref="auto">Device</button>
+                        <button class="theme-btn" data-theme-pref="light">Light</button>
+                        <button class="theme-btn" data-theme-pref="dark">Dark</button>
+                     </div>
                   </div>
-               </div>
-               <div class="setting-row">
-                  <span class="setting-label">Appearance</span>
-                  <div class="settings-buttons">
-                     <button class="theme-btn selected" data-theme-val="android">Android</button>
-                     <button class="theme-btn" data-theme-val="ios">iOS</button>
+                  <div class="setting-row">
+                     <span class="setting-label">Appearance</span>
+                     <div class="settings-buttons">
+                        <button class="theme-btn selected" data-theme-val="android">Android</button>
+                        <button class="theme-btn" data-theme-val="ios">iOS</button>
+                     </div>
                   </div>
-               </div>
-               <div class="setting-row inline-row">
-                  <span class="setting-label">Open gallery by default</span>
-                  <label class="toggle-switch">
-                     <input type="checkbox" id="toggleOpenGalleryByDefault" />
-                     <span class="toggle-slider"></span>
-                  </label>
-               </div>
-               <div class="setting-row">
-                  <span class="setting-label">Gallery background texture</span>
-                  <select id="galleryTextureSelect" class="meta-val"
-                     style="width: 100%; padding: 8px; border-radius: 4px;">
-                     <option value="none">No texture</option>
-                     <option value="cracks-texture">Cracks</option>
-                     <option value="dirty-wall-texture">Dirty Wall</option>
-                     <option value="fabric-texture">Fabric</option>
-                     <option value="grunge-texture">Grunge</option>
-                     <option value="sand-texture">Sand</option>
-                     <option value="wood-texture">Wood</option>
-                  </select>
-               </div>
-               <div class="setting-row inline-row">
-                  <span class="setting-label">Show cap names in gallery</span>
-                  <label class="toggle-switch">
-                     <input type="checkbox" id="toggleShowCapNames" />
-                     <span class="toggle-slider"></span>
-                  </label>
-               </div>
+                  <div class="setting-row inline-row">
+                     <span class="setting-label">Open gallery by default</span>
+                     <label class="toggle-switch">
+                        <input type="checkbox" id="toggleOpenGalleryByDefault" />
+                        <span class="toggle-slider"></span>
+                     </label>
+                  </div>
+                  <div class="setting-row">
+                     <span class="setting-label">Gallery background texture</span>
+                     <select id="galleryTextureSelect" class="meta-val"
+                        style="width: 100%; padding: 8px; border-radius: 4px;">
+                        <option value="none">No texture</option>
+                        <option value="cracks-texture">Cracks</option>
+                        <option value="dirty-wall-texture">Dirty Wall</option>
+                        <option value="fabric-texture">Fabric</option>
+                        <option value="grunge-texture">Grunge</option>
+                        <option value="sand-texture">Sand</option>
+                        <option value="wood-texture">Wood</option>
+                     </select>
+                  </div>
+                  <div class="setting-row inline-row">
+                     <span class="setting-label">Show cap names in gallery</span>
+                     <label class="toggle-switch">
+                        <input type="checkbox" id="toggleShowCapNames" />
+                        <span class="toggle-slider"></span>
+                     </label>
+                  </div>
+                  <div class="setting-row inline-row">
+                     <span class="setting-label">Find bottle cap in image automatically</span>
+                     <label class="toggle-switch">
+                        <input type="checkbox" id="toggleUseAutoCapFinder" />
+                        <span class="toggle-slider"></span>
+                     </label>
+                  </div>
+               </details>
                <hr>
-               <div class="setting-row">
-                  <span class="setting-label">GitHub fine-grained personal access token</span>
-                  <input type="password" id="githubTokenInput" class="meta-val" placeholder="github_pat_..." />
-                  <small style="display: block; margin-top: 4px; color: var(--clr-muted);">For cloud sync and
-                     backup</small>
-               </div>
-               <div class="setting-row inline-row">
-                  <span class="setting-label">Automatic saving to GitHub</span>
-                  <label class="toggle-switch">
-                     <input type="checkbox" id="toggleAutoSave" />
-                     <span class="toggle-slider"></span>
-                  </label>
-               </div>
-               <hr>
-               <div class="setting-row">
-                  <span class="setting-label">Import data</span>
-                  <div class="settings-buttons">
-                     <button type="button" class="theme-btn" id="importFromDeviceBtn">From Device</button>
-                     <button type="button" class="theme-btn" id="importFromGitHubBtn">From GitHub</button>
+               <details>
+                  <summary>Data settings</summary>
+                  <div class="setting-row">
+                     <span class="setting-label">GitHub fine-grained personal access token</span>
+                     <input type="password" id="githubTokenInput" class="meta-val" placeholder="github_pat_..." />
+                     <small style="display: block; margin-top: 4px; color: var(--clr-muted);">For cloud sync and
+                        backup</small>
                   </div>
-               </div>
-               <div class="setting-row">
-                  <span class="setting-label">Export data</span>
-                  <div class="settings-buttons">
-                     <button type="button" class="theme-btn" id="exportPlainBtn">Plain JSON</button>
-                     <button type="button" class="theme-btn" id="exportEncryptedBtn">Encrypted</button>
+                  <div class="setting-row inline-row">
+                     <span class="setting-label">Automatic saving to GitHub</span>
+                     <label class="toggle-switch">
+                        <input type="checkbox" id="toggleAutoSave" />
+                        <span class="toggle-slider"></span>
+                     </label>
                   </div>
-               </div>
+                  <hr>
+                  <div class="setting-row">
+                     <span class="setting-label">Import data</span>
+                     <div class="settings-buttons">
+                        <button type="button" class="theme-btn" id="importFromDeviceBtn">From Device</button>
+                        <button type="button" class="theme-btn" id="importFromGitHubBtn">From GitHub</button>
+                     </div>
+                  </div>
+                  <div class="setting-row">
+                     <span class="setting-label">Export data</span>
+                     <div class="settings-buttons">
+                        <button type="button" class="theme-btn" id="exportPlainBtn">Plain JSON</button>
+                        <button type="button" class="theme-btn" id="exportEncryptedBtn">Encrypted</button>
+                     </div>
+                  </div>
+               </details>
             </div>
          </section>
 

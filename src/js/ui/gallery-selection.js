@@ -17,18 +17,17 @@ export function initGallerySelection(showRemoveButton = false, showDeleteButton 
       delay: 350,
       onSelectionChange: (selectedIds) => {
          // Update UI to show selection count
-         const countEl = document.getElementById('selection-count');
+         /* const countEl = document.getElementById('selection-count');
          if (countEl) {
             countEl.textContent = `${selectedIds.length} selected`;
-         }
-         console.log('Selected items:', selectedIds);
+         } */
       },
       onSelectionModeChange: (isActive) => {
          // Show/hide selection toolbar, etc.
-         const toolbar = document.querySelector('.selection-toolbar');
+         /* const toolbar = document.querySelector('.selection-toolbar');
          if (toolbar) {
             toolbar.classList.toggle('active', isActive);
-         }
+         } */
 
          // Add/remove selection mode class to gallery
          galleryList.classList.toggle('selection-mode', isActive);
@@ -41,14 +40,12 @@ export function initGallerySelection(showRemoveButton = false, showDeleteButton 
          if (showDeleteButton) {
             isActive ? deleteButton.removeAttribute("hidden") : deleteButton.setAttribute("hidden", "");
          }
-
-         console.log('Selection mode:', isActive ? 'ON' : 'OFF');
       }
    });
 
    // Add items to selection manager
    galleryList.querySelectorAll('li').forEach((li, index) => {
-      const capId = li.dataset.id || `item-${index}`;
+      const capId = li.dataset.id || index;
       gallerySelectionManager.addSelectableItem(li, capId);
    });
 }

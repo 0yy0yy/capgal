@@ -1,5 +1,3 @@
-import { saveAppData } from './saving.js';
-
 // ── Central state management for app data ──────────────────────────────────
 export const store = {
    caps: [],
@@ -14,28 +12,27 @@ export const store = {
       theme: 'auto',
       appearance: 'android',
       showCapNames: true,
+      useAutoCapFinder: true,
       autoSave: false,
       openGalleryByDefault: false,
       galleryBackgroundTexture: 'none',
       githubToken: null,
       githubDataHash: null,
       lastGitHubSync: null,
+      encryptionPassphrase: null,
    },
 };
 
-export function setCaps(newCaps) {
+export async function setCaps(newCaps) {
    store.caps = newCaps;
-   saveAppData();
 }
 
-export function setCategories(newCategories) {
+export async function setCategories(newCategories) {
    store.categories = newCategories;
-   saveAppData();
 }
 
-export function updateUserSettings(newSettings) {
+export async function updateUserSettings(newSettings) {
    Object.assign(store.userSettings, newSettings);
-   saveAppData();
 }
 
 // UI state
@@ -46,9 +43,11 @@ export let settingsOpen = false;
 /**
  * Add a new cap to collection
  */
-export function addCap(capData) {
+export async function addCap(capData) {
+   // Import saveAppData here to avoid circular imports
+   const { saveAppData } = await import('./saving.js');
    const newCap = {
-      id: Date.now(),
+      id: String(Date.now()),
       title: capData.title || '',
       description: capData.description || '',
       category: capData.category || 'all',
@@ -59,18 +58,20 @@ export function addCap(capData) {
    };
 
    store.caps.push(newCap);
-   saveAppData();
+   await saveAppData();
    return newCap;
 }
 
 /**
  * Update cap data
  */
-export function updateCap(capId, updates) {
+export async function updateCap(capId, updates) {
+   // Import saveAppData here to avoid circular imports
+   const { saveAppData } = await import('./saving.js');
    const cap = store.caps.find(c => c.id === capId);
    if (cap) {
       Object.assign(cap, updates, { updatedAt: new Date().toISOString() });
-      saveAppData();
+      await saveAppData();
    }
    return cap;
 }
@@ -78,15 +79,19 @@ export function updateCap(capId, updates) {
 /**
  * Delete cap from collection
  */
-export function deleteCap(capId) {
+export async function deleteCap(capId) {
+   // Import saveAppData here to avoid circular imports
+   const { saveAppData } = await import('./saving.js');
    store.caps = store.caps.filter(c => c.id !== capId);
-   saveAppData();
+   await saveAppData();
 }
 
 /**
  * Add a new category
  */
-export function addCategory(categoryData) {
+export async function addCategory(categoryData) {
+   // Import saveAppData here to avoid circular imports
+   const { saveAppData } = await import('./saving.js');
    const newCategory = {
       id: categoryData.id || categoryData.name?.toLowerCase().replace(/\s+/g, '-') || `cat-${Date.now()}`,
       name: categoryData.name || 'Untitled',
@@ -94,14 +99,16 @@ export function addCategory(categoryData) {
    };
 
    store.categories.push(newCategory);
-   saveAppData();
+   await saveAppData();
    return newCategory;
 }
 
 /**
  * Delete category and reassign caps to 'all' --//TODO - all caps have category all by default. caps can have multiple categories!
  */
-export function deleteCategory(categoryId) {
+export async function deleteCategory(categoryId) {
+   // Import saveAppData here to avoid circular imports
+   const { saveAppData } = await import('./saving.js');
    store.categories = store.categories.filter(c => c.id !== categoryId);
    // Reassign caps in this category to 'all'
    store.caps.forEach(cap => {
@@ -109,7 +116,7 @@ export function deleteCategory(categoryId) {
          cap.category = 'all';
       }
    });
-   saveAppData();
+   await saveAppData();
 }
 
 /**
