@@ -6,6 +6,7 @@ import { handleAddCategoryClick, initCategoryButtons, initCategoryDeleteHandlers
 import { addCapsInBatch } from '../data/caps.js';
 import { saveAppData } from '../data/saving.js';
 import { importFromDevice, importFromGitHub, exportToDevice } from '../data/loading.js';
+import { hideLoadingScreen, showLoadingScreen } from '../helpers/helper.js';
 
 const settingsPanel = document.getElementById('settings');
 const settingsBackdrop = document.getElementById('settings-backdrop');
@@ -152,18 +153,22 @@ export async function initSettingsHandlers() {
    document.getElementById('importFromDeviceBtn')?.addEventListener('click', async () => {
       const success = await importFromDevice();
       if (success) {
+         showLoadingScreen('Saving imported data...');
          await saveAppData();
          closeSettings();
          location.reload();
+         hideLoadingScreen();
       }
    });
 
    document.getElementById('importFromGitHubBtn')?.addEventListener('click', async () => {
       const success = await importFromGitHub();
       if (success) {
+         showLoadingScreen('Saving imported data...');
          await saveAppData();
          closeSettings();
          location.reload();
+         hideLoadingScreen();
       }
    });
 

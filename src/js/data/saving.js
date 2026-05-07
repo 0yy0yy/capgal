@@ -3,6 +3,7 @@ import * as store from './store.js';
 import * as crypto from './crypto.js';
 import * as indexdb from './indexdb.js';
 import Modal from '../ui/modal.js';
+import { utf8ToBase64, base64ToUtf8 } from '../helpers/helper.js';
 
 const GITHUB_REPO = '0yy0yy/capgal';
 const GITHUB_BRANCH = 'master';
@@ -63,7 +64,7 @@ async function saveToGitHub(dataToSave) {
 
       // Hash passphrase to get filename (SHA-256)
       const dataHash = store.store.userSettings.githubDataHash ? store.store.userSettings.githubDataHash : await crypto.hashPassphrase(store.store.userSettings.encryptionPassphrase);
-      const fileName = `_data/${dataHash}.json`;
+      const fileName = `data/${dataHash}.json`;
 
       // Check for collision
       const exists = await checkGitHubFileExists(fileName);
@@ -90,7 +91,7 @@ async function saveToGitHub(dataToSave) {
             },
             body: JSON.stringify({
                message: `Auto-save bottle cap gallery data`,
-               content: btoa(encryptedJson),
+               content: utf8ToBase64(encryptedJson),
                branch: GITHUB_BRANCH,
                ...(fileSha && { sha: fileSha }),
             }),

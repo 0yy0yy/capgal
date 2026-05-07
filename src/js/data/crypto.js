@@ -1,58 +1,10 @@
 // ── Web Crypto utilities for encryption/decryption ──────────────────────────
 import { saveToIndexDB, loadFromIndexDB } from './indexdb.js';
+import { base64ToUint8, uint8ToBase64 } from '../helpers/helper.js';
 
 const ENCRYPTION_ALGORITHM = 'AES-GCM';
 const KEY_DERIVATION_ALGORITHM = 'PBKDF2';
 const HASH_ALGORITHM = 'SHA-256';
-
-function uint8ToBase64(u8) {
-   let binary = '';
-   const chunkSize = 0x8000;
-
-   for (let i = 0; i < u8.length; i += chunkSize) {
-      binary += String.fromCharCode(...u8.subarray(i, i + chunkSize));
-   }
-
-   return utf8ToBase64(binary);
-}
-
-function base64ToUint8(base64) {
-   const binary = base64ToUtf8(base64);
-   const len = binary.length;
-   const bytes = new Uint8Array(len);
-
-   for (let i = 0; i < len; i++) {
-      bytes[i] = binary.charCodeAt(i);
-   }
-
-   return bytes;
-}
-
-function utf8ToBase64(str) {
-   const bytes = new TextEncoder().encode(str);
-
-   let binary = '';
-   const chunkSize = 0x8000;
-
-   for (let i = 0; i < bytes.length; i += chunkSize) {
-      binary += String.fromCharCode(
-         ...bytes.subarray(i, i + chunkSize)
-      );
-   }
-
-   return btoa(binary);
-}
-
-function base64ToUtf8(base64) {
-   const binary = atob(base64);
-   const bytes = new Uint8Array(binary.length);
-
-   for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-   }
-
-   return new TextDecoder().decode(bytes);
-}
 
 /**
  * Hash a passphrase using SHA-256 (for GitHub filename)

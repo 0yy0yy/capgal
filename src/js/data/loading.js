@@ -3,6 +3,7 @@ import * as store from './store.js';
 import * as crypto from './crypto.js';
 import * as indexdb from './indexdb.js';
 import Modal from '../ui/modal.js';
+import { base64ToUtf8 } from '../helpers/helper.js';
 import { showLoadingScreen, updateLoadingScreen, hideLoadingScreen } from '../helpers/helper.js';
 
 const GITHUB_REPO = '0yy0yy/capgal';
@@ -51,38 +52,52 @@ export async function importFromGitHub() {
    try {
       updateLoadingScreen('Computing data hash...');
       const dataHash = await crypto.hashPassphrase(passphrase);
-      const fileName = `_data/${dataHash}.json`;
+      const fileName = `data/${dataHash}.json`;
 
       updateLoadingScreen('Downloading from GitHub...');
       const response = await fetch(
-         `https://api.github.com/repos/${GITHUB_REPO}/contents/${fileName}`,
-         {
-            headers: {
-               'Authorization': `token ${store.store.userSettings.githubToken}`,
-            },
-         }
+         `https://raw.githubusercontent.com/${GITHUB_REPO}/master/${fileName}`
       );
+      /* const response = await fetch(
+         `./${fileName}`
+      ); */
 
       if (!response.ok) {
          throw new Error('File not found on GitHub');
       }
 
       updateLoadingScreen('Decrypting data...');
-      const data = await response.json();
-      const encryptedContent = atob(data.content);
-      const encrypted = JSON.parse(encryptedContent);
+      const encrypted = await response.json();
+      /* const data = await response.json();
+      const encryptedContent = base64ToUtf8(data);
+      const encrypted = JSON.parse(encryptedContent); */
 
       // Decrypt
       const decrypted = await crypto.decrypt(encrypted, passphrase);
       const appData = JSON.parse(decrypted);
 
-      updateLoadingScreen('Merging data...');
-      // Write directly to store without using setters
-      store.store.caps = appData.caps || [];
-      store.store.categories = appData.categories || [];
-      Object.assign(store.store.userSettings, appData.userSettings || {});
-      store.store.userSettings.encryptionPassphrase = passphrase;
-      store.store.userSettings.githubDataHash = dataHash;
+      hideLoadingScreen();
+
+      const importMode = await Modal.confirm({
+         question: 'Would you like to override the data or merge it with the existing?',
+         yesLabel: 'Replace',
+         noLabel: 'Merge'
+      });
+      showLoadingScreen('Merging data...');
+
+      if (importMode) { // replace
+         // Write directly to store without using setters
+         store.store.caps = appData.caps || [];
+         store.store.categories = appData.categories || [];
+         Object.assign(store.store.userSettings, appData.userSettings || {});
+         store.store.userSettings.encryptionPassphrase = passphrase;
+         store.store.userSettings.githubDataHash = dataHash;
+      } else { // merge otherwise
+         //TODO - update same id and add nonexistant ones, do not merge with imported setting/leave the old settings intact
+         // store.store.caps = appData.caps || [];
+         // store.store.categories = appData.categories || [];
+         // Object.assign(store.store.userSettings, appData.userSettings || {});
+      }
 
       return true;
    } catch (error) {
