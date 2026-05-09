@@ -3,6 +3,7 @@ import Modal from './modal.js';
 import * as store from '../data/store.js';
 import { openGallery } from '../data/gallery.js';
 import { saveAppData } from '../data/saving.js';
+import { showLoadingScreen, hideLoadingScreen } from '../helpers/helper.js';
 
 let preventClickOnLongPress = null;
 
@@ -17,53 +18,80 @@ export async function deleteCategory(categoryId) {
    });
 
    if (confirmed) {
-      // Move affected caps to 'all'
-      store.store.caps.forEach(cap => {
-         if (cap.category === categoryId) {
-            cap.category = 'all';
-         }
-      });
+      try {
+         showLoadingScreen(`Deleting category and moving ${capCount} cap(s)...`);
 
-      // Remove category from store
-      store.store.categories = store.store.categories.filter(c => c.id !== categoryId);
+         // Move affected caps to 'all'
+         store.store.caps.forEach(cap => {
+            if (cap.category === categoryId) {
+               cap.category = 'all';
+            }
+         });
 
-      await saveAppData();
+         // Remove category from store
+         store.store.categories = store.store.categories.filter(c => c.id !== categoryId);
 
-      // Refresh UI
-      initCategoryUI();
-      //openGallery('all');
-      return true;
+         await saveAppData();
+
+         hideLoadingScreen();
+
+         // Refresh UI
+         initCategoryUI();
+         return true;
+      } catch (error) {
+         hideLoadingScreen();
+         console.error('Error deleting category:', error);
+         await Modal.confirm({
+            question: 'Failed to delete category. Please try again.',
+            yesLabel: 'OK'
+         });
+         return false;
+      }
    }
    return false;
 }
 
 export async function handleAddCategoryClick() {
-   const result = await Modal.addItem({ type: 'category' });
-   if (!result) return false;
+   try {
+      const result = await Modal.addItem({ type: 'category' });
+      if (!result) return false;
 
-   const newCategory = {
-      id: result.name.toLowerCase().replace(/\s+/g, '-') + String(Date.now()),
-      name: result.name,
-      color: result.color,
-   };
+      showLoadingScreen('Creating category...');
 
-   store.store.categories.push(newCategory);
-   await saveAppData();
+      const newCategory = {
+         id: result.name.toLowerCase().replace(/\s+/g, '-') + String(Date.now()),
+         name: result.name,
+         color: result.color,
+      };
 
-   // Refresh UI
-   initCategoryUI();
+      store.store.categories.push(newCategory);
+      await saveAppData();
 
-   // Add it to the options if in details view
-   if (store.getNavStackTop() === 'details') {
-      const detailsCategory = document.getElementById('detailsCategory');
-      if (detailsCategory) {
-         const opt = document.createElement('option');
-         opt.value = newCategory.id;
-         opt.textContent = newCategory.name;
-         detailsCategory.appendChild(opt);
+      hideLoadingScreen();
+
+      // Refresh UI
+      initCategoryUI();
+
+      // Add it to the options if in details view
+      if (store.getNavStackTop() === 'details') {
+         const detailsCategory = document.getElementById('detailsCategory');
+         if (detailsCategory) {
+            const opt = document.createElement('option');
+            opt.value = newCategory.id;
+            opt.textContent = newCategory.name;
+            detailsCategory.appendChild(opt);
+         }
       }
+      return true;
+   } catch (error) {
+      hideLoadingScreen();
+      console.error('Error adding category:', error);
+      await Modal.confirm({
+         question: 'Failed to create category. Please try again.',
+         yesLabel: 'OK'
+      });
+      return false;
    }
-   return true;
 }
 
 export function initCategoryButtons() {

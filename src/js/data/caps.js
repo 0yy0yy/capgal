@@ -41,23 +41,31 @@ export async function deleteSelectedCaps(capIds) {
 
    if (confirmed) {
       try {
-         capIds.forEach(async (capId) => {
-            const status = await deleteCap(capId, false);
-
-            if (!status) {
-               await Modal.confirm({
-                  question: `There was a problem when trying to delete cap with ID = '${capId}'`,
-                  yesLabel: 'OK'
-               });
+         showLoadingScreen(`Deleting ${numberOfCapsSelected} cap(s)...`);
+         
+         // Use for...of instead of forEach with async/await
+         for (const capId of capIds) {
+            try {
+               const status = await deleteCap(capId, false);
+               if (!status) {
+                  console.warn(`Failed to delete cap with ID: ${capId}`);
+               }
+            } catch (error) {
+               console.error(`Error deleting cap ${capId}:`, error);
             }
-         });
-      } catch {
+         }
+         
+         hideLoadingScreen();
+         return true;
+      } catch (error) {
+         hideLoadingScreen();
+         console.error('Error deleting selected caps:', error);
          await Modal.confirm({
-            question: `There was a problem when trying to delete cap with ID = '${capId}'`,
+            question: 'There was a problem when trying to delete the selected caps',
             yesLabel: 'OK'
          });
+         return false;
       }
-      return true;
    }
    return false;
 }

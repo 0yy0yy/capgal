@@ -46,14 +46,21 @@ export async function backupToGitHub() {
          },
          timestamp: new Date().toISOString(),
       };
+
       await saveToGitHub(dataForGitHub);
+
       // Save updated lastGitHubSync to IndexDB
-      await indexdb.saveToIndexDB('appData', {
-         caps: store.store.caps,
-         categories: store.store.categories,
-         userSettings: store.store.userSettings,
-         timestamp: new Date().toISOString(),
-      });
+      try {
+         await indexdb.saveToIndexDB('appData', {
+            caps: store.store.caps,
+            categories: store.store.categories,
+            userSettings: store.store.userSettings,
+            timestamp: new Date().toISOString(),
+         });
+      } catch (indexDbError) {
+         console.error('Warning: GitHub backup succeeded but IndexDB save failed:', indexDbError);
+         // Still return true since GitHub backup was successful
+      }
       return true;
    } catch (error) {
       console.error('Error backing up to GitHub:', error);
@@ -68,17 +75,22 @@ async function saveToGitHub(dataToSave) {
    try {
       // Ask for passphrase if not in memory
       if (!store.store.userSettings.encryptionPassphrase && !store.store.userSettings.githubDataHash) {
-         const passphrase = await Modal.getPassphrase(
-            'GitHub Sync',
-            'Enter your encryption passphrase'
-         );
+         try {
+            const passphrase = await Modal.getPassphrase(
+               'GitHub Sync',
+               'Enter your encryption passphrase'
+            );
 
-         if (!passphrase) {
-            console.warn('No passphrase provided for GitHub sync');
-            return;
+            if (!passphrase) {
+               console.warn('No passphrase provided for GitHub sync');
+               throw new Error('Passphrase required for GitHub sync');
+            }
+
+            store.store.userSettings.encryptionPassphrase = passphrase;
+         } catch (passphraseError) {
+            console.error('Error getting passphrase:', passphraseError);
+            throw passphraseError;
          }
-
-         store.store.userSettings.encryptionPassphrase = passphrase;
       }
 
       // Hash passphrase to get filename (SHA-256)
@@ -89,7 +101,7 @@ async function saveToGitHub(dataToSave) {
       const exists = await checkGitHubFileExists(fileName);
       if (exists && !store.store.userSettings.githubDataHash) {
          console.error('GitHub file collision detected');
-         return;
+         throw new Error('File collision detected on GitHub - hash mismatch');
       }
 
       // Encrypt data
@@ -99,35 +111,46 @@ async function saveToGitHub(dataToSave) {
       // Get current file SHA for update
       const fileSha = await getGitHubFileSha(fileName);
 
-      // Upload to GitHub
-      const response = await fetch(
-         `https://api.github.com/repos/${GITHUB_REPO}/contents/${fileName}`,
-         {
-            method: 'PUT',
-            headers: {
-               'Authorization': `token ${store.store.userSettings.githubToken}`,
-               'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-               message: `Auto-save bottle cap gallery data`,
-               content: utf8ToBase64(encryptedJson),
-               branch: GITHUB_BRANCH,
-               ...(fileSha && { sha: fileSha }),
-            }),
+      // Upload to GitHub with timeout protection
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+      try {
+         const response = await fetch(
+            `https://api.github.com/repos/${GITHUB_REPO}/contents/${fileName}`,
+            {
+               method: 'PUT',
+               headers: {
+                  'Authorization': `token ${store.store.userSettings.githubToken}`,
+                  'Content-Type': 'application/json',
+               },
+               body: JSON.stringify({
+                  message: `Backup bottle cap gallery data`,
+                  content: utf8ToBase64(encryptedJson),
+                  branch: GITHUB_BRANCH,
+                  ...(fileSha && { sha: fileSha }),
+               }),
+               signal: controller.signal,
+            }
+         );
+
+         clearTimeout(timeoutId);
+
+         if (!response.ok) {
+            throw new Error(`GitHub API error: ${response.status} - ${response.statusText}`);
          }
-      );
 
-      if (!response.ok) {
-         throw new Error(`GitHub API error: ${response.status}`);
+         if (!store.store.userSettings.githubDataHash) {
+            store.store.userSettings.githubDataHash = dataHash;
+         }
+         store.store.userSettings.lastGitHubSync = new Date().toISOString();
+      } catch (fetchError) {
+         clearTimeout(timeoutId);
+         throw fetchError;
       }
-
-      if (!store.store.userSettings.githubDataHash) {
-         store.store.userSettings.githubDataHash = dataHash;
-      }
-      store.store.userSettings.lastGitHubSync = new Date().toISOString();
-      //await saveAppData();
    } catch (error) {
       console.error('Error saving to GitHub:', error);
+      throw error;
    }
 }
 
@@ -178,42 +201,61 @@ async function getGitHubFileSha(fileName) {
  * Setup encryption for first time
  */
 export async function setupEncryption() {
-   const passphrase = await Modal.getPassphrase(
-      'Secure Your Data',
-      'Create an encryption passphrase'
-   );
+   try {
+      const passphrase = await Modal.getPassphrase(
+         'Secure Your Data',
+         'Create an encryption passphrase'
+      );
 
-   if (!passphrase) return false;
+      if (!passphrase) return false;
 
-   // Store passphrase in userSettings
-   store.store.userSettings.encryptionPassphrase = passphrase;
+      // Store passphrase in userSettings
+      store.store.userSettings.encryptionPassphrase = passphrase;
 
-   // Store only the hashed passphrase for verification
-   const hashedPassphrase = await crypto.hashPassphrase(passphrase);
-   store.store.userSettings.hashedPassphrase = hashedPassphrase;
-
-   // Get GitHub token if needed
-   const useGitHub = await Modal.confirm({
-      question: 'Enable GitHub cloud sync? (requires personal access token)',
-      yesLabel: 'Yes, set up GitHub',
-      noLabel: 'Local only',
-   });
-
-   if (useGitHub) {
-      const token = await Modal.getPassphrase('GitHub Setup', 'GitHub personal access token');
-      if (token) {
-         store.store.userSettings.githubToken = token;
-         store.store.userSettings.autoSave = false;
+      try {
+         // Store only the hashed passphrase for verification
+         const hashedPassphrase = await crypto.hashPassphrase(passphrase);
+         store.store.userSettings.hashedPassphrase = hashedPassphrase;
+      } catch (error) {
+         console.error('Error hashing passphrase:', error);
+         store.store.userSettings.encryptionPassphrase = null;
+         throw error;
       }
+
+      // Get GitHub token if needed
+      const useGitHub = await Modal.confirm({
+         question: 'Enable GitHub cloud sync? (requires personal access token)',
+         yesLabel: 'Yes, set up GitHub',
+         noLabel: 'Local only',
+      });
+
+      if (useGitHub) {
+         const token = await Modal.getPassphrase('GitHub Setup', 'GitHub personal access token');
+         if (token) {
+            store.store.userSettings.githubToken = token;
+            store.store.userSettings.autoSave = false;
+         }
+      }
+
+      // Save to IndexDB with error handling
+      try {
+         await indexdb.saveToIndexDB('appData', {
+            caps: store.store.caps,
+            categories: store.store.categories,
+            userSettings: store.store.userSettings,
+            timestamp: new Date().toISOString(),
+         });
+      } catch (error) {
+         console.error('Error saving encryption setup to IndexDB:', error);
+         throw error;
+      }
+
+      return true;
+   } catch (error) {
+      console.error('Error during encryption setup:', error);
+      // Reset settings on failure
+      store.store.userSettings.encryptionPassphrase = null;
+      store.store.userSettings.hashedPassphrase = null;
+      throw error;
    }
-
-   // Save to IndexDB
-   await indexdb.saveToIndexDB('appData', {
-      caps: store.store.caps,
-      categories: store.store.categories,
-      userSettings: store.store.userSettings,
-      timestamp: new Date().toISOString(),
-   });
-
-   return true;
 }
