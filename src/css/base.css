@@ -1575,8 +1575,11 @@ main {
    transition: all var(--dur) var(--ease);
 }
 
-.sheet-close:hover {
+.sheet-close:hover,
+.sheet-close:focus,
+.sheet-close:active {
    background: var(--clr-border);
+   color: antiquewhite;
    transform: scale(1.05);
 }
 

@@ -18,7 +18,7 @@ async function initApp() {
       const hasData = await loadAppData();
 
       // Initialize UI
-      initUI();
+      await initUI();
       initGallerySearch();
 
       // If no data, create default state

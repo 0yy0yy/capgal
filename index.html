@@ -206,20 +206,6 @@
                <details>
                   <summary>Data settings</summary>
                   <div class="setting-row">
-                     <span class="setting-label">GitHub fine-grained personal access token</span>
-                     <input type="password" id="githubTokenInput" class="meta-val" placeholder="github_pat_..." />
-                     <small style="display: block; margin-top: 4px; color: var(--clr-muted);">For cloud sync and
-                        backup</small>
-                  </div>
-                  <div class="setting-row inline-row">
-                     <span class="setting-label">Automatic saving to GitHub</span>
-                     <label class="toggle-switch">
-                        <input type="checkbox" id="toggleAutoSave" />
-                        <span class="toggle-slider"></span>
-                     </label>
-                  </div>
-                  <hr>
-                  <div class="setting-row">
                      <span class="setting-label">Import data</span>
                      <div class="settings-buttons">
                         <button type="button" class="theme-btn" id="importFromDeviceBtn">From Device</button>
@@ -232,6 +218,24 @@
                         <button type="button" class="theme-btn" id="exportPlainBtn">Plain JSON</button>
                         <button type="button" class="theme-btn" id="exportEncryptedBtn">Encrypted</button>
                      </div>
+                  </div>
+               </details>
+               <hr>
+               <details>
+                  <summary>Synchronisation settings</summary>
+                  <div class="setting-row">
+                     <span class="setting-label">GitHub fine-grained personal access token</span>
+                     <input type="password" id="githubTokenInput" class="meta-val" placeholder="github_pat_..." />
+                     <small style="display: block; margin-top: 4px; color: var(--clr-muted);">For cloud sync and
+                        backup</small>
+                  </div>
+                  <div class="setting-row">
+                     <span class="setting-label">Backup to GitHub</span>
+                     <div class="settings-buttons">
+                        <button class="theme-btn" type="button" id="manualBackupBtn">Backup now</button>
+                     </div>
+                     <small id="lastBackupTime" style="display: block; margin-top: 4px; color: var(--clr-muted);">Last
+                        backup: Never</small>
                   </div>
                </details>
             </div>

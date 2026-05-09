@@ -22,23 +22,42 @@ export async function saveAppData() {
       };
 
       await indexdb.saveToIndexDB('appData', dataToSave);
-
-      // Try to save to GitHub if configured
-      if (store.store.userSettings.autoSave && store.store.userSettings.githubToken) {
-         // Create a copy without encryptionPassphrase for GitHub
-         const dataForGitHub = {
-            caps: store.store.caps,
-            categories: store.store.categories,
-            userSettings: {
-               ...store.store.userSettings,
-               encryptionPassphrase: null, // Don't save passphrase to GitHub
-            },
-            timestamp: new Date().toISOString(),
-         };
-         await saveToGitHub(dataForGitHub);
-      }
    } catch (error) {
       console.error('Error saving app data:', error);
+   }
+}
+
+/**
+ * Manually backup data to GitHub
+ */
+export async function backupToGitHub() {
+   if (!store.store.userSettings.githubToken) {
+      console.error('No GitHub token configured');
+      return false;
+   }
+
+   try {
+      const dataForGitHub = {
+         caps: store.store.caps,
+         categories: store.store.categories,
+         userSettings: {
+            ...store.store.userSettings,
+            encryptionPassphrase: null, // Don't save passphrase to GitHub
+         },
+         timestamp: new Date().toISOString(),
+      };
+      await saveToGitHub(dataForGitHub);
+      // Save updated lastGitHubSync to IndexDB
+      await indexdb.saveToIndexDB('appData', {
+         caps: store.store.caps,
+         categories: store.store.categories,
+         userSettings: store.store.userSettings,
+         timestamp: new Date().toISOString(),
+      });
+      return true;
+   } catch (error) {
+      console.error('Error backing up to GitHub:', error);
+      return false;
    }
 }
 
@@ -184,7 +203,7 @@ export async function setupEncryption() {
       const token = await Modal.getPassphrase('GitHub Setup', 'GitHub personal access token');
       if (token) {
          store.store.userSettings.githubToken = token;
-         store.store.userSettings.autoSave = true;
+         store.store.userSettings.autoSave = false;
       }
    }
 

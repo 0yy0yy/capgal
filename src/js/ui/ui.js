@@ -4,7 +4,7 @@ import { popTab } from './navigation.js';
 import { openGallery, addLastCategoryToFilters, refreshGallery } from '../data/gallery.js';
 import { handleAddCategoryClick, initCategoryButtons, initCategoryDeleteHandlers, initCategoryUI } from './categories.js';
 import { addCapsInBatch } from '../data/caps.js';
-import { saveAppData } from '../data/saving.js';
+import { saveAppData, backupToGitHub } from '../data/saving.js';
 import { importFromDevice, importFromGitHub, exportToDevice } from '../data/loading.js';
 import { hideLoadingScreen, showLoadingScreen } from '../helpers/helper.js';
 
@@ -60,13 +60,59 @@ export async function initSettingsHandlers() {
       await saveAppData();
    });
 
-   initToggleSwitch('toggleAutoSave', store.store.userSettings.autoSave, async (value) => {
-      store.store.userSettings.autoSave = value;
-      await saveAppData();
-   });
+   // Helper function to update last backup display
+   function updateLastBackupDisplay(lastBackupTimeEl) {
+      if (lastBackupTimeEl) {
+         if (store.store.userSettings.lastGitHubSync) {
+            const backupDate = new Date(store.store.userSettings.lastGitHubSync);
+            const formattedDate = backupDate.toLocaleString('sl-SI', {
+               dateStyle: "medium",
+               timeStyle: "short",
+            });
+            lastBackupTimeEl.textContent = `Last backup: ${formattedDate}`;
+         } else {
+            lastBackupTimeEl.textContent = 'Last backup: Never';
+         }
+      }
+   }
+
+   // Manual GitHub backup button
+   const manualBackupBtn = document.getElementById('manualBackupBtn');
+   const lastBackupTime = document.getElementById('lastBackupTime');
+
+   if (manualBackupBtn) {
+      manualBackupBtn.addEventListener('click', async () => {
+         manualBackupBtn.disabled = true;
+         manualBackupBtn.textContent = 'Backing up...';
+         try {
+            const success = await backupToGitHub();
+            if (success) {
+               updateLastBackupDisplay(lastBackupTime);
+               manualBackupBtn.textContent = 'Backup successful!';
+               setTimeout(() => {
+                  manualBackupBtn.textContent = 'Backup now';
+               }, 2000);
+            } else {
+               manualBackupBtn.textContent = 'Backup failed';
+               setTimeout(() => {
+                  manualBackupBtn.textContent = 'Backup now';
+               }, 2000);
+            }
+         } catch (error) {
+            console.error('Backup error:', error);
+            manualBackupBtn.textContent = 'Backup error';
+            setTimeout(() => {
+               manualBackupBtn.textContent = 'Backup now';
+            }, 2000);
+         } finally {
+            manualBackupBtn.disabled = false;
+         }
+      });
+
+      updateLastBackupDisplay(lastBackupTime);
+   }
 
    // GitHub token with masking
-   const autoSaveInput = document.getElementById('toggleAutoSave');
    const githubTokenInput = document.getElementById('githubTokenInput');
    if (githubTokenInput) {
       const token = store.store.userSettings.githubToken || '';
@@ -93,30 +139,26 @@ export async function initSettingsHandlers() {
       githubTokenInput.addEventListener('blur', async () => {
          githubTokenInput.dataset.fullToken = githubTokenInput.value;
          store.store.userSettings.githubToken = githubTokenInput.value;
-         await saveAppData();
-         // Show auto-save toggle if token is now set
-         const autoSaveContainer = autoSaveInput?.closest('.setting-row');
-         if (autoSaveContainer) {
-            autoSaveContainer.style.display = githubTokenInput.value ? 'flex' : 'none';
+
+         const backupButtonContainer = manualBackupBtn?.closest('.setting-row');
+         if (backupButtonContainer) {
+            backupButtonContainer.style.display = githubTokenInput.value ? 'flex' : 'none';
             if (!store.store.userSettings.githubToken) {
-               autoSaveInput.checked = false;
                await store.updateUserSettings({ autoSave: false });
             }
          }
+
+         await saveAppData();
          updateTokenDisplay();
       });
 
       updateTokenDisplay();
    }
 
-   // Show auto-save toggle only if GitHub token is set
-   const autoSaveContainer = autoSaveInput?.closest('.setting-row');
-   if (autoSaveContainer) {
-      autoSaveContainer.style.display = store.store.userSettings.githubToken ? 'flex' : 'none';
-      if (!store.store.userSettings.githubToken) {
-         autoSaveInput.checked = false;
-         await store.updateUserSettings({ autoSave: false });
-      }
+   // Show backup button only if GitHub token is set
+   const backupButtonContainer = manualBackupBtn?.closest('.setting-row');
+   if (backupButtonContainer) {
+      backupButtonContainer.style.display = store.store.userSettings.githubToken ? 'flex' : 'none';
    }
 
    // Open gallery by default toggle
@@ -192,7 +234,7 @@ function initToggleSwitch(elementId, initialState, onChange) {
 }
 
 // ── Theme switcher ──────────────────────────────────────────────────────────
-export function initThemeSwitcher() {
+function initThemeSwitcher() {
    document.querySelectorAll('.theme-btn[data-theme-pref]').forEach(btn => {
       btn.addEventListener('click', async () => {
          document.querySelectorAll('.theme-btn[data-theme-pref]').forEach(b => b.classList.remove('selected'));
@@ -209,15 +251,10 @@ export function initThemeSwitcher() {
          await saveAppData();
       });
    });
-
-   const selectedStyle = document.documentElement.getAttribute('data-theme').split('-')[0];
-   if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      document.documentElement.setAttribute('data-theme', `${selectedStyle}-dark`);
-   }
 }
 
 // ── Theme styles switcher ──────────────────────────────────────────────────────────
-export function initThemeStyleSwitcher() {
+function initThemeStyleSwitcher() {
    document.querySelectorAll('.theme-btn[data-theme-val]').forEach(btn => {
       btn.addEventListener('click', async () => {
          document.querySelectorAll('.theme-btn[data-theme-val]').forEach(b => b.classList.remove('selected'));
@@ -234,8 +271,30 @@ export function initThemeStyleSwitcher() {
    });
 }
 
+// ── Set up theme and appearance from store/indexdb ────────────────────────────────────────────────────────── 
+function setUpThemeFromStore() {
+   const selectedStyle = store.store.userSettings.appearance;
+   if ((store.store.userSettings.theme === 'dark') || (
+      store.store.userSettings.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches
+   )) {
+      document.documentElement.setAttribute('data-theme', `${selectedStyle}-dark`);
+   } else {
+      document.documentElement.setAttribute('data-theme', selectedStyle);
+   }
+
+   document.querySelectorAll('.theme-btn[data-theme-pref]').forEach(b => b.classList.remove('selected'));
+   const selectedTheme = store.store.userSettings.theme;
+   const selectedButtonTheme = document.querySelector(`.theme-btn[data-theme-pref=${selectedTheme}]`);
+   selectedButtonTheme.classList.add('selected');
+
+   document.querySelectorAll('.theme-btn[data-theme-val]').forEach(b => b.classList.remove('selected'));
+   const selectedAppearance = store.store.userSettings.appearance;
+   const selectedButtonAppearance = document.querySelector(`.theme-btn[data-theme-val=${selectedAppearance}]`);
+   selectedButtonAppearance.classList.add('selected');
+}
+
 // ── Filter chips ────────────────────────────────────────────────────────────
-export function initFilterChips() {
+function initFilterChips() {
    document.querySelectorAll('.filter-chip').forEach(chip => {
       chip.addEventListener('click', () => {
          const active = [...chip.classList].includes('active');
@@ -246,13 +305,13 @@ export function initFilterChips() {
 }
 
 // ── Back buttons ────────────────────────────────────────────────────────────
-export function initBackButtons() {
+function initBackButtons() {
    document.getElementById('galleryBack')?.addEventListener('click', popTab);
    document.getElementById('detailsBack')?.addEventListener('click', popTab);
 }
 
 // ── Search button (FAB) ──────────────────────────────────────────────────────
-export function initSearchButton() {
+function initSearchButton() {
    searchButton.addEventListener('click', () => {
       // Select "all" category first
       document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
@@ -269,7 +328,7 @@ export function initSearchButton() {
 }
 
 // ── Add category button (FAB) ───────────────────────────────────────────────
-export function initAddCategoryButton() {
+function initAddCategoryButton() {
    document.getElementById('addCategoryButton').addEventListener('click', async () => {
       await handleAddCategoryClick();
 
@@ -280,28 +339,29 @@ export function initAddCategoryButton() {
 }
 
 // ── Add cap button (FAB) ────────────────────────────────────────────────────
-export function initAddCapButton() {
+async function initAddCapButton() {
    document.getElementById('addCapButton').addEventListener('click', async () => {
-      await addCapsInBatch();
+      await addCapsInBatch(); // !!! TODO: remove save from the addc caps in batch functionaliry and do a single save at the end
+      await saveAppData();
    });
 }
 
 // ── Sidebar/Menu toggle ─────────────────────────────────────────────────────
-export function openSidebar() {
+function openSidebar() {
    fabsEl.classList.add('open');
    fabsBackdrop.classList.add('visible');
    menuToggle.classList.add('open');
    menuToggle.setAttribute('aria-label', 'Close menu');
 }
 
-export function closeSidebar() {
+function closeSidebar() {
    fabsEl.classList.remove('open');
    fabsBackdrop.classList.remove('visible');
    menuToggle.classList.remove('open');
    menuToggle.setAttribute('aria-label', 'Open menu');
 }
 
-export function initSidebarHandlers() {
+function initSidebarHandlers() {
    menuToggle.addEventListener('click', () => {
       fabsEl.classList.contains('open') ? closeSidebar() : openSidebar();
    });
@@ -317,7 +377,7 @@ export function initSidebarHandlers() {
 }
 
 // ── Initialize all UI handlers ──────────────────────────────────────────────
-export function init() {
+export async function init() {
    initSettingsHandlers();
    initThemeSwitcher();
    initThemeStyleSwitcher();
@@ -325,9 +385,10 @@ export function init() {
    initBackButtons();
    initSearchButton();
    initAddCategoryButton();
-   initAddCapButton();
+   await initAddCapButton();
    initSidebarHandlers();
    initCategoryUI();  // Populate categories from store
    initCategoryButtons();
    initCategoryDeleteHandlers();
+   setUpThemeFromStore();
 }
