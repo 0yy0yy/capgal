@@ -38,7 +38,7 @@ const Modal = (() => {
       const style = document.createElement('style');
       style.id = STYLE_ID;
       style.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Syne:wght@400;600;700;800&display=swap');
+      /* @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Syne:wght@400;600;700;800&display=swap'); */
 
       /* ── Overlay ── */
       .mdl-overlay {
