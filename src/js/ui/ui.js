@@ -16,6 +16,8 @@ const menuToggle = document.getElementById('menuToggle');
 const searchInput = document.getElementById('searchInput');
 const searchButton = document.getElementById('searchButton');
 
+const fineGrainedTokenRegex = new RegExp("^github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59}$");
+
 // ── Settings ───────────────────────────────────────────────────────────────
 export function openSettings() {
    settingsPanel.classList.add('open');
@@ -119,40 +121,90 @@ export async function initSettingsHandlers() {
       githubTokenInput.value = token;
       githubTokenInput.dataset.fullToken = token; // Store actual value
 
+      const fitGithubToken = (input, fullToken) => {
+         const style = getComputedStyle(input);
+
+         const canvas = document.createElement('canvas');
+         const ctx = canvas.getContext('2d');
+
+         ctx.font = `${style.fontSize} ${style.fontFamily}`;
+
+         const lastDetailsInSettings = settings.querySelector('details:last-of-type');
+         const maxWidth =
+            (
+               !lastDetailsInSettings.open
+                  ? measureHiddenElement(input, lastDetailsInSettings).width
+                  : input.getBoundingClientRect().width
+            )
+            - parseFloat(style.paddingLeft)
+            - parseFloat(style.paddingRight);
+
+         const start = fullToken.slice(0, 13);
+         const end = fullToken.slice(-4);
+
+         let dots = '•'.repeat(fullToken.length - 17);
+
+         let value = start + dots + end;
+
+         while (
+            ctx.measureText(value).width > maxWidth &&
+            dots.length > 0
+         ) {
+            dots = dots.slice(0, -1);
+            value = start + dots + end;
+         }
+
+         input.value = value;
+      }
+
       // Show/hide toggle and masking logic
       const updateTokenDisplay = () => {
          if (document.activeElement === githubTokenInput) {
             // Show full token when focused
-            githubTokenInput.type = 'text';
             githubTokenInput.value = githubTokenInput.dataset.fullToken;
          } else {
             // Mask token when not focused
             const fullToken = githubTokenInput.dataset.fullToken;
-            if (fullToken && fullToken.length > 4) {
-               githubTokenInput.type = 'password';
-               githubTokenInput.value = fullToken.substring(0, 4) + '•'.repeat(Math.max(0, fullToken.length - 8)) + fullToken.substring(fullToken.length - 4);
+            if (fullToken && fullToken.length > 13) { // change number to fit -- todo
+               fitGithubToken(githubTokenInput, githubTokenInput.dataset.fullToken);
             }
          }
       };
 
+      const measureHiddenElement = (textInput, settings) => {
+         const githubSyncDetails = settings; //settings.querySelector('details:last-of-type');
+         githubSyncDetails.open = true;
+
+         const width = textInput.getBoundingClientRect().width;
+         const scrollWidth = textInput.scrollWidth;
+
+         githubSyncDetails.open = false;
+
+         return {
+            width,
+            scrollWidth,
+         };
+      }
+
       githubTokenInput.addEventListener('focus', updateTokenDisplay);
       githubTokenInput.addEventListener('blur', async () => {
-         githubTokenInput.dataset.fullToken = githubTokenInput.value;
-         store.store.userSettings.githubToken = githubTokenInput.value;
+         if (fineGrainedTokenRegex.test(githubTokenInput.value)) {
+            githubTokenInput.dataset.fullToken = githubTokenInput.value;
+            store.store.userSettings.githubToken = githubTokenInput.value;
 
-         const backupButtonContainer = manualBackupBtn?.closest('.setting-row');
-         if (backupButtonContainer) {
-            backupButtonContainer.style.display = githubTokenInput.value ? 'flex' : 'none';
-            if (!store.store.userSettings.githubToken) {
-               await store.updateUserSettings({ autoSave: false });
+            const backupButtonContainer = manualBackupBtn?.closest('.setting-row');
+            if (backupButtonContainer) {
+               backupButtonContainer.style.display = githubTokenInput.value ? 'flex' : 'none';
             }
-         }
 
-         await saveAppData();
-         updateTokenDisplay();
+            await saveAppData();
+            updateTokenDisplay();
+         }
       });
 
-      updateTokenDisplay();
+      if (githubTokenInput.dataset.fullToken.length > 13) { // change --- todo
+         fitGithubToken(githubTokenInput, githubTokenInput.dataset.fullToken);
+      }
    }
 
    // Show backup button only if GitHub token is set

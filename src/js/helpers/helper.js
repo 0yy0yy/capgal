@@ -1,7 +1,8 @@
 import { convertHeicToJpgIfNeeded } from '../data/image-processor.js'
-import { currentCategory } from '../data/store.js';
+import { currentCategory } from '../data/store.js'; // and others for setupEncryption...
+import Modal from '../ui/modal.js';
 
-const COLOR_WHEEL_24 = [
+/* const COLOR_WHEEL_24 = [
    "#FF0000", // 0°   red
    "#FF4000", // 15°
    "#FF8000", // 30°  orange
@@ -28,6 +29,54 @@ const COLOR_WHEEL_24 = [
    "#FF0040", // 345°
 ];
 
+function hslToHex(h, s, l) {
+   s /= 100; l /= 100;
+   const C = (1 - Math.abs(2 * l - 1)) * s;
+   const X = C * (1 - Math.abs((h / 60) % 2 - 1));
+   const m = l - C / 2;
+   let r, g, b;
+   if (h < 60) { [r, g, b] = [C, X, 0]; }
+   else if (h < 120) { [r, g, b] = [X, C, 0]; }
+   else if (h < 180) { [r, g, b] = [0, C, X]; }
+   else if (h < 240) { [r, g, b] = [0, X, C]; }
+   else if (h < 300) { [r, g, b] = [X, 0, C]; }
+   else { [r, g, b] = [C, 0, X]; }
+   const toHex = v => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+// Regenerate at any saturation/lightness:
+const COLOR_WHEEL_24 = Array.from({ length: 24 }, (_, i) =>
+   hslToHex(i * 15, 70, 60)
+); */
+
+const COLOR_WHEEL_24 = [
+   "#E05252",
+   "#E07552",
+   "#E09952",
+   "#E0BD52",
+   "#E0E052",
+   "#BDE052",
+   "#99E052",
+   "#75E052",
+   "#52E052",
+   "#52E075",
+   "#52E099",
+   "#52E0BD",
+   "#52E0E0",
+   "#52BDE0",
+   "#5299E0",
+   "#5275E0",
+   "#5252E0",
+   "#7552E0",
+   "#9952E0",
+   "#BD52E0",
+   "#E052E0",
+   "#E052BD",
+   "#E05299",
+   "#E05275",
+];
+
 /* const GRAYSCALE_8 = [
    "#000000", // black
    "#2B2B2B",
@@ -49,6 +98,32 @@ const GRAYSCALE_UI = [
    "#D9D9D9",
    "#F5F5F5"
 ];
+
+export function checkBFVisibility(hexColor) {
+   const badVidiblityRatioColors = [
+      "#E05252",
+      "#E07552",
+      "#E09952",
+      "#52BDE0",
+      "#5299E0",
+      "#5275E0",
+      "#5252E0",
+      "#7552E0",
+      "#9952E0",
+      "#BD52E0",
+      "#E052E0",
+      "#E052BD",
+      "#E05299",
+      "#E05275",
+      "#8F8F8F",
+      "#6B6B6B"
+   ];
+   return !badVidiblityRatioColors.includes(hexColor);
+   /* const value = parseInt(hexColor.replace('#', ''), 16);
+   return !(
+      value >= parseInt('6B6B6B', 16) && value <= parseInt('8F8F8F', 16)
+   ); */
+}
 
 const hexToRgb = (hex) => {
    const v = hex.replace('#', '');
@@ -243,4 +318,41 @@ export function base64ToUtf8(base64) {
    }
 
    return new TextDecoder().decode(bytes);
+}
+
+/**
+ * Setup encryption for first time
+ */
+export async function setupEncryption() {
+   try {
+      const passphrase = await Modal.getPassphrase(
+         'Secure Your Data',
+         'Create an encryption passphrase'
+      );
+
+      if (!passphrase) return false;
+
+      // Store passphrase in userSettings
+      store.store.userSettings.encryptionPassphrase = passphrase;
+
+      try {
+         // Store only the hashed passphrase for verification
+         const hashedPassphrase = await crypto.hashPassphrase(passphrase);
+         store.store.userSettings.hashedPassphrase = hashedPassphrase;
+      } catch (error) {
+         console.error('Error hashing passphrase:', error);
+         store.store.userSettings.encryptionPassphrase = null;
+         throw error;
+      }
+
+      await saveAppData();
+
+      return true;
+   } catch (error) {
+      console.error('Error during encryption setup:', error);
+      // Reset settings on failure
+      store.store.userSettings.encryptionPassphrase = null;
+      store.store.userSettings.hashedPassphrase = null;
+      throw error;
+   }
 }

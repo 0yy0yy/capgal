@@ -6,7 +6,7 @@ import { replaceCapImage, exportCapImage, deleteCapImage, deleteSelectedCaps } f
 import { handleAddCategoryClick, deleteCategory, updateCategoryTitles } from '../ui/categories.js';
 import { saveAppData } from './saving.js';
 import Modal from '../ui/modal.js';
-import { getWordForCount, setMarqueeScroll, isAllCategorySelected } from '../helpers/helper.js';
+import { getWordForCount, setMarqueeScroll, isAllCategorySelected, checkBFVisibility } from '../helpers/helper.js';
 
 const galleryList = document.getElementById('galleryList');
 const galleryTitle = document.getElementById('galleryTitle');
@@ -69,16 +69,24 @@ export function openGallery(category, focusSearch = false) {
    }
 
    // Render items
-   galleryList.innerHTML = store.store.caps.map(cap => `
-      <li data-category="${cap.category}" data-id="${cap.id}" style="background:${cap.color}; color:${cap.color}" title="${cap.title}">
+   galleryList.innerHTML = store.store.caps.map(cap => {
+      let color;
+      let colorFilter = "";
+      if (checkBFVisibility(cap.color)) {
+         color = cap.color;
+      } else {
+         color = 'var(--clr-on-surface)';
+         colorFilter = ' style="filter: none"';
+      }
+      return `<li data-category="${cap.category}" data-id="${cap.id}" style="background:${cap.color}; color:${color}" title="${cap.title}">
         <div class="cap-image-container">
           ${cap.imageBase64 ? `<img src="data:image/jpeg;base64,${cap.imageBase64}" alt="${cap.title}" />` : '<div class="no-image">📷</div>'}
         </div>
-        <div class="cap-title ${store.store.userSettings.showCapNames ? 'visible' : 'hidden'}">
+        <div class="cap-title ${store.store.userSettings.showCapNames ? 'visible' : 'hidden'}"${colorFilter}>
           <div class="marquee-content" data-text="${cap.title}"></div>
         </div>
       </li>
-    `).join('');
+    `}).join('');
 
    // Show/hide filter row - only in ALL CAPS gallery
    if (filterRow) {

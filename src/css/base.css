@@ -45,11 +45,11 @@
    --radius-pill: 999px;
    --radius-sheet: 28px 28px 0 0;
 
-   /* Typography */
+   /* Typography (with fluid/responsive sizing) */
    --font: 'Google Sans', 'Roboto', system-ui, -apple-system, sans-serif;
-   --font-size: 14px;
-   --font-size-lg: 20px;
-   --font-size-title: 22px;
+   --font-size: clamp(13px, 2vw, 15px);
+   --font-size-lg: clamp(18px, 3vw, 21px);
+   --font-size-title: clamp(20px, 4vw, 27px);
    /* Large titles */
    --font-weight-med: 500;
    --line-height-tight: 1.2;
@@ -129,11 +129,11 @@
    --radius-pill: 999px;
    --radius-sheet: 16px 16px 0 0;
 
-   /* Typography (SF Pro + Dynamic Type) */
+   /* Typography (SF Pro + Dynamic Type with fluid sizing) */
    --font: -apple-system, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', sans-serif;
-   --font-size: 15px;
-   --font-size-lg: 17px;
-   --font-size-title: 28px;
+   --font-size: clamp(13px, 2vw, 15px);
+   --font-size-lg: clamp(15px, 3vw, 19px);
+   --font-size-title: clamp(24px, 6vw, 30px);
    /* Large titles (bold) */
    --font-weight-med: 500;
    --font-weight-semibold: 600;
@@ -272,11 +272,11 @@
    --radius-pill: 999px;
    --radius-sheet: 28px 28px 0 0;
 
-   /* Typography */
+   /* Typography (with fluid/responsive sizing) */
    --font: 'Google Sans', 'Roboto', system-ui, -apple-system, sans-serif;
-   --font-size: 14px;
-   --font-size-lg: 20px;
-   --font-size-title: 22px;
+   --font-size: clamp(13px, 2vw, 16px);
+   --font-size-lg: clamp(18px, 3vw, 22px);
+   --font-size-title: clamp(20px, 4vw, 28px);
    --font-weight-med: 500;
    --line-height-tight: 1.2;
    --line-height-normal: 1.5;
@@ -344,11 +344,11 @@
    --radius-pill: 999px;
    --radius-sheet: 16px 16px 0 0;
 
-   /* Typography (SF Pro + Dynamic Type) */
+   /* Typography (SF Pro + Dynamic Type with fluid sizing) */
    --font: -apple-system, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', sans-serif;
-   --font-size: 15px;
-   --font-size-lg: 17px;
-   --font-size-title: 28px;
+   --font-size: clamp(14px, 2.2vw, 17px);
+   --font-size-lg: clamp(15px, 3vw, 19px);
+   --font-size-title: clamp(24px, 6vw, 32px);
    --font-weight-med: 500;
    --font-weight-semibold: 600;
    --line-height-tight: 1.1;
@@ -629,7 +629,7 @@ main {
    display: flex;
    flex-direction: column;
    gap: 4px;
-   padding: var(--sp) 8px;
+   padding: var(--sp) 4px;
    width: var(--sidebar-w);
    background: var(--clr-surface);
    border-right: 1px solid var(--clr-border);
@@ -653,7 +653,7 @@ main {
    align-items: center;
    gap: 12px;
    height: var(--btn-h);
-   padding: 0 16px;
+   padding: 0 0 0 14px;
    border: none;
    background: transparent;
    color: var(--clr-on-surface);
@@ -913,7 +913,7 @@ main {
 
 /* iOS large title style */
 [data-theme="ios"] .tab-header h1 {
-   font-size: 28px;
+   font-size: clamp(24px, 6vw, 32px);
    font-weight: 700;
    letter-spacing: -0.5px;
 }
@@ -1041,7 +1041,7 @@ main {
    background: var(--clr-surface);
    color: var(--clr-muted);
    font-family: inherit;
-   font-size: 13px;
+   font-size: clamp(11px, 1.8vw, 14px);
    font-weight: 500;
    cursor: pointer;
    /* transition: all var(--dur) var(--ease); */
@@ -1130,7 +1130,10 @@ main {
    left: 12px;
 }
 
-.stick-down {}
+.stick-down.danger {
+   border-color: var(--clr-destructive);
+   color: var(--clr-destructive)
+}
 
 .mdl-footer hr,
 #showForTheDeleteButton {
@@ -1350,7 +1353,7 @@ main {
    border-color: var(--clr-on-primary);
    border-radius: var(--radius-sm);
    cursor: pointer;
-   font-size: 13px;
+   font-size: clamp(11px, 1.8vw, 14px);
    font-weight: 500;
    transition: background var(--dur) var(--ease);
 }
@@ -1377,7 +1380,7 @@ main {
 }
 
 .details-meta .meta-key {
-   font-size: 12px;
+   font-size: clamp(10px, 1.5vw, 13px);
    text-transform: uppercase;
    letter-spacing: .06em;
    color: var(--clr-muted);
@@ -1667,7 +1670,7 @@ main {
 }
 
 .setting-label {
-   font-size: 13px;
+   font-size: clamp(10px, 1.5vw, 13px);
    text-transform: uppercase;
    letter-spacing: .06em;
    color: var(--clr-muted);
@@ -1763,7 +1766,7 @@ main {
    .filter-chip,
    .selecting-chip {
       padding: 8px 12px;
-      font-size: 12px;
+      font-size: clamp(11px, 1.8vw, 13px);
    }
 
    .tab-header {

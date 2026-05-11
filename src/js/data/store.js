@@ -13,7 +13,6 @@ export const store = {
       appearance: 'android',
       showCapNames: true,
       useAutoCapFinder: true,
-      autoSave: false,
       openGalleryByDefault: false,
       galleryBackgroundTexture: 'none',
       githubToken: null,

@@ -42,7 +42,7 @@ export async function deleteSelectedCaps(capIds) {
    if (confirmed) {
       try {
          showLoadingScreen(`Deleting ${numberOfCapsSelected} cap(s)...`);
-         
+
          // Use for...of instead of forEach with async/await
          for (const capId of capIds) {
             try {
@@ -54,7 +54,7 @@ export async function deleteSelectedCaps(capIds) {
                console.error(`Error deleting cap ${capId}:`, error);
             }
          }
-         
+
          hideLoadingScreen();
          return true;
       } catch (error) {
@@ -304,7 +304,7 @@ export async function replaceCapImage(capId) {
 
       const fileName = imageFile.name ? imageFile.name : String(Date.now());
       updateLoadingScreen(`Detecting bottle cap in image '${fileName}'...`);
-      const processed = await processCapImage(convertedJpegImage);
+      const processed = await processCapImage(convertedJpegImage); // add the source to know if it is in bgr... --- todo
 
       updateLoadingScreen('Encoding image...');
       const imageBase64 = await fileToBase64(processed.imageBlob);
