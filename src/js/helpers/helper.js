@@ -99,6 +99,21 @@ const GRAYSCALE_UI = [
    "#F5F5F5"
 ];
 
+const METALIC_COLORS = [
+   "#D3AF37", // Metallic Gold - shiny, reflective gold tone
+   "#FFD700", // Deep Gold - rich, classic gold color
+   "#CD7F32", // Classic Bronze - standard bronze metal shade
+   "#6E4A2D", // Dark Bronze - deeper, muted bronze tone
+   "#E5A01D", // Bronze Gold - warm mix leaning toward gold
+   "#C9AE5D", // Pale Gold Bronze - soft muted gold-bronze blend
+   "#CFA35D", // Gold/Bronze Palette - warm gold-bronze
+   "#A86E3A", // Gold/Bronze Palette - medium bronze brown
+   "#6E4A2D", // Gold/Bronze Palette - dark bronze tone
+   "#D3AF37", // Metallic Blend - gold base
+   "#CE8946", // Metallic Blend - bronze blend tone
+   "#c49c48"  // Bright Gold-Bronze - vibrant mixed metallic tone
+];
+
 export function checkBFVisibility(hexColor) {
    const badVidiblityRatioColors = [
       "#E05252",
@@ -145,10 +160,10 @@ const colorDistance = (a, b) => {
 export function clampToPalette(inputHex) {
    const input = hexToRgb(inputHex);
 
-   let closest = COLOR_WHEEL_24[0];
+   let closest = '#000000';
    let minDist = Infinity;
 
-   for (const hex of [...COLOR_WHEEL_24, ...GRAYSCALE_UI]) {
+   for (const hex of [...COLOR_WHEEL_24, ...GRAYSCALE_UI, ...METALIC_COLORS]) {
       const dist = colorDistance(input, hexToRgb(hex));
       if (dist < minDist) {
          minDist = dist;

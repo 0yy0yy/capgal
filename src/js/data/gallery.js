@@ -413,6 +413,17 @@ export function openDetails(id) {
       }
    };
 
+   const charCount = detailsDesc.nextElementSibling;
+   const countChars = () => {
+      const len = detailsDesc.value.length;
+      charCount.textContent = `${len} / 280`;
+      charCount.className = 'mdl-char-count' + (len > 280 * 0.9 ? (len >= 280 ? ' over' : ' warn') : '');
+   };
+   detailsDesc.oninput = () => {
+      countChars();
+   };
+   countChars(); // to initialise the counter
+
    const detailsImage = document.getElementById('detailsImage');
    detailsImage.style.background = cap.color;
    if (cap.imageBase64) {

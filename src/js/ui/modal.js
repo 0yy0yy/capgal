@@ -206,23 +206,6 @@ const Modal = (() => {
          line-height: 1.5;
       }
 
-      .mdl-char-count {
-         font-family: 'DM Mono', monospace;
-         font-size: 0.6rem;
-         color: #999;
-         text-align: right;
-         margin-top: -0.2rem;
-         transition: color 0.15s;
-      }
-
-      .mdl-char-count.warn {
-         color: #e67e22;
-      }
-
-      .mdl-char-count.over {
-         color: #c0392b;
-      }
-
       /* ── Color row ── */
       .mdl-color-row {
          display: flex;
@@ -558,18 +541,6 @@ const Modal = (() => {
          box-shadow: 3px 3px 0 #a9a9a9;
       }
 
-      [data-theme$="-dark"] .mdl-char-count {
-         color: #777;
-      }
-
-      [data-theme$="-dark"] .mdl-char-count.warn {
-         color: #f39c12;
-      }
-
-      [data-theme$="-dark"] .mdl-char-count.over {
-         color: #ff6b5c;
-      }
-
       [data-theme$="-dark"] .mdl-color-swatch {
          border-color: #555;
       }
@@ -710,8 +681,13 @@ const Modal = (() => {
       _overlay.appendChild(box);
 
       // Click outside → cancel
-      _overlay.addEventListener('click', e => {
+      /* _overlay.addEventListener('click', e => {
          if (e.target === _overlay) _resolve(null);
+      }); */
+      _overlay.addEventListener('mouseup', e => {
+         if (e.target === _overlay && window.getSelection().toString() === '') {
+            _resolve(null);
+         }
       });
       // Esc key → cancel
       const onKey = e => { if (e.key === 'Escape') { _resolve(null); } };
@@ -993,7 +969,6 @@ const Modal = (() => {
 
             updateLoadingScreen('Image ready!');
             errorEl.hide();
-
          } catch (error) {
             updateLoadingScreen('FAILED to process the image, using the original one...');
             console.error('Image processing error:', error);
@@ -1003,6 +978,7 @@ const Modal = (() => {
             showImagePreview(URL.createObjectURL(imageFile));
          } finally {
             isProcessing = false;
+            _pendingImageName = null;
             hideLoadingScreen();
          }
       };
@@ -1196,7 +1172,7 @@ const Modal = (() => {
     * @param {Array<{id, name, color}>} [opts.categories]  required when type='cap'
     * @returns {Promise<CategoryResult|CapResult|null>}
     */
-   const addItem = ({ type, categories = [], headerText = null } = {}) => {
+   const addItem = ({ type, categories = [], headerText = null, hideBatchButton = false } = {}) => {
       if (type !== 'category' && type !== 'cap') {
          return Promise.reject(new Error(`Modal.addItem: type must be 'category' or 'cap', got '${type}'`));
       }
@@ -1251,31 +1227,6 @@ const Modal = (() => {
             cancelBtn.textContent = 'Cancel';
             cancelBtn.addEventListener('click', () => _resolve(null));
 
-            // Add Multiple Caps button
-            const addMultipleBtn = el('button', 'mdl-btn mdl-btn-ghost mdl-btn-important');
-            addMultipleBtn.textContent = 'Batch add';
-            addMultipleBtn.addEventListener('click', () => {
-               // Open file picker for multiple files
-               const multiFileInput = el('input');
-               multiFileInput.type = 'file';
-               multiFileInput.multiple = true;
-               multiFileInput.accept = 'image/*';
-
-               multiFileInput.addEventListener('change', () => {
-                  const files = Array.from(multiFileInput.files);
-                  if (files.length > 0) {
-                     _resolve({
-                        isMultiple: true,
-                        files: files,
-                        image: null,
-                        description: '',
-                     });
-                  }
-               });
-
-               multiFileInput.click();
-            });
-
             const addBtn = el('button', 'mdl-btn mdl-btn-primary mdl-btn-important');
             addBtn.textContent = 'Add Cap';
             addBtn.addEventListener('click', () => {
@@ -1283,8 +1234,35 @@ const Modal = (() => {
                if (data) _resolve(data);
             });
 
-            footer.appendChild(addMultipleBtn);
-            footer.appendChild(el('hr', ''));
+            if (!hideBatchButton) {
+               // Add Multiple Caps button
+               const addMultipleBtn = el('button', 'mdl-btn mdl-btn-ghost mdl-btn-important');
+               addMultipleBtn.textContent = 'Batch add';
+               addMultipleBtn.addEventListener('click', () => {
+                  // Open file picker for multiple files
+                  const multiFileInput = el('input');
+                  multiFileInput.type = 'file';
+                  multiFileInput.multiple = true;
+                  multiFileInput.accept = 'image/*';
+
+                  multiFileInput.addEventListener('change', () => {
+                     const files = Array.from(multiFileInput.files);
+                     if (files.length > 0) {
+                        _resolve({
+                           isMultiple: true,
+                           files: files,
+                           image: null,
+                           description: '',
+                        });
+                     }
+                  });
+
+                  multiFileInput.click();
+               });
+
+               footer.appendChild(addMultipleBtn);
+               footer.appendChild(el('hr', ''));
+            }
             footer.appendChild(cancelBtn);
             footer.appendChild(addBtn);
             frag.appendChild(footer);

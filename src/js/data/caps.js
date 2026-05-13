@@ -199,7 +199,8 @@ export async function addCapsInBatch() {
                const capData = await Modal.addItem({
                   type: 'cap',
                   categories: store.store.categories,
-                  headerText: `Add Cap (${i + 1}/${totalFiles})`
+                  headerText: `Add Cap (${i + 1}/${totalFiles})`,
+                  hideBatchButton: true
                });
 
                if (!capData) {

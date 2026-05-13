@@ -1189,7 +1189,15 @@ main {
 }
 
 #gallery:has(li:first-child > div.cap-title.visible) li {
-   aspect-ratio: 0.8;
+   aspect-ratio: 0.815;
+}
+
+#galleryList.selection-mode li {
+   opacity: 0.5;
+}
+
+#galleryList.selection-mode li.selected {
+   opacity: 1;
 }
 
 #gallery li.selected {
@@ -1212,6 +1220,7 @@ main {
    height: 100%;
    object-fit: contain;
    display: block;
+   /* mix-blend-mode: overlay; */
 }
 
 .cap-title {
@@ -1905,4 +1914,38 @@ details[open] {
 details[open] summary {
    border-bottom: 1px solid #aaaaaa;
    margin-bottom: 0.5em;
+}
+
+
+
+/*
+   Char count for text area
+*/
+[data-theme$="-dark"] .mdl-char-count {
+   color: #777;
+}
+
+[data-theme$="-dark"] .mdl-char-count.warn {
+   color: #f39c12;
+}
+
+[data-theme$="-dark"] .mdl-char-count.over {
+   color: #ff6b5c;
+}
+
+.mdl-char-count {
+   font-family: 'DM Mono', monospace;
+   font-size: 0.6rem;
+   color: #999;
+   text-align: right;
+   margin-top: -0.2rem;
+   transition: color 0.15s;
+}
+
+.mdl-char-count.warn {
+   color: #e67e22;
+}
+
+.mdl-char-count.over {
+   color: #c0392b;
 }
