@@ -338,7 +338,7 @@ export async function exportCapImage(capId) {
    if (!cap || !cap.imageBase64) return false;
 
    try {
-      const blob = new Blob([Uint8Array.from(atob(cap.imageBase64), c => c.charCodeAt(0))], { type: 'image/jpeg' });
+      const blob = new Blob([Uint8Array.from(atob(cap.imageBase64), c => c.charCodeAt(0))], { type: 'image/png' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

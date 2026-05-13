@@ -104,7 +104,7 @@ export async function showCameraModal() {
 
                canvas.toBlob((blob) => {
                   resolve(blob);
-               }, 'image/jpeg', 0.95);
+               }, 'image/webp', 1);
             });
 
             cancelBtn.addEventListener('click', () => {

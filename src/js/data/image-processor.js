@@ -42,7 +42,7 @@ export async function convertHeicToJpgIfNeeded(imageBlob) {
       }
 
       // Convert HEIC to JPEG
-      const jpegBlob = await heic2any({ blob: imageBlob, toType: 'image/jpeg', quality: 1.0 });
+      const jpegBlob = await heic2any({ blob: imageBlob, toType: 'image/webp', quality: 1 });
       return jpegBlob;
    } catch (error) {
       console.error('HEIC conversion failed:', error);
@@ -145,7 +145,6 @@ async function detectAndProcessWithOpenCV(imageBlob) {
             circles.data32F[1],
             circles.data32F[2],
          ];
-
 
          // testing circles lol
          /* const crcdst = cv.Mat.zeros(src.rows, src.cols, cv.CV_8U);
@@ -315,7 +314,7 @@ async function cropToCircle(canvas, circle) {
    );
 
    return new Promise(resolve => {
-      cropCanvas.toBlob(resolve, 'image/jpeg', 1);
+      cropCanvas.toBlob(resolve, 'image/webp', 1);
    });
 }
 
