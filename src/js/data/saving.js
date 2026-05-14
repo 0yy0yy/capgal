@@ -112,8 +112,8 @@ async function saveToGitHub(dataToSave) {
       const fileSha = await getGitHubFileSha(fileName);
 
       // Upload to GitHub with timeout protection
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      //const controller = new AbortController();
+      //const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
       try {
          const response = await fetch(
@@ -129,12 +129,11 @@ async function saveToGitHub(dataToSave) {
                   content: utf8ToBase64(encryptedJson),
                   branch: GITHUB_BRANCH,
                   ...(fileSha && { sha: fileSha }),
-               }),
-               signal: controller.signal,
+               })
             }
          );
 
-         clearTimeout(timeoutId);
+         //clearTimeout(timeoutId);
 
          if (!response.ok) {
             throw new Error(`GitHub API error: ${response.status} - ${response.statusText}`);
@@ -145,7 +144,7 @@ async function saveToGitHub(dataToSave) {
          }
          store.store.userSettings.lastGitHubSync = new Date().toISOString();
       } catch (fetchError) {
-         clearTimeout(timeoutId);
+         //clearTimeout(timeoutId);
          throw fetchError;
       }
    } catch (error) {
@@ -160,7 +159,7 @@ async function saveToGitHub(dataToSave) {
 async function checkGitHubFileExists(fileName) {
    try {
       const response = await fetch(
-         `https://raw.githubusercontent.com/${GITHUB_REPO}/master/${fileName}`,
+         `https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/${fileName}`,
          {
             method: 'HEAD'
          }

@@ -85,7 +85,7 @@ export async function initSettingsHandlers() {
    if (manualBackupBtn) {
       manualBackupBtn.addEventListener('click', async () => {
          manualBackupBtn.disabled = true;
-         manualBackupBtn.textContent = 'Backing up...';
+         manualBackupBtn.textContent = 'Backing up... this may take a while';
          try {
             const success = await backupToGitHub();
             if (success) {
