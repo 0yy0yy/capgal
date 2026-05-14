@@ -21,7 +21,7 @@ function waitForOpenCV(timeout = 30000) {
 }
 
 /**
- * Check if image is HEIC format and convert to JPG if needed
+ * Check if image is HEIC format and convert to WebP if needed
  */
 export async function convertHeicToJpgIfNeeded(imageBlob) {
    // Check if file is HEIC
@@ -41,9 +41,9 @@ export async function convertHeicToJpgIfNeeded(imageBlob) {
          return imageBlob;
       }
 
-      // Convert HEIC to JPEG
-      const jpegBlob = await heic2any({ blob: imageBlob, toType: 'image/webp', quality: 1 });
-      return jpegBlob;
+      // Convert HEIC to WebP
+      const webpBlob = await heic2any({ blob: imageBlob, toType: 'image/webp', quality: 1 });
+      return webpBlob;
    } catch (error) {
       console.error('HEIC conversion failed:', error);
       return imageBlob; // Fall back to original

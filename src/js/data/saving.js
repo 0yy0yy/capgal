@@ -160,12 +160,9 @@ async function saveToGitHub(dataToSave) {
 async function checkGitHubFileExists(fileName) {
    try {
       const response = await fetch(
-         `https://api.github.com/repos/${GITHUB_REPO}/contents/${fileName}`,
+         `https://raw.githubusercontent.com/${GITHUB_REPO}/master/${fileName}`,
          {
-            method: 'HEAD',
-            headers: {
-               'Authorization': `token ${store.store.userSettings.githubToken}`,
-            },
+            method: 'HEAD'
          }
       );
       return response.ok;
