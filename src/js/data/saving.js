@@ -18,6 +18,7 @@ export async function saveAppData() {
          caps: store.store.caps,
          categories: store.store.categories,
          userSettings: store.store.userSettings,
+         userPrefs: store.store.userPrefs,
          timestamp: new Date().toISOString(),
       };
 
@@ -55,6 +56,7 @@ export async function backupToGitHub() {
             caps: store.store.caps,
             categories: store.store.categories,
             userSettings: store.store.userSettings,
+            userPrefs: store.store.userPrefs,
             timestamp: new Date().toISOString(),
          });
       } catch (indexDbError) {

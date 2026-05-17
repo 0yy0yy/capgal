@@ -1,5 +1,4 @@
 // ── Web Crypto utilities for encryption/decryption ──────────────────────────
-import { saveToIndexDB, loadFromIndexDB } from './indexdb.js';
 import { base64ToUint8, uint8ToBase64 } from '../helpers/helper.js';
 
 const ENCRYPTION_ALGORITHM = 'AES-GCM';

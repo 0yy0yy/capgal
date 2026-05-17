@@ -20,6 +20,9 @@ export const store = {
       lastGitHubSync: null,
       encryptionPassphrase: null,
    },
+   userPrefs: {
+      galleryZoom: 1,
+   },
 };
 
 export async function setCaps(newCaps) {

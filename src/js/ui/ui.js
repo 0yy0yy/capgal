@@ -7,6 +7,7 @@ import { addCapsInBatch } from '../data/caps.js';
 import { saveAppData, backupToGitHub } from '../data/saving.js';
 import { importFromDevice, importFromGitHub, exportToDevice } from '../data/loading.js';
 import { hideLoadingScreen, showLoadingScreen } from '../helpers/helper.js';
+import { initGalleryZoom } from './gallery-zoom.js';
 
 const settingsPanel = document.getElementById('settings');
 const settingsBackdrop = document.getElementById('settings-backdrop');
@@ -83,31 +84,45 @@ export async function initSettingsHandlers() {
    const lastBackupTime = document.getElementById('lastBackupTime');
 
    if (manualBackupBtn) {
+      let resetTimeout = null;
+
+      const resetButton = () => {
+         if (resetTimeout) clearTimeout(resetTimeout);
+         manualBackupBtn.className = 'theme-btn';
+         manualBackupBtn.textContent = 'Backup now';
+         manualBackupBtn.disabled = false;
+         resetTimeout = null;
+      };
+
+      const goToDefaultAfter5Seconds = () => {
+         resetTimeout = setTimeout(resetButton, 5000);
+      };
+
       manualBackupBtn.addEventListener('click', async () => {
+         if (manualBackupBtn.disabled) return; // Prevent double-click
+
+         showLoadingScreen('Backing up gallery data to github... This may take a while.');
          manualBackupBtn.disabled = true;
-         manualBackupBtn.textContent = 'Backing up... this may take a while';
+
          try {
             const success = await backupToGitHub();
             if (success) {
                updateLastBackupDisplay(lastBackupTime);
                manualBackupBtn.textContent = 'Backup successful!';
-               setTimeout(() => {
-                  manualBackupBtn.textContent = 'Backup now';
-               }, 2000);
+               manualBackupBtn.classList.add("success");
+               goToDefaultAfter5Seconds();
             } else {
                manualBackupBtn.textContent = 'Backup failed';
-               setTimeout(() => {
-                  manualBackupBtn.textContent = 'Backup now';
-               }, 2000);
+               manualBackupBtn.classList.add("error");
+               goToDefaultAfter5Seconds();
             }
          } catch (error) {
             console.error('Backup error:', error);
             manualBackupBtn.textContent = 'Backup error';
-            setTimeout(() => {
-               manualBackupBtn.textContent = 'Backup now';
-            }, 2000);
+            manualBackupBtn.classList.add("error");
+            goToDefaultAfter5Seconds();
          } finally {
-            manualBackupBtn.disabled = false;
+            hideLoadingScreen();
          }
       });
 
@@ -442,5 +457,6 @@ export async function init() {
    initCategoryUI();  // Populate categories from store
    initCategoryButtons();
    initCategoryDeleteHandlers();
+   initGalleryZoom();  // Initialize gallery zoom controls
    setUpThemeFromStore();
 }

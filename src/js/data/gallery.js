@@ -2,7 +2,7 @@
 import * as store from '../data/store.js';
 import { pushTab, popTab } from '../ui/navigation.js';
 import { updateGallerySelection, exitGallerySelectionMode, getGallerySelectionManager } from '../ui/gallery-selection.js';
-import { replaceCapImage, exportCapImage, deleteCapImage, deleteSelectedCaps } from './caps.js';
+import { replaceCapImage, exportCapImage, deleteCapImage, deleteSelectedCaps, cropCapImage } from './caps.js';
 import { handleAddCategoryClick, deleteCategory, updateCategoryTitles } from '../ui/categories.js';
 import { saveAppData } from './saving.js';
 import Modal from '../ui/modal.js';
@@ -94,11 +94,14 @@ export function openGallery(category, focusSearch = false) {
       const selectingDiv = filterRow.querySelector('#selecting');
       filtersDiv.innerHTML = '';
 
+      const topBar = document.getElementById('topbar');
       const updateSelectButtonCompactState = () => {
-         const hasThreeOrMoreFilters = filtersDiv.querySelectorAll('.filter-chip:not(.filter-chip-plus)').length >= 3;
+         const isOnSmallScreen = getComputedStyle(topBar).display === 'flex';
+         const numberOfFilters = filtersDiv.querySelectorAll('.filter-chip:not(.filter-chip-plus)').length;
+         const shouldCompactTheButtons = isOnSmallScreen ? numberOfFilters >= 1 : numberOfFilters >= 3;
          const selectButtons = selectingDiv.querySelectorAll('.selecting-chip');
          selectButtons.forEach(btn => {
-            if (hasThreeOrMoreFilters) {
+            if (shouldCompactTheButtons) {
                const index = Array.from(selectButtons).indexOf(btn);
                if (index !== 0) {
                   btn.classList.add('compact');
@@ -122,6 +125,7 @@ export function openGallery(category, focusSearch = false) {
                chip.className = 'filter-chip';
                chip.textContent = cat.name;
                chip.style.borderColor = cat.color;
+               chip.style.setProperty('--clr-filter-chip-active', `${cat.color}b3`); // alpha at 0.7
                chip.dataset.id = cat.id;
                // Click to filter, not navigate - show only caps with this category
                chip.onclick = async () => {
@@ -492,12 +496,22 @@ function setupDetailsImageActions(capId) {
    actionBar.parentNode.replaceChild(newActionBar, actionBar);
 
    const replaceBtn = newActionBar.querySelector('#replaceImageBtn');
+   const cropBtn = newActionBar.querySelector('#cropImageBtn');
    const exportBtn = newActionBar.querySelector('#exportImageBtn');
    const deleteBtn = newActionBar.querySelector('#deleteImageBtn');
 
    if (replaceBtn) {
       replaceBtn.addEventListener('click', async () => {
          const success = await replaceCapImage(capId);
+         if (success) {
+            openDetails(capId);
+         }
+      });
+   }
+
+   if (cropBtn) {
+      cropBtn.addEventListener('click', async () => {
+         const success = await cropCapImage(capId);
          if (success) {
             openDetails(capId);
          }
@@ -535,7 +549,7 @@ export function initGallerySearch() {
    searchInput.addEventListener('input', () => {
       const q = searchInput.value.toLowerCase();
       galleryList.querySelectorAll('li').forEach(li => {
-         const id = Number(li.dataset.id);
+         const id = li.dataset.id;
          const cap = store.store.caps.find(c => c.id === id);
          const match = !q || cap.title?.toLowerCase().includes(q) || cap.description?.toLowerCase().includes(q);
          li.style.display = match ? '' : 'none';
@@ -551,6 +565,8 @@ export function addLastCategoryToFilters() {
    chip.className = 'filter-chip';
    chip.textContent = cat.name;
    chip.style.borderColor = cat.color;
+   chip.style.setProperty('--clr-filter-chip-active', `${cat.color}b3`); // alpha at 0.7
+   chip.dataset.id = cat.id;
    // Click to filter, not navigate - show only caps with this category
    chip.onclick = async () => {
       const allSelected = isAllCategorySelected();

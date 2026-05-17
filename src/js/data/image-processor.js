@@ -1,7 +1,77 @@
 import { updateLoadingScreen } from '../helpers/helper.js';
+
+// Web Worker for OpenCV processing
+//let openCVWorker = null;
+//initOpenCVWorker();
+
 /**
- * Wait for OpenCV.js to load (checks cv global object)
+ * Initialize OpenCV Web Worker
  */
+/* function initOpenCVWorker() {
+   if (openCVWorker) return true; // Already initialized
+
+   const opencvUrl = new URL('../workers/opencv-worker.js', import.meta.url);
+   try {
+      openCVWorker = new Worker(opencvUrl); //(opencvUrl, { type: 'module' });
+   } catch (error) {
+      // Fallback for browsers that don't support module workers
+      //openCVWorker = new Worker(opencvUrl);
+      return false;
+   }
+
+   // Handle worker error
+   openCVWorker.onerror = (error) => {
+      console.error('Worker error:', error);
+   };
+
+   openCVWorker.onmessage = (message) => {
+      console.log('Worker message:', message.data.type);
+   };
+
+   return true;
+} */
+
+/**
+ * Send task to worker and wait for response
+ */
+/* function sendToWorker(task, data, timeoutMs = 10000) {
+   return new Promise((resolve, reject) => {
+      const taskId = Math.random().toString(36).substr(2, 9);
+      let timeoutId = null;
+
+      const handleMessage = (event) => {
+         const { taskId: responseTaskId, type, error } = event.data;
+
+         if (responseTaskId !== taskId) return; // Not for us
+
+         if (timeoutId) clearTimeout(timeoutId);
+         openCVWorker.removeEventListener('message', handleMessage);
+
+         if (type === 'error') {
+            reject(new Error(error));
+         } else {
+            resolve(event.data);
+         }
+      };
+
+      // Timeout safety
+      timeoutId = setTimeout(() => {
+         openCVWorker.removeEventListener('message', handleMessage);
+         reject(new Error('Worker task timeout'));
+      }, timeoutMs);
+
+      openCVWorker.addEventListener('message', handleMessage);
+      openCVWorker.postMessage({
+         taskId,
+         task,
+         ...data
+      });
+   });
+} */
+
+/**
+* Wait for OpenCV.js to load (checks cv global object)
+*/
 function waitForOpenCV(timeout = 30000) {
    return new Promise((resolve, reject) => {
       const startTime = Date.now();
@@ -60,9 +130,7 @@ export async function processCapImage(imageBlob) {
 
    if (useAutoCapFinder) {
       try {
-         if (typeof cv !== 'undefined' && cv.Mat) {
-            return await detectAndProcessWithOpenCV(imageBlob);
-         }
+         return await detectAndProcessWithOpenCV(imageBlob);
       } catch (error) {
          console.warn('OpenCV detection failed, falling back to color extraction:', error);
       }
@@ -87,11 +155,15 @@ async function getSetting(settingKey) {
 }
 
 /**
- * Process with OpenCV Hough circle detection
+ * Process with OpenCV Hough circle detection using Web Worker
+ * Keeps main thread responsive with countdown animation
  */
 async function detectAndProcessWithOpenCV(imageBlob) {
    try {
-      // Load image
+      // Initialize worker
+      //initOpenCVWorker();
+
+      // Load image on main thread
       const bitmap = await createImageBitmap(imageBlob);
       const canvas = document.createElement('canvas');
       canvas.width = bitmap.width;
@@ -292,6 +364,7 @@ function extractColorFromCircle(mat, circle, colorSpace = 'BGR') {
       return '#808080';
    }
 }
+
 
 /**
  * Crop image to circle with padding

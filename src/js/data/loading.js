@@ -22,6 +22,7 @@ export async function loadAppData() {
          store.store.caps = data.caps || [];
          store.store.categories = data.categories || [];
          Object.assign(store.store.userSettings, data.userSettings || {});
+         Object.assign(store.store.userPrefs, data.userPrefs || {});
          hideLoadingScreen();
          return true;
       }
@@ -90,6 +91,7 @@ export async function importFromGitHub() {
          store.store.caps = appData.caps || [];
          store.store.categories = appData.categories || [];
          Object.assign(store.store.userSettings, appData.userSettings || {});
+         Object.assign(store.store.userPrefs, appData.userPrefs || {});
          store.store.userSettings.encryptionPassphrase = passphrase;
          store.store.userSettings.githubDataHash = dataHash;
       } else { // merge otherwise
@@ -138,10 +140,14 @@ export async function importFromDevice() {
                // If it has caps/categories, it's our format
                if (appData.caps && Array.isArray(appData.caps)) {
                   updateLoadingScreen('Importing...');
+
+                  // TODO: add the merge or replace user input to procede like in the import from github function
+
                   // Write directly to store without using setters
                   store.store.caps = appData.caps || [];
                   store.store.categories = appData.categories || [];
                   Object.assign(store.store.userSettings, appData.userSettings || {});
+                  Object.assign(store.store.userPrefs, appData.userPrefs || {});
                   hideLoadingScreen();
                   resolve(true);
                   return;
@@ -171,21 +177,25 @@ export async function importFromDevice() {
             const decrypted = await crypto.decrypt(encrypted, passphrase);
             appData = JSON.parse(decrypted);
 
+            // TODO: add the merge or replace user input to procede like in the import from github function
+
             // Write directly to store without using setters
             store.store.caps = appData.caps || [];
             store.store.categories = appData.categories || [];
+            Object.assign(store.store.userPrefs, appData.userPrefs || {});
 
-            const hashedPassphrase = await crypto.hashPassphrase(passphrase);
+            const githubDataHash = await crypto.hashPassphrase(passphrase);
             Object.assign(store.store.userSettings, {
                ...appData.userSettings,
                encryptionPassphrase: passphrase, // Store passphrase from import
-               hashedPassphrase, // Store only the hash, not the passphrase
+               githubDataHash, // Store only the hash, not the passphrase
             });
 
             await indexdb.saveToIndexDB('appData', {
                caps: store.store.caps,
                categories: store.store.categories,
                userSettings: store.store.userSettings,
+               userPrefs: store.store.userPrefs,
                timestamp: new Date().toISOString(),
             });
             hideLoadingScreen();

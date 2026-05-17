@@ -24,12 +24,22 @@ export function applyTabStates() {
 export function pushTab(name) {
    if (store.navStack[store.navStack.length - 1] === name) return;
    store.navStack.push(name);
+
+   // Force a layout reflow before applying transforms to ensure DOM dimensions are calculated
+   // This prevents misalignment when transitioning to a newly rendered view
+   if (name === 'gallery' || name === 'details') {
+      const tabEl = tabEls[name];
+      if (tabEl) {
+         // Accessing offsetHeight forces a layout recalculation
+         void tabEl.offsetHeight;
+      }
+   }
+
    applyTabStates();
 
    if (name === 'details') {
       pauseMarqueeScroll();
    }
-   //else if (name === 'gallery') {}
 }
 
 export function popTab() {

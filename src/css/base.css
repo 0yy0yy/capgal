@@ -12,6 +12,7 @@
    /* More distinct from surface */
    --clr-on-surface: #1c1b1f;
    --clr-primary: #6750a4;
+   --clr-filter-chip-active: #6750a4;
    --clr-on-primary: #ffffff;
    --clr-primary-container: #eaddff;
    /* For selected states */
@@ -95,6 +96,7 @@
    /* systemGray5 */
    --clr-on-surface: #000000;
    --clr-primary: #007aff;
+   --clr-filter-chip-active: #007aff;
    /* System Blue */
    --clr-on-primary: #ffffff;
    --clr-primary-container: #d4e6ff;
@@ -230,6 +232,7 @@
    --clr-on-surface: #e6e1e5;
    /* High-emphasis text */
    --clr-primary: #d0bcff;
+   --clr-filter-chip-active: #d0bcff;
    /* Muted primary for dark bg */
    --clr-on-primary: #381e72;
    /* Dark bg primary text */
@@ -311,6 +314,7 @@
    --clr-on-surface: #ffffff;
    /* White text on dark bg */
    --clr-primary: #0a84ff;
+   --clr-filter-chip-active: #0a84ff;
    /* System Blue (unchanged from light) */
    --clr-on-primary: #ffffff;
    --clr-primary-container: #174a7a;
@@ -490,7 +494,7 @@
 }
 
 [data-theme$="-dark"] .action-btn:hover {
-   background: color-mix(in srgb, var(--clr-primary) 60%, white);
+   background: color-mix(in srgb, var(--clr-primary) 30%, white);
    color: var(--clr-surface);
 }
 
@@ -764,7 +768,7 @@ main {
    flex-direction: column;
    overflow: hidden;
    /* Default: waiting off-screen to the right */
-   transform: translateX(100%);
+   transform: translateX(100vw);
    opacity: 0;
    pointer-events: none;
    transition:
@@ -774,7 +778,7 @@ main {
 }
 
 .tab.active {
-   transform: translateX(0);
+   transform: translateX(0%);
    opacity: 1;
    pointer-events: all;
 }
@@ -1048,9 +1052,9 @@ main {
 }
 
 .filter-chip.active {
-   background: var(--clr-primary);
+   background: var(--clr-filter-chip-active);
    color: var(--clr-on-primary);
-   border-color: var(--clr-primary);
+   border-color: var(--clr-filter-chip-active);
 }
 
 .filter-chip-plus {
@@ -1098,8 +1102,9 @@ main {
    position: absolute;
    inset: 0;
    background-repeat: no-repeat;
-   background-position: right bottom;
-   background-size: 90%;
+   background-position: 60% 50%;
+   background-size: 70%;
+   opacity: 0.65;
    background-image: url('data:image/svg+xml,<svg width="800" height="800" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.496 5.627A2.25 2.25 0 0 1 22 7.75v10A4.25 4.25 0 0 1 17.75 22h-10a2.25 2.25 0 0 1-2.123-1.504l2.097.004H17.75a2.75 2.75 0 0 0 2.75-2.75v-10l-.004-.051zM17.246 2a2.25 2.25 0 0 1 2.25 2.25v12.997a2.25 2.25 0 0 1-2.25 2.25H4.25A2.25 2.25 0 0 1 2 17.247V4.25A2.25 2.25 0 0 1 4.25 2zm0 1.5H4.25a.75.75 0 0 0-.75.75v12.997c0 .414.336.75.75.75h12.997a.75.75 0 0 0 .75-.75V4.25a.75.75 0 0 0-.75-.75" fill="currentcolor" /></svg>');
 }
 
@@ -1110,6 +1115,7 @@ main {
    background-repeat: no-repeat;
    background-position: center;
    background-size: 50%;
+   opacity: 1;
    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff453a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 6 5 6 21 6'/%3E%3Cpath d='M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6'/%3E%3Cpath d='M10 11v6'/%3E%3Cpath d='M14 11v6'/%3E%3Cpath d='M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2'/%3E%3C/svg%3E");
 }
 
@@ -1189,7 +1195,8 @@ main {
 }
 
 #gallery:has(li:first-child > div.cap-title.visible) li {
-   aspect-ratio: 0.815;
+   aspect-ratio: auto;
+   /* 0.815; */
 }
 
 #galleryList.selection-mode li {
@@ -1231,7 +1238,7 @@ main {
 
 .cap-title.visible {
    filter: invert(1);
-   padding: 3px 5px;
+   padding: 3% 2%;
 }
 
 .cap-title.hidden {
@@ -1368,7 +1375,7 @@ main {
 }
 
 .action-btn:hover {
-   background: color-mix(in srgb, var(--clr-primary) 80%, black);
+   background: color-mix(in srgb, var(--clr-primary) 50%, black);
    color: var(--clr-surface);
 }
 
@@ -1714,6 +1721,16 @@ main {
    border-color: var(--clr-primary);
    background: color-mix(in srgb, var(--clr-primary) 12%, var(--clr-surface));
    color: var(--clr-primary);
+}
+
+.theme-btn.success {
+   color: var(--clr-success);
+   border-color: var(--clr-success);
+}
+
+.theme-btn.error {
+   color: var(--clr-destructive);
+   border-color: var(--clr-destructive);
 }
 
 /* =====================================================

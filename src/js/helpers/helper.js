@@ -352,8 +352,8 @@ export async function setupEncryption() {
 
       try {
          // Store only the hashed passphrase for verification
-         const hashedPassphrase = await crypto.hashPassphrase(passphrase);
-         store.store.userSettings.hashedPassphrase = hashedPassphrase;
+         const githubDataHash = await crypto.hashPassphrase(passphrase);
+         store.store.userSettings.githubDataHash = githubDataHash;
       } catch (error) {
          console.error('Error hashing passphrase:', error);
          store.store.userSettings.encryptionPassphrase = null;
@@ -367,7 +367,7 @@ export async function setupEncryption() {
       console.error('Error during encryption setup:', error);
       // Reset settings on failure
       store.store.userSettings.encryptionPassphrase = null;
-      store.store.userSettings.hashedPassphrase = null;
+      store.store.userSettings.githubDataHash = null;
       throw error;
    }
 }

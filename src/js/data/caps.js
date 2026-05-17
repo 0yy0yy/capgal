@@ -6,6 +6,7 @@ import { processCapImage } from './image-processor.js';
 import { openGallery, refreshGallery } from './gallery.js';
 import { getWordForCount, tryHeicConversion, clampToPalette, showLoadingScreen, updateLoadingScreen, hideLoadingScreen } from '../helpers/helper.js';
 import * as camera from '../camera/camera.js';
+import { showImageCropper } from '../ui/image-cropper.js';
 
 /**
  * Delete a cap from collection (with confirmation)
@@ -372,4 +373,40 @@ export async function deleteCapImage(capId) {
       return true;
    }
    return false;
+}
+
+/**
+ * Crop cap image
+ */
+export async function cropCapImage(capId) {
+   const cap = store.store.caps.find(c => c.id === capId);
+   if (!cap || !cap.imageBase64) return false;
+
+   try {
+      showLoadingScreen('Opening image cropper...');
+
+      // Show the image cropper
+      const croppedBlob = await showImageCropper(`data:image/jpeg;base64,${cap.imageBase64}`);
+
+      if (!croppedBlob) {
+         // User cancelled
+         hideLoadingScreen();
+         return false;
+      }
+
+      updateLoadingScreen('Processing cropped image...');
+      const imageBase64 = await fileToBase64(croppedBlob);
+
+      // Update the cap with the cropped image
+      cap.imageBase64 = imageBase64;
+      cap.updatedAt = new Date().toISOString();
+
+      await saveAppData();
+      hideLoadingScreen();
+      return true;
+   } catch (error) {
+      console.error('Error cropping image:', error);
+      hideLoadingScreen();
+      return false;
+   }
 }
