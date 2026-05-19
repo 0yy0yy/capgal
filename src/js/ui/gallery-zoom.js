@@ -88,6 +88,8 @@ export function initGalleryZoom() {
 
       // Save to store
       store.store.userSettings.galleryZoom = zoomLevel;
+      document.body.classList.toggle('zoom-small', zoomLevel < 0.702);
+      document.body.classList.toggle('zoom-big', zoomLevel > 2.7);
       try {
          await saveAppData();
       } catch (error) {
@@ -147,7 +149,7 @@ export function initGalleryZoom() {
 
          if (touchDistance > 0) {
             const ratio = newDistance / touchDistance;
-            if (ratio > 1.02) {
+            if (ratio > 1.0) {
                const step = getAdaptiveZoomStep('up');
                setZoom(zoomLevel + step);
                touchDistance = newDistance;

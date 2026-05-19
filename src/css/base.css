@@ -1250,6 +1250,14 @@ main {
    white-space: nowrap;
 }
 
+.zoom-small .marquee-content {
+   font-size: 75%;
+}
+
+.zoom-big .marquee-content {
+   font-size: 125%;
+}
+
 .cap-image-container {
    aspect-ratio: 1 !important;
 }

@@ -304,7 +304,7 @@ export function hideLoadingScreen() {
 }
 
 
-export function setMarqueeScroll(defaultSpeed = 0.3) {
+export function setMarqueeScroll(defaultSpeed = 0.17) {
    const marquees = document.querySelectorAll('.marquee-content');
 
    marquees.forEach((marquee) => {
