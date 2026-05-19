@@ -132,6 +132,7 @@ export async function showImageCropper(imageBase64) {
          box-shadow: 0 0 0 2px #1a1a1a;
          cursor: move;
          background: rgba(255, 255, 255, 0.1);
+         /* mix-blend-mode: plus-lighter; */
       `;
       canvasContainer.appendChild(cropFrame);
 
@@ -262,22 +263,22 @@ export async function showImageCropper(imageBase64) {
             const frameW = cropSize * scale;
             const frameH = cropSize * scale;
 
-            handles['nw'].style.left = '-2px';
-            handles['nw'].style.top = '-2px';
-            handles['n'].style.left = (frameW / 2 - 2) + 'px';
-            handles['n'].style.top = '-2px';
-            handles['ne'].style.left = (frameW - 2) + 'px';
-            handles['ne'].style.top = '-2px';
-            handles['e'].style.left = (frameW - 2) + 'px';
-            handles['e'].style.top = (frameH / 2 - 2) + 'px';
-            handles['se'].style.left = frameW + 'px';
-            handles['se'].style.top = (frameH - 2) + 'px';
-            handles['s'].style.left = (frameW / 2) + 'px';
-            handles['s'].style.top = (frameH - 2) + 'px';
-            handles['sw'].style.left = '-2px';
-            handles['sw'].style.top = (frameH - 2) + 'px';
-            handles['w'].style.left = '-2px';
-            handles['w'].style.top = (frameH / 2 - 2) + 'px';
+            handles['nw'].style.left = '-3px';
+            handles['nw'].style.top = '-3px';
+            handles['n'].style.left = (frameW / 2 - 3) + 'px';
+            handles['n'].style.top = '-3px';
+            handles['ne'].style.left = (frameW - 3) + 'px';
+            handles['ne'].style.top = '-3px';
+            handles['e'].style.left = (frameW - 3) + 'px';
+            handles['e'].style.top = (frameH / 2 - 3) + 'px';
+            handles['se'].style.left = (frameW - 3) + 'px';
+            handles['se'].style.top = (frameH - 3) + 'px';
+            handles['s'].style.left = (frameW / 2 - 3) + 'px';
+            handles['s'].style.top = (frameH - 3) + 'px';
+            handles['sw'].style.left = '-3px';
+            handles['sw'].style.top = (frameH - 3) + 'px';
+            handles['w'].style.left = '-3px';
+            handles['w'].style.top = (frameH / 2 - 3) + 'px';
 
             sizeInfo.textContent = `Size: ${Math.round(cropSize)}px × ${Math.round(cropSize)}px`;
          };
@@ -301,34 +302,93 @@ export async function showImageCropper(imageBase64) {
             if (dragType === 'move') {
                cropX = Math.max(0, Math.min(dragStartCropX + deltaX, img.width - cropSize));
                cropY = Math.max(0, Math.min(dragStartCropY + deltaY, img.height - cropSize));
-            } else {
-               let newCropX = dragStartCropX;
-               let newCropY = dragStartCropY;
-               let newCropSize = dragStartCropSize;
-
-               if (dragType.includes('w')) {
-                  newCropX = dragStartCropX + deltaX;
-                  newCropSize = dragStartCropSize - deltaX;
-               }
-               if (dragType.includes('e')) {
-                  newCropSize = dragStartCropSize + deltaX;
-               }
-               if (dragType.includes('n')) {
-                  newCropY = dragStartCropY + deltaY;
-                  newCropSize = dragStartCropSize - deltaY;
-               }
-               if (dragType.includes('s')) {
-                  newCropSize = dragStartCropSize + deltaY;
-               }
-
-               newCropSize = Math.max(50, Math.min(newCropSize, img.width, img.height));
-               newCropX = Math.max(0, Math.min(newCropX, img.width - newCropSize));
-               newCropY = Math.max(0, Math.min(newCropY, img.height - newCropSize));
-
-               cropX = newCropX;
-               cropY = newCropY;
-               cropSize = newCropSize;
+               updateCropFrameDisplay();
+               return;
             }
+
+            // Precompute anchored edges from the drag-start snapshot
+            const startRight = dragStartCropX + dragStartCropSize;
+            const startBottom = dragStartCropY + dragStartCropSize;
+            const startCenterX = dragStartCropX + dragStartCropSize / 2;
+            const startCenterY = dragStartCropY + dragStartCropSize / 2;
+
+            let newCropX, newCropY, newCropSize;
+
+            switch (dragType) {
+
+               // ── Corner handles ──────────────────────────────────────────────────────
+               // Project mouse movement onto the handle's diagonal to get one clean
+               // size delta; the diagonally opposite corner is the fixed anchor.
+
+               case 'se':
+                  // Anchor: nw = (dragStartCropX, dragStartCropY)
+                  newCropSize = dragStartCropSize + (deltaX + deltaY) / 2;
+                  newCropX = dragStartCropX;
+                  newCropY = dragStartCropY;
+                  break;
+
+               case 'nw':
+                  // Anchor: se = (startRight, startBottom)
+                  newCropSize = dragStartCropSize - (deltaX + deltaY) / 2;
+                  newCropX = startRight - newCropSize;
+                  newCropY = startBottom - newCropSize;
+                  break;
+
+               case 'ne':
+                  // Anchor: sw = (dragStartCropX, startBottom)
+                  newCropSize = dragStartCropSize + (deltaX - deltaY) / 2;
+                  newCropX = dragStartCropX;          // sw x is fixed (left edge)
+                  newCropY = startBottom - newCropSize; // sw y is fixed (bottom edge)
+                  break;
+
+               case 'sw':
+                  // Anchor: ne = (startRight, dragStartCropY)
+                  newCropSize = dragStartCropSize + (-deltaX + deltaY) / 2;
+                  newCropX = startRight - newCropSize; // ne x is fixed (right edge)
+                  newCropY = dragStartCropY;           // ne y is fixed (top edge)
+                  break;
+
+               // ── Edge handles ────────────────────────────────────────────────────────
+               // Only one axis drives size; the opposite edge stays planted.
+               // The perpendicular axis stays centered so the square doesn't drift.
+
+               case 'e':
+                  // Anchor: left edge (dragStartCropX fixed)
+                  newCropSize = dragStartCropSize + deltaX;
+                  newCropX = dragStartCropX;
+                  newCropY = startCenterY - newCropSize / 2;
+                  break;
+
+               case 'w':
+                  // Anchor: right edge (startRight fixed)
+                  newCropSize = dragStartCropSize - deltaX;
+                  newCropX = startRight - newCropSize;
+                  newCropY = startCenterY - newCropSize / 2;
+                  break;
+
+               case 's':
+                  // Anchor: top edge (dragStartCropY fixed)
+                  newCropSize = dragStartCropSize + deltaY;
+                  newCropX = startCenterX - newCropSize / 2;
+                  newCropY = dragStartCropY;
+                  break;
+
+               case 'n':
+                  // Anchor: bottom edge (startBottom fixed)
+                  newCropSize = dragStartCropSize - deltaY;
+                  newCropX = startCenterX - newCropSize / 2;
+                  newCropY = startBottom - newCropSize;
+                  break;
+            }
+
+            // Clamp size and position within image bounds
+            newCropSize = Math.max(50, Math.min(newCropSize, img.width, img.height));
+            newCropX = Math.max(0, Math.min(newCropX, img.width - newCropSize));
+            newCropY = Math.max(0, Math.min(newCropY, img.height - newCropSize));
+
+            cropX = newCropX;
+            cropY = newCropY;
+            cropSize = newCropSize;
 
             updateCropFrameDisplay();
          };

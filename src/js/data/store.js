@@ -15,13 +15,13 @@ export const store = {
       useAutoCapFinder: true,
       openGalleryByDefault: false,
       galleryBackgroundTexture: 'none',
+      galleryZoom: 1,
       githubToken: null,
       githubDataHash: null,
+      githubFileSha: null,
       lastGitHubSync: null,
+      lastGitHubAutoSync: null,
       encryptionPassphrase: null,
-   },
-   userPrefs: {
-      galleryZoom: 1,
    },
 };
 

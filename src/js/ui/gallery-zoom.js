@@ -14,11 +14,11 @@ export function initGalleryZoom() {
    if (!gallery || !galleryList) return;
 
    // Get initial zoom from store
-   let zoomLevel = store.store.userPrefs.galleryZoom || 1;
-   const minZoom = 0.5;
+   let zoomLevel = store.store.userSettings.galleryZoom || 1;
+   const minZoom = 0.4;
    let maxZoom = 2;
 
-   const BASE_ITEM_SIZE = 110; // Base size in pixels
+   const BASE_ITEM_SIZE = 100; // Base size in pixels
 
    /**
     * Calculate maximum zoom based on viewport width
@@ -27,7 +27,7 @@ export function initGalleryZoom() {
    const calculateMaxZoom = () => {
       const containerWidth = galleryList.parentElement?.clientWidth || window.innerWidth;
       // Account for padding and gap
-      const gap = 12; // gap in CSS
+      const gap = 14; // gap in CSS
       const padding = 16; // padding in CSS
       const availableWidth = containerWidth - padding * 2;
 
@@ -57,7 +57,7 @@ export function initGalleryZoom() {
     */
    const getColumnCount = () => {
       const containerWidth = galleryList.parentElement?.clientWidth || window.innerWidth;
-      const gap = 12;
+      const gap = 14;
       const padding = 16;
       const availableWidth = containerWidth - padding * 2;
       const itemSize = BASE_ITEM_SIZE * zoomLevel;
@@ -87,7 +87,7 @@ export function initGalleryZoom() {
       galleryList._styleElement.textContent = css;
 
       // Save to store
-      store.store.userPrefs.galleryZoom = zoomLevel;
+      store.store.userSettings.galleryZoom = zoomLevel;
       try {
          await saveAppData();
       } catch (error) {

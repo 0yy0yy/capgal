@@ -123,15 +123,26 @@ export async function convertHeicToJpgIfNeeded(imageBlob) {
 /**
  * Process cap image: detect circle, extract color, crop
  * Respects the useAutoCapFinder setting from userSettings
+ * @param {Blob} imageBlob - The image to process
+ * @param {AbortSignal} signal - Optional abort signal for cancellation
  */
-export async function processCapImage(imageBlob) {
+export async function processCapImage(imageBlob, signal = null) {
+   // Check if already aborted
+   if (signal?.aborted) {
+      throw new DOMException('Image processing cancelled', 'AbortError');
+   }
+
    // Check if auto cap finder is enabled
    const useAutoCapFinder = await getSetting('useAutoCapFinder');
 
    if (useAutoCapFinder) {
       try {
-         return await detectAndProcessWithOpenCV(imageBlob);
+         return await detectAndProcessWithOpenCV(imageBlob, signal);
       } catch (error) {
+         // Re-throw abort errors
+         if (error.name === 'AbortError' || signal?.aborted) {
+            throw error;
+         }
          console.warn('OpenCV detection failed, falling back to color extraction:', error);
       }
    }
@@ -157,8 +168,15 @@ async function getSetting(settingKey) {
 /**
  * Process with OpenCV Hough circle detection using Web Worker
  * Keeps main thread responsive with countdown animation
+ * @param {Blob} imageBlob - The image to process
+ * @param {AbortSignal} signal - Optional abort signal for cancellation
  */
-async function detectAndProcessWithOpenCV(imageBlob) {
+async function detectAndProcessWithOpenCV(imageBlob, signal = null) {
+   // Check if already aborted
+   if (signal?.aborted) {
+      throw new DOMException('Image processing cancelled', 'AbortError');
+   }
+
    try {
       // Initialize worker
       //initOpenCVWorker();
@@ -175,6 +193,11 @@ async function detectAndProcessWithOpenCV(imageBlob) {
       let src = cv.imread(canvas);
       let gray = new cv.Mat();
       cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+
+      // Check abort before expensive operation
+      if (signal?.aborted) {
+         throw new DOMException('Image processing cancelled', 'AbortError');
+      }
 
       // Detect circles using Hough Circle Detection
       updateLoadingScreen('Searching for the cap in the image...');
@@ -208,6 +231,14 @@ async function detectAndProcessWithOpenCV(imageBlob) {
       let capColor = '#808080';
       let processedBlob = imageBlob;
       let detected = false;
+
+      // Check abort before continuing with processing
+      if (signal?.aborted) {
+         src.delete();
+         gray.delete();
+         circles.delete();
+         throw new DOMException('Image processing cancelled', 'AbortError');
+      }
 
       if (circles.rows > 0) {
          detected = true;
@@ -274,9 +305,10 @@ async function detectAndProcessWithOpenCV(imageBlob) {
  */
 function extractColorFromCircle(mat, circle, colorSpace = 'BGR') {
    const [x, y, radius] = circle;
-   const roiX = x - radius;
-   const roiY = y - radius;
-   const roiSize = radius * 2;
+   const r = radius * 0.9
+   const roiX = x - r;
+   const roiY = y - r;
+   const roiSize = r * 2;
 
    const safeX = Math.max(0, Math.min(roiX, mat.cols - 1));
    const safeY = Math.max(0, Math.min(roiY, mat.rows - 1));
@@ -303,7 +335,7 @@ function extractColorFromCircle(mat, circle, colorSpace = 'BGR') {
       const rows = roi.rows;
       const roiCenterX = cols / 2;
       const roiCenterY = rows / 2;
-      const radiusSq = radius * radius;   // compare squared — no sqrt needed
+      const radiusSq = r * r;   // compare squared — no sqrt needed
 
       // Map<"qr,qg,qb", { r, g, b, count }>
       const buckets = new Map();
@@ -341,6 +373,38 @@ function extractColorFromCircle(mat, circle, colorSpace = 'BGR') {
             }
          }
       }
+
+
+      // debug
+      /* const debugPixels = new Uint8ClampedArray(cols * rows * 4);
+
+      for (let row = 0; row < rows; row++) {
+         const dy = row - roiCenterY;
+         const dy2 = dy * dy;
+         const rowOffset = row * cols * 4;
+
+         for (let col = 0; col < cols; col++) {
+            const dx = col - roiCenterX;
+            const i = rowOffset + col * 4;
+
+            // Outside circle -> transparent
+            if (dx * dx + dy2 > radiusSq) {
+               debugPixels[i + 3] = 0;
+               continue;
+            }
+
+            // Copy processed pixel
+            debugPixels[i] = data[i];
+            debugPixels[i + 1] = data[i + 1];
+            debugPixels[i + 2] = data[i + 2];
+            debugPixels[i + 3] = 255;
+         }
+      }
+      const imageData = new ImageData(debugPixels, cols, rows);
+      const debugMat = cv.matFromImageData(imageData);
+      cv.imshow('circlesOutput', debugMat);
+      debugMat.delete(); */
+      // --
 
       roi.delete();
       roiRgba.delete();
@@ -435,4 +499,54 @@ async function processWithColorExtraction(imageBlob) {
          detected: false,
       });
    });
+}
+
+/**
+ * Downsize image to max 600x600px if larger
+ * @param {Blob} imageBlob - The image blob to resize
+ * @param {number} maxDimension - Maximum width or height (default: 600)
+ * @returns {Promise<Blob>} - Resized image blob, or original if already smaller
+ */
+export async function resizeImageIfNeeded(imageBlob, maxDimension = 600) {
+   try {
+      const bitmap = await createImageBitmap(imageBlob);
+
+      // If image is already smaller than max dimension, return original
+      if (bitmap.width <= maxDimension && bitmap.height <= maxDimension) {
+         return imageBlob;
+      }
+
+      // Calculate new dimensions maintaining aspect ratio
+      let newWidth = bitmap.width;
+      let newHeight = bitmap.height;
+
+      if (newWidth > maxDimension || newHeight > maxDimension) {
+         const aspectRatio = bitmap.width / bitmap.height;
+         if (aspectRatio > 1) {
+            // Wider than tall
+            newWidth = maxDimension;
+            newHeight = Math.round(maxDimension / aspectRatio);
+         } else {
+            // Taller than wide or square
+            newHeight = maxDimension;
+            newWidth = Math.round(maxDimension * aspectRatio);
+         }
+      }
+
+      // Create canvas and draw resized image
+      const canvas = document.createElement('canvas');
+      canvas.width = newWidth;
+      canvas.height = newHeight;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0, newWidth, newHeight);
+
+      // Convert to blob (webp for consistency)
+      return new Promise(resolve => {
+         canvas.toBlob(resolve, 'image/webp', 1);
+      });
+   } catch (error) {
+      console.warn('Image resize failed, returning original:', error);
+      return imageBlob;
+   }
 }

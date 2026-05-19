@@ -23,6 +23,11 @@ export class SelectionManager {
       let justToggledSelection = false;
 
       const start = (e) => {
+         // Ignore multi-touch events (e.g., pinch zoom, two-finger gestures)
+         if (e.touches && e.touches.length > 1) {
+            return;
+         }
+
          // Store the start event coordinates
          startEvent = e;
          longPressTriggered = false;

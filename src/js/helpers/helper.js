@@ -108,10 +108,8 @@ const METALIC_COLORS = [
    "#C9AE5D", // Pale Gold Bronze - soft muted gold-bronze blend
    "#CFA35D", // Gold/Bronze Palette - warm gold-bronze
    "#A86E3A", // Gold/Bronze Palette - medium bronze brown
-   "#6E4A2D", // Gold/Bronze Palette - dark bronze tone
-   "#D3AF37", // Metallic Blend - gold base
    "#CE8946", // Metallic Blend - bronze blend tone
-   "#c49c48"  // Bright Gold-Bronze - vibrant mixed metallic tone
+   "#302716"  // Bright Gold-Bronze - vibrant mixed metallic tone
 ];
 
 export function checkBFVisibility(hexColor) {
@@ -119,19 +117,32 @@ export function checkBFVisibility(hexColor) {
       "#E05252",
       "#E07552",
       "#E09952",
+      "#75E052",
+      "#52E052",
+      "#52E075",
+      "#52E099",
+      "#52E0BD",
+      "#52E0E0",
       "#52BDE0",
       "#5299E0",
       "#5275E0",
       "#5252E0",
       "#7552E0",
       "#9952E0",
-      "#BD52E0",
       "#E052E0",
       "#E052BD",
       "#E05299",
       "#E05275",
+      "#6B6B6B",
       "#8F8F8F",
-      "#6B6B6B"
+      "#D3AF37",
+      "#FFD700",
+      "#CD7F32",
+      "#E5A01D",
+      "#C9AE5D",
+      "#CFA35D",
+      "#A86E3A",
+      "#CE8946"
    ];
    return !badVidiblityRatioColors.includes(hexColor);
    /* const value = parseInt(hexColor.replace('#', ''), 16);
@@ -157,6 +168,76 @@ const colorDistance = (a, b) => {
    );
 };
 
+const rgbToHsv = ({ r, g, b }) => {
+   r /= 255;
+   g /= 255;
+   b /= 255;
+
+   const max = Math.max(r, g, b);
+   const min = Math.min(r, g, b);
+   const delta = max - min;
+
+   let h = 0;
+
+   if (delta !== 0) {
+      if (max === r) {
+         h = 60 * (((g - b) / delta) % 6);
+      } else if (max === g) {
+         h = 60 * ((b - r) / delta + 2);
+      } else {
+         h = 60 * ((r - g) / delta + 4);
+      }
+   }
+
+   if (h < 0) h += 360;
+
+   const s = max === 0 ? 0 : delta / max;
+   const v = max;
+
+   return { h, s, v };
+};
+
+// Circular hue distance
+// Handles wraparound correctly:
+// e.g. 5° and 355° => distance 10, not 350
+const hueDistance = (a, b) => {
+   const hsvA = rgbToHsv(a);
+   const hsvB = rgbToHsv(b);
+
+   if (hsvA.v > 0.2) {
+      const diff = Math.abs(hsvB.h - hsvA.h);
+      return Math.min(diff, 360 - diff);
+   } else { //input color too dark to see the actualy hue
+      return hsvDistance(hsvA, hsvB);
+   }
+};
+
+
+/**
+ * Needed for the colors that are too dark to correctly determine the right "visual" color
+ */
+const hsvDistance = (A, B) => {
+   /* const A = rgbToHsv(a);
+   const B = rgbToHsv(b); */
+
+   // Circular hue difference
+   let h = Math.abs(B.h - A.h);
+   h = Math.min(h, 360 - h) / 180; // normalize 0-1
+
+   const s = Math.abs(B.s - A.s);
+   const v = Math.abs(B.v - A.v); // / 255;
+
+   // Hue becomes unreliable at low saturation
+   const hueImportance = Math.min(A.s, B.s);
+
+   return (
+      h * hueImportance * 3.0 +
+      s * 1.5 +
+      v * 2.5
+   );
+   //return Math.sqrt(h * h + s * s + v * v);
+};
+
 export function clampToPalette(inputHex) {
    const input = hexToRgb(inputHex);
 
@@ -164,7 +245,7 @@ export function clampToPalette(inputHex) {
    let minDist = Infinity;
 
    for (const hex of [...COLOR_WHEEL_24, ...GRAYSCALE_UI, ...METALIC_COLORS]) {
-      const dist = colorDistance(input, hexToRgb(hex));
+      const dist = hueDistance(input, hexToRgb(hex));
       if (dist < minDist) {
          minDist = dist;
          closest = hex;

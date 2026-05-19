@@ -22,6 +22,7 @@
 import * as camera from '../camera/camera.js';
 import { tryHeicConversion, showLoadingScreen, updateLoadingScreen, hideLoadingScreen } from '../helpers/helper.js';
 import { processCapImage } from '../data/image-processor.js';
+import { showImageCropper } from './image-cropper.js';
 
 const Modal = (() => {
    /* ─── State ──────────────────────────────────────────────────────────── */
@@ -30,6 +31,7 @@ const Modal = (() => {
    let _capColor = null;         // temporary hex color of the pending cap
    let _activeResolve = null;    // promise resolver for current modal
    let _overlay = null;          // current DOM overlay
+   let _capAbortController = null; // abort controller for cap modal image processing
 
    /* ─── Styles ─────────────────────────────────────────────────────────── */
    const STYLE_ID = '__modal_styles__';
@@ -355,6 +357,13 @@ const Modal = (() => {
          background: #f5f2ec;
          color: #1a1a1a;
          border-color: #1a1a1a;
+         flex: 1;
+         display: flex;
+      }
+
+      .mdl-camera-btn-secondary[disabled] {
+         flex: none;
+         display: none;
       }
 
       /* ── Tag / select ── */
@@ -704,6 +713,11 @@ const Modal = (() => {
          _overlay.remove();
          _overlay = null;
       }
+      // Abort any ongoing image processing if cap modal was open
+      if (_capAbortController) {
+         _capAbortController.abort();
+         _capAbortController = null;
+      }
       _activeResolve = null;
    };
 
@@ -892,11 +906,14 @@ const Modal = (() => {
     * @param {Array<{id, name, color}>} categories  existing categories
     * @param {Blob|File|null} pendingImage           pre-loaded image
     * @param {Function} errorEl                      error display element
+    * @param {AbortSignal} signal                    cancellation signal from parent modal
     */
-   const buildCapForm = async (categories, pendingImage, errorEl) => {
+   const buildCapForm = async (categories, pendingImage, errorEl, signal) => {
       const container = document.createDocumentFragment();
       let imageFile = pendingImage || null;
       let isProcessing = false;
+      let originalImage = null;
+      let originalFile = null;
 
       /* ── Image slot ── */
       const imageField = el('div', 'mdl-field');
@@ -923,11 +940,17 @@ const Modal = (() => {
       imageSlot.appendChild(slotHint);
       imageField.appendChild(imageSlot);
 
-      /* ── Camera button row ── */
+      /* ── Camera and crop button row ── */
       const cameraRow = el('div', 'mdl-camera-row');
       const cameraBtn = el('button', 'mdl-camera-btn');
       cameraBtn.innerHTML = '<em>📸</em> Take Photo';
 
+      const cropBtn = el('button', 'mdl-camera-btn mdl-camera-btn-secondary');
+      cropBtn.innerHTML = '<em>✂️</em> Crop Original';
+      cropBtn.disabled = true;
+      cropBtn.style.opacity = '0.5';
+
+      cameraRow.appendChild(cropBtn);
       cameraRow.appendChild(cameraBtn);
       imageField.appendChild(cameraRow);
 
@@ -938,6 +961,19 @@ const Modal = (() => {
          imgPreview.style.display = 'block';
          slotIcon.style.display = 'none';
          slotHint.style.display = 'none';
+         // Enable crop button when image is loaded
+         cropBtn.disabled = false;
+         cropBtn.style.opacity = '1';
+      };
+
+      const hideImagePreview = () => {
+         imgPreview.src = '';
+         imgPreview.style.display = 'none';
+         slotIcon.style.display = 'block';
+         slotHint.style.display = 'block';
+         // Disable crop button when no image
+         cropBtn.disabled = true;
+         cropBtn.style.opacity = '0.5';
       };
 
       const titleInput = el('input', 'mdl-input');
@@ -953,11 +989,21 @@ const Modal = (() => {
 
          let convertedImage = null;
          try {
-            updateLoadingScreen('Converting format...');
+            // Check if already aborted before starting
+            if (signal.aborted) {
+               throw new DOMException('Image processing cancelled', 'AbortError');
+            }
+
+            updateLoadingScreen('Converting format to WebP...');
             convertedImage = await tryHeicConversion(file);
 
+            if (!originalImage || originalFile !== file) {
+               originalImage = convertedImage;
+               originalFile = file
+            }
+
             updateLoadingScreen(`Detecting bottle cap in image '${titleInput.value}'...`);
-            const processed = await processCapImage(convertedImage);
+            const processed = await processCapImage(convertedImage, signal);
 
             updateLoadingScreen('Preparing preview...');
             imageFile = processed.imageBlob;
@@ -970,6 +1016,14 @@ const Modal = (() => {
             updateLoadingScreen('Image ready!');
             errorEl.hide();
          } catch (error) {
+            // Handle abort errors silently (user cancelled)
+            if (error.name === 'AbortError' || signal.aborted) {
+               console.log('Image processing cancelled by user');
+               isProcessing = false;
+               _pendingImageName = null;
+               hideLoadingScreen();
+               return;
+            }
             updateLoadingScreen('FAILED to process the image, using the original one...');
             console.error('Image processing error:', error);
             errorEl.show('Failed to process image. Using original.');
@@ -979,13 +1033,17 @@ const Modal = (() => {
          } finally {
             isProcessing = false;
             _pendingImageName = null;
+            if (!originalImage) {
+               originalImage = imageFile;
+               originalFile = file
+            }
             hideLoadingScreen();
          }
       };
 
       // If a pending image was pre-loaded, process it
       if (pendingImage) {
-         processAndPreviewImage(pendingImage);
+         await processAndPreviewImage(pendingImage);
       }
 
       // Handle camera capture
@@ -999,6 +1057,28 @@ const Modal = (() => {
          } catch (error) {
             console.error('Camera error:', error);
             errorEl.show('Could not access camera. Please check permissions.');
+         }
+      });
+
+      // Handle crop original image
+      cropBtn.addEventListener('click', async () => {
+         if (isProcessing || !originalImage) return;
+         try {
+            showLoadingScreen('Opening image cropper...');
+            const croppedBlob = await showImageCropper(URL.createObjectURL(originalImage));
+            if (!croppedBlob) {
+               hideLoadingScreen();
+               return;
+            }
+            updateLoadingScreen('Processing cropped image...');
+            imageFile = croppedBlob;
+            const croppedBlobUrl = URL.createObjectURL(croppedBlob);
+            await showImagePreview(croppedBlobUrl);
+            hideLoadingScreen();
+         } catch (error) {
+            hideLoadingScreen();
+            console.error('Error cropping image:', error);
+            errorEl.show('Failed to crop image.');
          }
       });
 
@@ -1184,7 +1264,8 @@ const Modal = (() => {
 
          const titles = { category: 'New Category', cap: 'Add Cap' };
          const labels_ = { category: 'Add item', cap: 'Add item' };
-         frag.appendChild(makeHeader(labels_[type], headerText ? headerText : titles[type], true));
+         const header = makeHeader(labels_[type], headerText ? headerText : titles[type], true);
+         frag.appendChild(header);
 
          const body = el('div', 'mdl-body mdl-body-scroll');
          const errorEl = makeError();
@@ -1216,20 +1297,40 @@ const Modal = (() => {
 
          } else {
             // type === 'cap'
-            const { container, getData } = await buildCapForm(categories, _pendingImage, errorEl);
+            // Create abort controller for this modal to cancel image processing if user closes
+            const capAbortController = new AbortController();
+            _capAbortController = capAbortController; // Store globally so close() can abort it
+
+            const { container, getData } = await buildCapForm(categories, _pendingImage, errorEl, capAbortController.signal);
             _pendingImage = null; // consumed
             body.appendChild(errorEl);
             body.appendChild(container);
             frag.appendChild(body);
 
+            // Modify header's close button to abort the controller
+            const closeBtn = header.querySelector('.mdl-close');
+            if (closeBtn) {
+               // Remove the existing click listener and add one that aborts
+               const newCloseBtn = closeBtn.cloneNode(true);
+               closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+               newCloseBtn.addEventListener('click', () => {
+                  capAbortController.abort();
+                  _resolve(null);
+               });
+            }
+
             const footer = el('div', 'mdl-footer');
             const cancelBtn = el('button', 'mdl-btn mdl-btn-ghost');
             cancelBtn.textContent = 'Cancel';
-            cancelBtn.addEventListener('click', () => _resolve(null));
+            cancelBtn.addEventListener('click', () => {
+               capAbortController.abort();
+               _resolve(null);
+            });
 
             const addBtn = el('button', 'mdl-btn mdl-btn-primary mdl-btn-important');
             addBtn.textContent = 'Add Cap';
             addBtn.addEventListener('click', () => {
+               capAbortController.abort(); // Cancel any ongoing processing when submitting
                const data = getData();
                if (data) _resolve(data);
             });
@@ -1286,7 +1387,7 @@ const Modal = (() => {
       let convertedImage = null;
       _pendingImageName = blobOrFile.name ? blobOrFile.name : String(Date.now());
       try {
-         updateLoadingScreen('Converting format...');
+         updateLoadingScreen('Converting format to WebP...');
          convertedImage = await tryHeicConversion(blobOrFile);
 
          updateLoadingScreen(`Detecting bottle cap in image '${_pendingImageName}'...`);

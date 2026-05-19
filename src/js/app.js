@@ -5,19 +5,27 @@ import { init as initUI } from './ui/ui.js';
 import { initGallerySearch, openGallery } from './data/gallery.js';
 import { applyTabStates } from './ui/navigation.js';
 import * as store from './data/store.js';
-import { loadAppData } from './data/loading.js';
+import { loadAppData, autoSyncFromGitHub } from './data/loading.js';
 import { initCategoryUI } from './ui/categories.js';
-import { showLoadingScreen, hideLoadingScreen } from './helpers/helper.js'
+import { showLoadingScreen, hideLoadingScreen, updateLoadingScreen } from './helpers/helper.js'
 
 /**
  * Initialize app
  */
 async function initApp() {
    try {
+      showLoadingScreen('Loading data...');
       // Load user data from storage
       const hasData = await loadAppData();
 
+      // Attempt autosync from GitHub if credentials are available
+      if (hasData && store.store.userSettings.githubToken && store.store.userSettings.encryptionPassphrase) {
+         updateLoadingScreen('Checking GitHub backup for changes...');
+         await autoSyncFromGitHub();
+      }
+
       // Initialize UI
+      updateLoadingScreen('Initializing app...');
       await initUI();
       initGallerySearch();
 
@@ -51,6 +59,7 @@ async function initApp() {
    } finally {
       // Hide loading screen
       hideLoadingScreen();
+      console.log('Bottle Cap Gallery initialized');
    }
 }
 
@@ -58,8 +67,5 @@ async function initApp() {
 if (document.readyState === 'loading') {
    document.addEventListener('DOMContentLoaded', initApp);
 } else {
-   initApp();
+   await initApp();
 }
-
-console.log('Bottle Cap Gallery initialized');
-

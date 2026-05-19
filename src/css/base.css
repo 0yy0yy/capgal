@@ -1329,9 +1329,9 @@ main {
    transition: opacity var(--dur) var(--ease);
 }
 
-#detailsImage:hover {
+/* #detailsImage:hover {
    opacity: 0.9;
-}
+} */
 
 #capImage {
    position: relative;

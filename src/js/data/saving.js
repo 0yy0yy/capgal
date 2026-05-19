@@ -18,7 +18,6 @@ export async function saveAppData() {
          caps: store.store.caps,
          categories: store.store.categories,
          userSettings: store.store.userSettings,
-         userPrefs: store.store.userPrefs,
          timestamp: new Date().toISOString(),
       };
 
@@ -50,13 +49,12 @@ export async function backupToGitHub() {
 
       await saveToGitHub(dataForGitHub);
 
-      // Save updated lastGitHubSync to IndexDB
+      // Save updated lastGitHubSync and githubFileSha to IndexDB
       try {
          await indexdb.saveToIndexDB('appData', {
             caps: store.store.caps,
             categories: store.store.categories,
             userSettings: store.store.userSettings,
-            userPrefs: store.store.userPrefs,
             timestamp: new Date().toISOString(),
          });
       } catch (indexDbError) {
@@ -141,10 +139,17 @@ async function saveToGitHub(dataToSave) {
             throw new Error(`GitHub API error: ${response.status} - ${response.statusText}`);
          }
 
+         const responseData = await response.json();
+
          if (!store.store.userSettings.githubDataHash) {
             store.store.userSettings.githubDataHash = dataHash;
          }
+
+         // Store the file SHA for versioning/autosync
+         store.store.userSettings.githubFileSha = responseData.content.sha;
          store.store.userSettings.lastGitHubSync = new Date().toISOString();
+
+         return responseData.content.sha;
       } catch (fetchError) {
          //clearTimeout(timeoutId);
          throw fetchError;

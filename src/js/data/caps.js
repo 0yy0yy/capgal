@@ -2,7 +2,7 @@
 import Modal from '../ui/modal.js';
 import * as store from './store.js';
 import { saveAppData } from './saving.js';
-import { processCapImage } from './image-processor.js';
+import { processCapImage, resizeImageIfNeeded } from './image-processor.js';
 import { openGallery, refreshGallery } from './gallery.js';
 import { getWordForCount, tryHeicConversion, clampToPalette, showLoadingScreen, updateLoadingScreen, hideLoadingScreen } from '../helpers/helper.js';
 import * as camera from '../camera/camera.js';
@@ -90,12 +90,12 @@ export async function saveCap(capData) {
       showLoadingScreen('Saving cap to database...');
 
       let imageBase64 = null;
-      let capColor = '#808080';
+      let capColor = '';
       let processed = null;
 
       try {
-         if (!capData.imageProcessed) {
-            updateLoadingScreen('Converting format...');
+         if (!capData.hasOwnProperty("imageProcessed")) {
+            updateLoadingScreen('Converting format to WebP...');
             const convertedJpegImage = await tryHeicConversion(capData.image);
 
             updateLoadingScreen(`Detecting bottle cap in image '${capData.title}'...`);
@@ -105,9 +105,11 @@ export async function saveCap(capData) {
          updateLoadingScreen('FAILED to process the image, using the original one...');
       }
 
-      updateLoadingScreen('Encoding image...');
-      const img = processed ? processed.imageBlob : capData.image;
+      updateLoadingScreen('Downsizing to 600x600 if needed...');
+      const imgToDownsize = processed ? processed.imageBlob : capData.image;
+      const img = await resizeImageIfNeeded(imgToDownsize);
       const color = processed ? processed.capColor : capData.capColor;
+      updateLoadingScreen('Encoding image...');
       imageBase64 = await fileToBase64(img);
       capColor = clampToPalette(color || '#808080');
 
@@ -300,7 +302,7 @@ export async function replaceCapImage(capId) {
       }
 
       showLoadingScreen('Processing image...');
-      updateLoadingScreen('Converting format...');
+      updateLoadingScreen('Converting format to WebP...');
 
       const convertedJpegImage = await tryHeicConversion(imageFile);
 
@@ -339,13 +341,39 @@ export async function exportCapImage(capId) {
    if (!cap || !cap.imageBase64) return false;
 
    try {
-      const blob = new Blob([Uint8Array.from(atob(cap.imageBase64), c => c.charCodeAt(0))], { type: 'image/png' });
+      const img = new Image();
+
+      img.src = `data:image/webp;base64,${cap.imageBase64}`;
+
+      await img.decode();
+
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      const blob = await new Promise(resolve =>
+         canvas.toBlob(
+            resolve,
+            'image/png',
+            1
+         )
+      );
+
       const url = URL.createObjectURL(blob);
+
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${cap.title || 'cap'}.jpg`;
+      a.download = `${cap.title || 'cap' + cap.id}.png`;
+
+      document.body.appendChild(a);
       a.click();
+      a.remove();
+
       URL.revokeObjectURL(url);
+
       return true;
    } catch (error) {
       console.error('Error exporting image:', error);

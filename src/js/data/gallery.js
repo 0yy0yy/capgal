@@ -433,10 +433,22 @@ export function openDetails(id) {
    if (cap.imageBase64) {
       detailsImage.src = `data:image/jpeg;base64,${cap.imageBase64}`;
       detailsImage.style.minHeight = '180px';
+
+      // Show image actions when image is loaded
+      /* const actionBar = document.querySelector('.image-actions');
+      if (actionBar) {
+         actionBar.classList.add('visible');
+      } */
    } else {
       detailsImage.src = '';
       detailsImage.style.minHeight = '';
-      detailsImage.textContent = 'No image';
+      detailsImage.textContent = 'No image added yet for this cap entry';
+
+      // Hide image actions if no image
+      /* const actionBar = document.querySelector('.image-actions');
+      if (actionBar) {
+         actionBar.classList.remove('visible');
+      } */
    }
 
    // Show/hide image actions on image focus
