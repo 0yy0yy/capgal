@@ -450,13 +450,13 @@ const Modal = (() => {
 
       .mdl-btn-danger {
          background: #fff0ee;
-         border-color: #c0392b;
-         color: #c0392b;
-         box-shadow: 3px 3px 0 #c0392b;
+         border-color: var(--clr-primary);
+         color: var(--clr-primary);
+         box-shadow: 3px 3px 0 var(--clr-primary);
       }
 
       .mdl-btn-danger:hover {
-         background: #c0392b;
+         background: var(--clr-primary);
          color: #fff;
       }
 
@@ -618,14 +618,14 @@ const Modal = (() => {
       }
 
       [data-theme$="-dark"] .mdl-btn-danger {
-         background: #2c1a18;
-         border-color: #ff6b5c;
-         color: #ff6b5c;
-         box-shadow: 3px 3px 0 #ff6b5c;
+         background: #1e1e20;
+         border-color: var(--clr-primary);
+         color: var(--clr-primary);
+         box-shadow: 3px 3px 0 var(--clr-primary);
       }
 
       [data-theme$="-dark"] .mdl-btn-danger:hover {
-         background: #ff6b5c;
+         background: var(--clr-primary);
          color: #1e1e20;
       }
 
