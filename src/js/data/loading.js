@@ -37,6 +37,7 @@ export async function loadAppData() {
  * Import data, ask user for mode: MERGE or REPLACE
  */
 async function importData(appData) {
+   hideLoadingScreen();
    const importMode = await Modal.confirm({
       question: 'Would you like to override the data or merge it with the existing?',
       yesLabel: 'Replace',
@@ -137,10 +138,9 @@ export async function importFromGitHub() {
       // Decrypt
       const decrypted = await crypto.decrypt(encrypted, passphrase);
       const appData = JSON.parse(decrypted);
-      hideLoadingScreen();
-      appData.data.encryptionPassphrase = passphrase;
-      appData.data.userSettings.githubDataHash = dataHash;
-      await importData(appData.data);
+      appData.userSettings.encryptionPassphrase = passphrase;
+      appData.userSettings.githubDataHash = dataHash;
+      await importData(appData);
       return true;
    } catch (error) {
       console.error('Error importing from GitHub:', error);
@@ -184,7 +184,7 @@ export async function importFromDevice() {
 
                   //TODO: modal: do you want to add a passphrase also?
 
-                  await importData(appData.data);
+                  await importData(appData);
                   hideLoadingScreen();
                   resolve(true);
                   return;
@@ -209,12 +209,12 @@ export async function importFromDevice() {
             const encrypted = JSON.parse(text);
             const decrypted = await crypto.decrypt(encrypted, passphrase);
             appData = JSON.parse(decrypted);
-            appData.data.encryptionPassphrase = passphrase;
-            appData.data.userSettings.githubDataHash = await crypto.hashPassphrase(passphrase);
+            appData.userSettings.encryptionPassphrase = passphrase;
+            appData.userSettings.githubDataHash = await crypto.hashPassphrase(passphrase);
 
             // Ask user for import mode (replace or merge)
             hideLoadingScreen();
-            await importData(appData.data);
+            await importData(appData);
             hideLoadingScreen();
             resolve(true);
          } catch (error) {

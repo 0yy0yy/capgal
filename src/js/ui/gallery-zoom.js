@@ -16,7 +16,7 @@ export function initGalleryZoom() {
    // Get initial zoom from store
    let zoomLevel = store.store.userSettings.galleryZoom || 1;
    const minZoom = 0.4;
-   let maxZoom = 2;
+   let maxZoom = 2.2;
 
    const BASE_ITEM_SIZE = 100; // Base size in pixels
 
