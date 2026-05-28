@@ -103,7 +103,8 @@ export async function showImageCropper(imageBase64) {
       const canvasContainer = document.createElement('div');
       canvasContainer.style.cssText = `
          position: relative;
-         width: 100%;
+         width: 90%;
+         align-self: center;
          aspect-ratio: auto;
          background: #ddd;
          border: 1px solid #999;

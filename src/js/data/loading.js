@@ -49,7 +49,10 @@ async function importData(appData) {
       // Write directly to store without using setters
       store.store.caps = appData.caps || [];
       store.store.categories = appData.categories || [];
+      // Preserve current lastGitHubSync - don't overwrite with stale backup data
+      const currentLastGitHubSync = store.store.userSettings.lastGitHubSync;
       Object.assign(store.store.userSettings, appData.userSettings || {});
+      store.store.userSettings.lastGitHubSync = currentLastGitHubSync;
    } else { // merge otherwise
       showLoadingScreen('Merging data...');
       // Merge caps: keep existing, add new ones, update same ID with backup data
@@ -97,7 +100,10 @@ async function importData(appData) {
 
       if (syncPrefs) {
          showLoadingScreen('Synchronizing user settings...');
+         // Preserve current lastGitHubSync - don't overwrite with stale backup data
+         const currentLastGitHubSync = store.store.userSettings.lastGitHubSync;
          Object.assign(store.store.userSettings, appData.userSettings);
+         store.store.userSettings.lastGitHubSync = currentLastGitHubSync;
       }
    }
 }

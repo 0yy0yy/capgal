@@ -111,9 +111,9 @@ export async function convertHeicToJpgIfNeeded(imageBlob) {
          return imageBlob;
       }
 
-      // Convert HEIC to WebP
-      const webpBlob = await heic2any({ blob: imageBlob, toType: 'image/webp', quality: 1 });
-      return webpBlob;
+      // Convert HEIC to PNG
+      const pngBlob = await heic2any({ blob: imageBlob, toType: 'image/png' });
+      return pngBlob;
    } catch (error) {
       console.error('HEIC conversion failed:', error);
       return imageBlob; // Fall back to original
@@ -451,7 +451,7 @@ async function cropToCircle(canvas, circle) {
    );
 
    return new Promise(resolve => {
-      cropCanvas.toBlob(resolve, 'image/webp', 1);
+      cropCanvas.toBlob(resolve, 'image/png');  // Use lossless PNG, compress to WebP at the end
    });
 }
 
@@ -502,6 +502,31 @@ async function processWithColorExtraction(imageBlob) {
 }
 
 /**
+ * Final step: Compress image to WebP format at quality 0.9
+ * Call this as the last step before saving to storage
+ * @param {Blob} imageBlob - The image blob to compress
+ * @returns {Promise<Blob>} - WebP compressed blob at quality 0.9
+ */
+export async function compressToWebP(imageBlob) {
+   try {
+      const bitmap = await createImageBitmap(imageBlob);
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0);
+
+      return new Promise(resolve => {
+         canvas.toBlob(resolve, 'image/webp', 0.9);
+      });
+   } catch (error) {
+      console.warn('WebP compression failed, returning original:', error);
+      return imageBlob;
+   }
+}
+
+/**
  * Downsize image to max 600x600px if larger
  * @param {Blob} imageBlob - The image blob to resize
  * @param {number} maxDimension - Maximum width or height (default: 600)
@@ -541,9 +566,9 @@ export async function resizeImageIfNeeded(imageBlob, maxDimension = 600) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(bitmap, 0, 0, newWidth, newHeight);
 
-      // Convert to blob (webp for consistency)
+      // Convert to blob (use PNG for lossless intermediate, compress to WebP later)
       return new Promise(resolve => {
-         canvas.toBlob(resolve, 'image/webp', 1);
+         canvas.toBlob(resolve, 'image/png');
       });
    } catch (error) {
       console.warn('Image resize failed, returning original:', error);

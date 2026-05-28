@@ -2,7 +2,7 @@
 import Modal from '../ui/modal.js';
 import * as store from './store.js';
 import { saveAppData } from './saving.js';
-import { processCapImage, resizeImageIfNeeded } from './image-processor.js';
+import { processCapImage, resizeImageIfNeeded, compressToWebP } from './image-processor.js';
 import { openGallery, refreshGallery } from './gallery.js';
 import { getWordForCount, tryHeicConversion, clampToPalette, showLoadingScreen, updateLoadingScreen, hideLoadingScreen } from '../helpers/helper.js';
 import * as camera from '../camera/camera.js';
@@ -95,7 +95,7 @@ export async function saveCap(capData) {
 
       try {
          if (!capData.hasOwnProperty("imageProcessed")) {
-            updateLoadingScreen('Converting format to WebP...');
+            updateLoadingScreen('Converting image format if needed...');
             const convertedJpegImage = await tryHeicConversion(capData.image);
 
             updateLoadingScreen(`Detecting bottle cap in image '${capData.title}'...`);
@@ -109,8 +109,10 @@ export async function saveCap(capData) {
       const imgToDownsize = processed ? processed.imageBlob : capData.image;
       const img = await resizeImageIfNeeded(imgToDownsize);
       const color = processed ? processed.capColor : capData.capColor;
+      updateLoadingScreen('Compressing image to WebP at 0.9 quality...');
+      const compressedImg = await compressToWebP(img);
       updateLoadingScreen('Encoding image...');
-      imageBase64 = await fileToBase64(img);
+      imageBase64 = await fileToBase64(compressedImg);
       capColor = clampToPalette(color || '#808080');
 
       // Add to store
@@ -145,6 +147,7 @@ export async function saveCap(capData) {
 /**
  * Batch add multiple caps
  */
+export const inBatchMode = { 'current': 0, 'all': 0 };
 export async function addCapsInBatch() {
    let keepAdding = true;
 
@@ -182,6 +185,7 @@ export async function addCapsInBatch() {
       // Multiple files mode
       else if (result.files && result.files.length > 0) {
          const totalFiles = result.files.length;
+         inBatchMode.all = totalFiles;
          let addedCount = 0;
 
          // Ask if user wants to add details now or later
@@ -195,6 +199,7 @@ export async function addCapsInBatch() {
 
          for (let i = 0; i < totalFiles; i++) {
             const file = result.files[i];
+            inBatchMode.current = i + 1;
 
             if (addDetailsNow) {
                // Pre-load and ask for details for each
@@ -248,6 +253,9 @@ export async function addCapsInBatch() {
             question: `Added ${addedCount} ${getWordForCount(addedCount, 'cap')}!`,
             yesLabel: 'OK'
          });
+
+         inBatchMode.current = 0;
+         inBatchMode.all = 0;
 
          // Refresh gallery
          openGallery(store.currentCategory);
@@ -414,7 +422,7 @@ export async function cropCapImage(capId) {
       showLoadingScreen('Opening image cropper...');
 
       // Show the image cropper
-      const croppedBlob = await showImageCropper(`data:image/jpeg;base64,${cap.imageBase64}`);
+      const croppedBlob = await showImageCropper(`data:image/webp;base64,${cap.imageBase64}`);
 
       if (!croppedBlob) {
          // User cancelled

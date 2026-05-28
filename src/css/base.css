@@ -506,6 +506,9 @@
    filter: invert(1) opacity(0.5);
 }
 
+[data-theme$="-dark"] .theme-btn.selected {
+   color: color-mix(in srgb, var(--clr-on-surface) 50%, var(--clr-primary));
+}
 
 /* Safe area insets for modern devices */
 body {
@@ -1200,7 +1203,7 @@ main {
 }
 
 #galleryList.selection-mode li {
-   opacity: 0.5;
+   opacity: 0.6;
 }
 
 #galleryList.selection-mode li.selected {
@@ -1343,7 +1346,7 @@ main {
 
 #capImage {
    position: relative;
-   overflow: hidden;
+   overflow: clip;
    max-height: 45%;
    display: flex;
    justify-content: center;
@@ -1436,6 +1439,126 @@ main {
    resize: vertical;
 }
 
+/* Color Picker Carousel Wrapper */
+.color-picker-wrapper {
+   display: flex;
+   align-items: stretch;
+   gap: 12px;
+   position: relative;
+}
+
+/* Carousel Navigation Buttons */
+.carousel-nav {
+   background: var(--clr-surface);
+   border: 2px solid var(--clr-border);
+   border-radius: var(--radius-sm);
+   color: var(--clr-on-surface);
+   font-size: 20px;
+   font-weight: 600;
+   width: 36px;
+   height: auto;
+   /* min-height: 250px; */
+   cursor: pointer;
+   transition: all 150ms var(--ease);
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   flex-shrink: 0;
+   padding: 0;
+}
+
+.carousel-nav:hover:not(:disabled) {
+   background: var(--clr-surface-2);
+   border-color: var(--clr-on-surface);
+   transform: scale(1.08);
+}
+
+.carousel-nav:active:not(:disabled) {
+   transform: scale(0.95);
+}
+
+.carousel-nav:disabled {
+   opacity: 0.3;
+   cursor: not-allowed;
+}
+
+/* Carousel Container (Fixed Viewport) */
+.details-color-picker {
+   flex: 1;
+   overflow: hidden;
+   border: 2px solid var(--clr-border);
+   border-radius: var(--radius-sm);
+   background: var(--clr-surface);
+   position: relative;
+   height: auto;
+}
+
+/* Carousel Track (Scrollable, Transformable) */
+.color-picker-track {
+   display: flex;
+   flex-direction: row;
+   flex-wrap: nowrap;
+   height: 100%;
+}
+
+.color-group {
+   display: flex;
+   flex-direction: column;
+   gap: 10px;
+   flex: 0 0 100%;
+   min-width: 0;
+   padding: 16px;
+}
+
+.color-group label {
+   font-size: clamp(11px, 1.5vw, 12px);
+   text-transform: uppercase;
+   letter-spacing: 0.08em;
+   color: var(--clr-muted);
+   font-weight: var(--font-weight-med);
+   display: block;
+}
+
+.color-group>*:not(label) {
+   display: grid;
+   grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+   gap: 8px;
+}
+
+.color-picker-btn {
+   width: 100%;
+   aspect-ratio: 1;
+   border: 2px solid var(--clr-border);
+   border-radius: var(--radius-sm);
+   cursor: pointer;
+   transition: all 150ms var(--ease);
+   background-clip: padding-box;
+}
+
+.color-picker-btn:hover {
+   transform: scale(1.15);
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+   border-color: var(--clr-on-surface);
+}
+
+.color-picker-btn.selected {
+   border-width: 3px;
+   border-color: var(--clr-on-surface);
+   box-shadow: 0 0 0 2px var(--clr-surface),
+      0 0 0 5px var(--clr-on-surface),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.15),
+      0 0 8px rgba(0, 0, 0, 0.3);
+   transform: scale(1.05);
+}
+
+.color-picker-btn.selected:hover {
+   transform: scale(1.12);
+   box-shadow: 0 0 0 2px var(--clr-surface),
+      0 0 0 5px var(--clr-on-surface),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.15),
+      0 0 12px rgba(0, 0, 0, 0.4);
+}
+
 /* =====================================================
        SETTINGS — bottom sheet OVERLAY
        (not part of the nav stack, always on top)
@@ -1461,7 +1584,7 @@ main {
    left: 0;
    right: 0;
    height: auto;
-   max-height: 70%;
+   max-height: 85%;
    background: var(--clr-surface);
    border-radius: var(--radius-sheet);
    box-shadow: var(--shadow-sheet);
@@ -1727,7 +1850,7 @@ main {
 
 .theme-btn.selected {
    border-color: var(--clr-primary);
-   background: color-mix(in srgb, var(--clr-primary) 12%, var(--clr-surface));
+   background: color-mix(in srgb, var(--clr-primary) 8%, var(--clr-surface));
    color: var(--clr-primary);
 }
 
@@ -1812,6 +1935,10 @@ main {
    }
 
    .filter-chip.filter-chip-plus {}
+
+   .action-btn {
+      padding: 8px 5px;
+   }
 }
 
 /* =====================================================

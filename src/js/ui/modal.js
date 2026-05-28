@@ -20,7 +20,7 @@
  */
 
 import * as camera from '../camera/camera.js';
-import { tryHeicConversion, showLoadingScreen, updateLoadingScreen, hideLoadingScreen } from '../helpers/helper.js';
+import { tryHeicConversion, showLoadingScreen, updateLoadingScreen, hideLoadingScreen, cssColorToHex, isValidCssColor } from '../helpers/helper.js';
 import { processCapImage } from '../data/image-processor.js';
 import { showImageCropper } from './image-cropper.js';
 
@@ -836,6 +836,17 @@ const Modal = (() => {
       nameInput.type = 'text';
       nameInput.placeholder = 'e.g. Snapbacks';
       nameInput.maxLength = 60;
+
+      nameInput.oninput = () => {
+         const title = nameInput.value.trim();
+         if (isValidCssColor(title)) {
+            const hex = cssColorToHex(title);
+            colorPreview.style.background = hex;
+            colorInput.value = hex;
+            hexInput.value = hex;
+         }
+      };
+
       container.appendChild(field(label('Category name', true), nameInput));
 
       // Color
@@ -861,7 +872,7 @@ const Modal = (() => {
       const hexInput = el('input', 'mdl-input mdl-hex');
       hexInput.type = 'text';
       hexInput.value = currentColor;
-      hexInput.placeholder = '#3B82F6';
+      //hexInput.placeholder = '#3B82F6';
       hexInput.maxLength = 7;
 
       const syncColor = (hex) => {
@@ -994,7 +1005,7 @@ const Modal = (() => {
                throw new DOMException('Image processing cancelled', 'AbortError');
             }
 
-            updateLoadingScreen('Converting format to WebP...');
+            updateLoadingScreen('Converting image format if needed...');
             convertedImage = await tryHeicConversion(file);
 
             if (!originalImage || originalFile !== file) {
@@ -1386,7 +1397,8 @@ const Modal = (() => {
       showLoadingScreen('Processing image...');
       let convertedImage = null;
       _pendingImageName = blobOrFile.name ? blobOrFile.name : String(Date.now());
-      try {
+
+      /* try {
          updateLoadingScreen('Converting format to WebP...');
          convertedImage = await tryHeicConversion(blobOrFile);
 
@@ -1403,7 +1415,9 @@ const Modal = (() => {
          imageFile = convertedImage ? convertedImage : blobOrFile;
          _pendingImage = imageFile;
          _capColor = null;
-      }
+      } */
+      _pendingImage = blobOrFile;
+      _capColor = null;
    };
 
    /* ═══════════════════════════════════════════════════════════════════════

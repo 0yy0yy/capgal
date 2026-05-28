@@ -1,6 +1,7 @@
 import { convertHeicToJpgIfNeeded } from '../data/image-processor.js'
 import { currentCategory } from '../data/store.js'; // and others for setupEncryption...
 import Modal from '../ui/modal.js';
+import { inBatchMode } from '../data/caps.js';
 
 /* const COLOR_WHEEL_24 = [
    "#FF0000", // 0°   red
@@ -99,7 +100,7 @@ const GRAYSCALE_UI = [
    "#F5F5F5"
 ];
 
-const METALIC_COLORS = [
+const METALLIC_COLORS = [
    "#D3AF37", // Metallic Gold - shiny, reflective gold tone
    "#FFD700", // Deep Gold - rich, classic gold color
    "#CD7F32", // Classic Bronze - standard bronze metal shade
@@ -109,38 +110,33 @@ const METALIC_COLORS = [
    "#CFA35D", // Gold/Bronze Palette - warm gold-bronze
    "#A86E3A", // Gold/Bronze Palette - medium bronze brown
    "#CE8946", // Metallic Blend - bronze blend tone
-   "#302716"  // Bright Gold-Bronze - vibrant mixed metallic tone
+   "#302716",  // Bright Gold-Bronze - vibrant mixed metallic tone
+   "#C0C0C0" // Silver
 ];
+
+export const ALL_CAP_COLORS = { COLOR_WHEEL_24, GRAYSCALE_UI, METALLIC_COLORS };
 
 export function checkBFVisibility(hexColor) {
    const badVidiblityRatioColors = [
       "#E05252",
       "#E07552",
       "#E09952",
-      "#75E052",
-      "#52E052",
-      "#52E075",
-      "#52E099",
-      "#52E0BD",
-      "#52E0E0",
+      "#E0BD52",
       "#52BDE0",
       "#5299E0",
       "#5275E0",
       "#5252E0",
       "#7552E0",
       "#9952E0",
+      "#BD52E0",
       "#E052E0",
       "#E052BD",
       "#E05299",
       "#E05275",
       "#6B6B6B",
       "#8F8F8F",
-      "#D3AF37",
-      "#FFD700",
+      "#B5B5B5",
       "#CD7F32",
-      "#E5A01D",
-      "#C9AE5D",
-      "#CFA35D",
       "#A86E3A",
       "#CE8946"
    ];
@@ -149,6 +145,27 @@ export function checkBFVisibility(hexColor) {
    return !(
       value >= parseInt('6B6B6B', 16) && value <= parseInt('8F8F8F', 16)
    ); */
+}
+
+export const isValidCssColor = (color) => {
+   const s = new Option().style;
+   s.color = color;
+   return s.color !== "";
+}
+
+export const cssColorToHex = (color) => {
+   const div = document.createElement("div");
+   div.style.color = color;
+   document.body.appendChild(div);
+   const rgb = getComputedStyle(div).color;
+   document.body.removeChild(div);
+   const values = rgb.match(/\d+/g);
+   const hex = values
+      .slice(0, 3)
+      .map(v => Number(v).toString(16).padStart(2, "0"))
+      .join("");
+
+   return `#${hex}`;
 }
 
 const hexToRgb = (hex) => {
@@ -244,7 +261,7 @@ export function clampToPalette(inputHex) {
    let closest = '#000000';
    let minDist = Infinity;
 
-   for (const hex of [...COLOR_WHEEL_24, ...GRAYSCALE_UI, ...METALIC_COLORS]) {
+   for (const hex of [...COLOR_WHEEL_24, ...GRAYSCALE_UI, ...METALLIC_COLORS]) {
       const dist = hueDistance(input, hexToRgb(hex));
       if (dist < minDist) {
          minDist = dist;
@@ -278,7 +295,8 @@ export function showLoadingScreen(message = 'Loading') {
       loading.classList.add('active');
       const logsEl = document.getElementById('loadingScreenLogs');
       if (logsEl) {
-         logsEl.textContent = message;
+         const counter = inBatchMode.all !== 0 ? `[ ${inBatchMode.current}/${inBatchMode.all} ]  ` : '';
+         logsEl.textContent = `${counter}${message}`;
       }
    }
 }
@@ -289,7 +307,8 @@ export function showLoadingScreen(message = 'Loading') {
 export function updateLoadingScreen(message) {
    const logsEl = document.getElementById('loadingScreenLogs');
    if (logsEl) {
-      logsEl.textContent = message;
+      const counter = inBatchMode.all !== 0 ? `[ ${inBatchMode.current}/${inBatchMode.all} ]  ` : '';
+      logsEl.textContent = `${counter}${message}`;
    }
 }
 
