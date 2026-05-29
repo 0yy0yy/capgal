@@ -14,9 +14,9 @@ export function initGalleryZoom() {
    if (!gallery || !galleryList) return;
 
    // Get initial zoom from store
-   let zoomLevel = store.store.userSettings.galleryZoom || 1;
-   const minZoom = 0.4;
-   let maxZoom = 2.2;
+   let zoomLevel = store.store.userSettings.galleryZoom || 1.05;
+   const minZoom = 0.45;
+   let maxZoom = 2.6;
 
    const BASE_ITEM_SIZE = 100; // Base size in pixels
 
@@ -33,7 +33,7 @@ export function initGalleryZoom() {
 
       // Max zoom should make the item fill available width minus gap
       const calculatedMaxZoom = availableWidth / BASE_ITEM_SIZE;
-      return Math.max(2, calculatedMaxZoom); // At least 2x
+      return Math.max(2.6, calculatedMaxZoom); // At least 2x
    };
 
    /**
@@ -45,7 +45,7 @@ export function initGalleryZoom() {
          return direction === 'up' ? 0.1 : -0.1;
       } else if (zoomLevel < 1.05) {
          return direction === 'up' ? 0.25 : -0.25;
-      } else if (zoomLevel < 1.2) {
+      } else if (zoomLevel < 1.19) {
          return direction === 'up' ? 0.3 : -0.3;
       } else {
          return direction === 'up' ? 0.4 : -0.4;

@@ -1105,8 +1105,8 @@ main {
 
 .selecting-chip.compact::after {
    content: attr(data-icon);
-   font-size: 16px;
-   line-height: 16px;
+   font-size: 14px;
+   line-height: 14px;
    display: contents;
 }
 
