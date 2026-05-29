@@ -128,7 +128,7 @@ export function initCategoryDeleteHandlers() {
             timer = null;
             preventClickOnLongPress = e.target;
             showDeleteButton(li, catId);
-         }, 350);
+         }, 270);
       });
 
       li.addEventListener('pointerup', () => {
@@ -175,7 +175,7 @@ function showDeleteButton(li, catId) {
    // Auto-dismiss after 4s if unused
    setTimeout(() => {
       if (del.parentElement) del.remove();
-   }, 4000);
+   }, 10000);
 }
 
 /**
@@ -208,6 +208,7 @@ export function initCategoryUI() {
          btn.dataset.cat = cat.id;
          btn.textContent = cat.name;
          btn.style.borderLeftColor = cat.color;
+         btn.style.setProperty('--clr-category', cat.color);
          btn.style.borderLeftWidth = '4px';
          btn.style.paddingLeft = '12px';
          li.appendChild(btn);

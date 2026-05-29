@@ -184,6 +184,23 @@ export function openGallery(category, focusSearch = false) {
             if (status) {
                addLastCategoryToFilters();
                updateSelectButtonCompactState();
+
+               const allSelected = isAllCategorySelected();
+               const selectionManager = getGallerySelectionManager(!allSelected, allSelected);
+
+               // If in selection mode, assign category to selected items
+               if (selectionManager && selectionManager.selectedItems.size > 0) {
+                  const catId = store.store.categories.at(-1).id;
+                  selectionManager.selectedItems.forEach(capId => {
+                     const capToUpdate = store.store.caps.find(c => c.id === capId);
+                     if (capToUpdate) {
+                        capToUpdate.category = catId;
+                     }
+                  });
+                  await saveAppData();
+                  exitGallerySelectionMode();
+                  openGallery('all');
+               }
             }
          };
          filtersDiv.prepend(plusChip);
@@ -261,19 +278,27 @@ export function openGallery(category, focusSearch = false) {
             const selectedCaps = selectionManager.getSelectedItems();
 
             if (selectedCaps.length > 0) {
-               const selectedSet = new Set(selectedCaps);
+               const confirmed = await Modal.confirm({
+                  question: `Remove ${selectedCaps.length} ${getWordForCount(selectedCaps.length, 'cap')} from this category?\nThey will be available in "All caps".`,
+                  yesLabel: 'Remove',
+                  noLabel: 'Cancel',
+               });
 
-               for (const cap of store.store.caps) {
-                  if (selectedSet.has(String(cap.id))) {
-                     await store.updateCap(cap.id, {
-                        ...cap,
-                        category: 'all'
-                     });
+               if (confirmed) {
+                  const selectedSet = new Set(selectedCaps);
+
+                  for (const cap of store.store.caps) {
+                     if (selectedSet.has(String(cap.id))) {
+                        await store.updateCap(cap.id, {
+                           ...cap,
+                           category: 'all'
+                        });
+                     }
                   }
-               }
 
-               selectionManager.exitSelectionMode();
-               refreshGallery();
+                  selectionManager.exitSelectionMode();
+                  refreshGallery();
+               }
             }
          }
       };

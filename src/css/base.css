@@ -806,11 +806,16 @@ main {
    flex: 1;
 }
 
+#categories li {
+   position: relative;
+}
+
 #categories li button:not(.cat-delete-btn) {
    width: 100%;
    height: 45px;
    padding: 0 16px;
-   border: none;
+   /* border: none; */
+   border-color: transparent;
    background: var(--clr-surface);
    color: var(--clr-on-surface);
    border-radius: var(--radius-md);
@@ -820,12 +825,14 @@ main {
    font-weight: var(--font-weight-med);
    text-align: left;
    transition: all var(--dur) var(--ease);
-   box-shadow: var(--shadow-sm);
+   box-shadow: 0px 0px 0px 0px var(--clr-category), var(--shadow-sm);
 }
 
-#categories li button:hover {
+#categories li button:hover,
+#categories li button:active {
    background: var(--clr-ripple);
-   transform: translateX(4px);
+   transform: translateX(2px);
+   box-shadow: 0px 0px 5px 3px var(--clr-category), var(--shadow-sm);
 }
 
 #categories li button.selected {
@@ -836,16 +843,18 @@ main {
 #categories li button.cat-delete-btn {
    display: inline-block;
    position: absolute;
-   right: 20px;
-   width: 40px;
-   height: 40px;
+   right: 5px;
+   width: 35px;
+   height: 35px;
    border: none;
    background: transparent;
    color: var(--clr-destructive);
+   box-shadow: inset 0px 0px 10px 0px color-mix(in srgb, var(--clr-on-surface) 50%, var(--clr-surface));
    border-radius: var(--radius-sm);
    cursor: pointer;
    animation: pop-in var(--dur) var(--ease-decel) both;
    transition: background var(--dur) var(--ease);
+   z-index: 2;
 }
 
 .cat-delete-btn:hover {
@@ -1091,6 +1100,7 @@ main {
    align-items: center;
    justify-content: center;
    min-width: 36px;
+   overflow: hidden;
 }
 
 .selecting-chip.compact::after {
@@ -1104,10 +1114,12 @@ main {
    content: "";
    position: absolute;
    inset: 0;
+   border-radius: inherit;
    background-repeat: no-repeat;
    background-position: 60% 50%;
    background-size: 70%;
    opacity: 0.65;
+   pointer-events: none;
    background-image: url('data:image/svg+xml,<svg width="800" height="800" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.496 5.627A2.25 2.25 0 0 1 22 7.75v10A4.25 4.25 0 0 1 17.75 22h-10a2.25 2.25 0 0 1-2.123-1.504l2.097.004H17.75a2.75 2.75 0 0 0 2.75-2.75v-10l-.004-.051zM17.246 2a2.25 2.25 0 0 1 2.25 2.25v12.997a2.25 2.25 0 0 1-2.25 2.25H4.25A2.25 2.25 0 0 1 2 17.247V4.25A2.25 2.25 0 0 1 4.25 2zm0 1.5H4.25a.75.75 0 0 0-.75.75v12.997c0 .414.336.75.75.75h12.997a.75.75 0 0 0 .75-.75V4.25a.75.75 0 0 0-.75-.75" fill="currentcolor" /></svg>');
 }
 
@@ -1115,10 +1127,12 @@ main {
    content: "";
    position: absolute;
    inset: 0;
+   border-radius: inherit;
    background-repeat: no-repeat;
    background-position: center;
    background-size: 50%;
    opacity: 1;
+   pointer-events: none;
    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff453a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 6 5 6 21 6'/%3E%3Cpath d='M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6'/%3E%3Cpath d='M10 11v6'/%3E%3Cpath d='M14 11v6'/%3E%3Cpath d='M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2'/%3E%3C/svg%3E");
 }
 
@@ -1397,13 +1411,14 @@ main {
    box-shadow: var(--shadow-sm);
    display: flex;
    flex-direction: column;
-   gap: 16px;
+   gap: 21px;
 }
 
-.details-meta label {
+.details-meta label,
+.details-meta-row {
    display: flex;
    flex-direction: column;
-   gap: 4px;
+   gap: 6px;
 }
 
 .details-meta .meta-key {
@@ -1445,19 +1460,26 @@ main {
    align-items: stretch;
    gap: 12px;
    position: relative;
+   isolation: isolate;
+   pointer-events: auto;
 }
 
 /* Carousel Navigation Buttons */
 .carousel-nav {
+   position: relative;
    background: var(--clr-surface);
    border: 2px solid var(--clr-border);
    border-radius: var(--radius-sm);
    color: var(--clr-on-surface);
    font-size: 20px;
+   overflow: hidden;
+   contain: layout style;
+   line-height: 1;
    font-weight: 600;
    width: 36px;
-   height: auto;
-   /* min-height: 250px; */
+   height: stretch;
+   transform: scale(0.75);
+   align-self: center;
    cursor: pointer;
    transition: all 150ms var(--ease);
    display: flex;
@@ -1470,11 +1492,28 @@ main {
 .carousel-nav:hover:not(:disabled) {
    background: var(--clr-surface-2);
    border-color: var(--clr-on-surface);
-   transform: scale(1.08);
+   transform: scale(0.9);
+}
+
+.carousel-nav:focus {
+   outline: none;
+}
+
+/* Prevent color buttons from showing hover when carousel nav is hovered */
+.color-picker-btn:hover {
+   transform: scale(1.1);
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+   border-color: var(--clr-on-surface);
+}
+
+.color-picker-track.is-dragging .color-picker-btn:hover {
+   transform: scale(0.9);
+   box-shadow: none;
+   border-color: var(--clr-border);
 }
 
 .carousel-nav:active:not(:disabled) {
-   transform: scale(0.95);
+   transform: scale(0.8);
 }
 
 .carousel-nav:disabled {
@@ -1491,6 +1530,7 @@ main {
    background: var(--clr-surface);
    position: relative;
    height: auto;
+   z-index: 1;
 }
 
 /* Carousel Track (Scrollable, Transformable) */

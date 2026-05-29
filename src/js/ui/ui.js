@@ -6,8 +6,9 @@ import { handleAddCategoryClick, initCategoryButtons, initCategoryDeleteHandlers
 import { addCapsInBatch } from '../data/caps.js';
 import { saveAppData, backupToGitHub } from '../data/saving.js';
 import { importFromDevice, importFromGitHub, exportToDevice } from '../data/loading.js';
-import { hideLoadingScreen, showLoadingScreen } from '../helpers/helper.js';
+import { hideLoadingScreen, showLoadingScreen, isAllCategorySelected } from '../helpers/helper.js';
 import { initGalleryZoom } from './gallery-zoom.js';
+import { getGallerySelectionManager } from './gallery-selection.js';
 
 const settingsPanel = document.getElementById('settings');
 const settingsBackdrop = document.getElementById('settings-backdrop');
@@ -401,6 +402,22 @@ function initAddCategoryButton() {
 
       if (store.navStack.includes('gallery') && store.currentCategory === 'all') {
          addLastCategoryToFilters();
+
+         const allSelected = isAllCategorySelected();
+         const selectionManager = getGallerySelectionManager(!allSelected, allSelected);
+
+         // If in selection mode, assign category to selected items
+         if (selectionManager && selectionManager.selectedItems.size > 0) {
+            selectionManager.selectedItems.forEach(capId => {
+               const capToUpdate = store.store.caps.find(c => c.id === capId);
+               if (capToUpdate) {
+                  capToUpdate.category = cat.id;
+               }
+            });
+            await saveAppData();
+            exitGallerySelectionMode();
+            openGallery('all');
+         }
       }
    });
 }

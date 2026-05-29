@@ -277,7 +277,13 @@ async function detectAndProcessWithOpenCV(imageBlob, signal = null) {
 
          // Extract color from circle
          updateLoadingScreen('Extracting dominant color of the cap...');
-         capColor = extractColorFromCircle(src, circle, 'RGBA');
+         // Check if auto color finding is enabled
+         const useAutoColorFinder = await getSetting('toggleUseAutoColorFinder');
+         if (useAutoColorFinder) {
+            capColor = extractColorFromCircle(src, circle, 'RGBA');
+         } else {
+            capColor = '#808080'; // Use grey when auto color finding is disabled
+         }
 
          // Crop to circle with padding
          updateLoadingScreen('Cropping image to circle...');
@@ -460,36 +466,43 @@ async function cropToCircle(canvas, circle) {
  */
 async function processWithColorExtraction(imageBlob) {
    updateLoadingScreen('Extracting dominant color of the cap...');
-   const bitmap = await createImageBitmap(imageBlob);
 
-   // Sample the center for dominant color
-   const canvas = document.createElement('canvas');
-   canvas.width = 50;
-   canvas.height = 50;
+   // Check if auto color finding is enabled
+   const useAutoColorFinder = await getSetting('toggleUseAutoColorFinder');
+   let capColor = '#808080'; // Default to grey
 
-   const ctx = canvas.getContext('2d');
-   const scale = Math.min(bitmap.width, bitmap.height) / 50;
-   const offsetX = (bitmap.width - 50 * scale) / 2;
-   const offsetY = (bitmap.height - 50 * scale) / 2;
+   if (useAutoColorFinder) {
+      const bitmap = await createImageBitmap(imageBlob);
 
-   ctx.drawImage(bitmap, offsetX, offsetY, 50 * scale, 50 * scale, 0, 0, 50, 50);
+      // Sample the center for dominant color
+      const canvas = document.createElement('canvas');
+      canvas.width = 50;
+      canvas.height = 50;
 
-   const imageData = ctx.getImageData(0, 0, 50, 50);
-   const data = imageData.data;
+      const ctx = canvas.getContext('2d');
+      const scale = Math.min(bitmap.width, bitmap.height) / 50;
+      const offsetX = (bitmap.width - 50 * scale) / 2;
+      const offsetY = (bitmap.height - 50 * scale) / 2;
 
-   let r = 0, g = 0, b = 0;
-   for (let i = 0; i < data.length; i += 4) {
-      r += data[i];
-      g += data[i + 1];
-      b += data[i + 2];
+      ctx.drawImage(bitmap, offsetX, offsetY, 50 * scale, 50 * scale, 0, 0, 50, 50);
+
+      const imageData = ctx.getImageData(0, 0, 50, 50);
+      const data = imageData.data;
+
+      let r = 0, g = 0, b = 0;
+      for (let i = 0; i < data.length; i += 4) {
+         r += data[i];
+         g += data[i + 1];
+         b += data[i + 2];
+      }
+
+      const count = data.length / 4;
+      r = Math.round(r / count);
+      g = Math.round(g / count);
+      b = Math.round(b / count);
+
+      capColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
    }
-
-   const count = data.length / 4;
-   r = Math.round(r / count);
-   g = Math.round(g / count);
-   b = Math.round(b / count);
-
-   const capColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 
    // Return original image for full quality, only use small sample for color
    return new Promise(resolve => {

@@ -13,6 +13,7 @@ export const store = {
       appearance: 'android',
       showCapNames: true,
       useAutoCapFinder: true,
+      toggleUseAutoColorFinder: true,
       openGalleryByDefault: false,
       galleryBackgroundTexture: 'none',
       galleryZoom: 1,

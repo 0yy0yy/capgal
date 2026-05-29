@@ -841,9 +841,7 @@ const Modal = (() => {
          const title = nameInput.value.trim();
          if (isValidCssColor(title)) {
             const hex = cssColorToHex(title);
-            colorPreview.style.background = hex;
-            colorInput.value = hex;
-            hexInput.value = hex;
+            syncColor(hex);
          }
       };
 

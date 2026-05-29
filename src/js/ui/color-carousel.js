@@ -126,6 +126,7 @@ export function initColorCarousel() {
       mouseCurrentX = mouseStartX;
       colorPickerTrack.style.transition = 'none';
       colorPickerTrack.style.cursor = 'grabbing';
+      colorPickerTrack.classList.add('is-dragging');
    });
 
    document.addEventListener('mousemove', (e) => {
@@ -140,6 +141,7 @@ export function initColorCarousel() {
       if (!isMouseDragging) return;
       isMouseDragging = false;
       colorPickerTrack.style.cursor = 'grab';
+      colorPickerTrack.classList.remove('is-dragging');
 
       const deltaX = mouseCurrentX - mouseStartX;
       let newIndex = currentIndex;
