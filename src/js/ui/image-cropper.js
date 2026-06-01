@@ -1,9 +1,10 @@
 /**
  * Image Cropper Modal
  * Allows users to crop images to a square of their choice
+ * @param {string} imageSrc - Image source URL (can be blob URL or data URL)
  */
 
-export async function showImageCropper(imageBase64) {
+export async function showImageCropper(imageSrc) {
    return new Promise((resolve) => {
       // Create overlay
       const overlay = document.createElement('div');
@@ -459,7 +460,7 @@ export async function showImageCropper(imageBase64) {
             dragType = null;
          });
       };
-      img.src = imageBase64;
+      img.src = imageSrc;
 
       // ── Button events ─────────────────────────────────────────────────────────
 

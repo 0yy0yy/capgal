@@ -54,7 +54,7 @@ export async function addCap(capData) {
       title: capData.title || '',
       description: capData.description || '',
       category: capData.category || 'all',
-      imageBase64: capData.imageBase64 || null,
+      imageWebP: capData.imageWebP || null,
       color: capData.color || '#808080',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

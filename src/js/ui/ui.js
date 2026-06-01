@@ -1,7 +1,7 @@
 // ── UI Controls (Settings, Theme, Sidebar, Back Buttons) ──────────────────
 import * as store from '../data/store.js';
 import { popTab } from './navigation.js';
-import { openGallery, addLastCategoryToFilters, refreshGallery } from '../data/gallery.js';
+import { openGallery, addLastCategoryToFilters, refreshGallery, updateGalleryTitleVisibility } from '../data/gallery.js';
 import { handleAddCategoryClick, initCategoryButtons, initCategoryDeleteHandlers, initCategoryUI } from './categories.js';
 import { addCapsInBatch } from '../data/caps.js';
 import { saveAppData, backupToGitHub } from '../data/saving.js';
@@ -55,12 +55,16 @@ export async function initSettingsHandlers() {
    initToggleSwitch('toggleShowCapNames', store.store.userSettings.showCapNames, async (value) => {
       store.store.userSettings.showCapNames = value;
       await saveAppData();
-      // Refresh gallery to show/hide cap names immediately
-      refreshGallery();
+      updateGalleryTitleVisibility(value);
    });
 
    initToggleSwitch('toggleUseAutoCapFinder', store.store.userSettings.useAutoCapFinder, async (value) => {
       store.store.userSettings.useAutoCapFinder = value;
+      await saveAppData();
+   });
+
+   initToggleSwitch('toggleUseAutoColorFinder', store.store.userSettings.toggleUseAutoColorFinder, async (value) => {
+      store.store.userSettings.toggleUseAutoColorFinder = value;
       await saveAppData();
    });
 

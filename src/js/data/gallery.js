@@ -81,13 +81,24 @@ export function openGallery(category, focusSearch = false) {
       }
       return `<li data-category="${cap.category}" data-id="${cap.id}" style="background:${cap.color}; color:${color}" title="${cap.title}">
         <div class="cap-image-container">
-          ${cap.imageBase64 ? `<img src="data:image/jpeg;base64,${cap.imageBase64}" alt="${cap.title}" />` : '<div class="no-image">📷</div>'}
+          ${cap.imageWebP ? `<img src="blob:data" class="cap-image" data-blob="true" alt="${cap.title}" />` : '<div class="no-image">📷</div>'}
         </div>
         <div class="cap-title ${store.store.userSettings.showCapNames ? 'visible' : 'hidden'}"${colorFilter}>
           <div class="marquee-content" data-text="${cap.title}"></div>
         </div>
       </li>
     `}).join('');
+
+   // Create blob URLs for all images
+   const imageElements = galleryList.querySelectorAll('img[data-blob="true"]');
+   imageElements.forEach((img, index) => {
+      const cap = store.store.caps[index];
+      if (cap?.imageWebP) {
+         const blobUrl = URL.createObjectURL(cap.imageWebP);
+         img.src = blobUrl;
+         img.dataset.blobUrl = blobUrl; // Store for cleanup
+      }
+   });
 
    // Show/hide filter row - only in ALL CAPS gallery
    if (filterRow) {
@@ -384,16 +395,20 @@ async function handleDeleteCategoryFromGallery(categoryId) {
 /**
  * Refresh gallery colors after update
  */
-export function refreshGallery() {
+export function refreshGallery(reopenGallery = true) {
    // Re-render current gallery to update colors
    const currentCat = store.currentCategory;
    const numberOfViewsOnStack = store.navStack.length;
    if (numberOfViewsOnStack === 2) {
       store.setNavStack(['categories', 'gallery']);
    } else if (numberOfViewsOnStack === 3) {
+      store.setNavStack(['categories', 'gallery', 'details']);
+   } else {
       store.setNavStack(['categories']);
    }
-   openGallery(currentCat);
+   if (reopenGallery) {
+      openGallery(currentCat);
+   }
 }
 
 export function openDetails(id) {
@@ -456,8 +471,10 @@ export function openDetails(id) {
 
    const detailsImage = document.getElementById('detailsImage');
    detailsImage.style.background = cap.color;
-   if (cap.imageBase64) {
-      detailsImage.src = `data:image/jpeg;base64,${cap.imageBase64}`;
+   if (cap.imageWebP) {
+      const blobUrl = URL.createObjectURL(cap.imageWebP);
+      detailsImage.src = blobUrl;
+      detailsImage.dataset.blobUrl = blobUrl; // Store for cleanup
       detailsImage.style.minHeight = '180px';
 
       // Show image actions when image is loaded

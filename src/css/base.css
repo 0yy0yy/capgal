@@ -774,6 +774,7 @@ main {
    transform: translateX(100vw);
    opacity: 0;
    pointer-events: none;
+   user-select: none;
    transition:
       transform var(--dur) var(--ease),
       opacity var(--dur) var(--ease);

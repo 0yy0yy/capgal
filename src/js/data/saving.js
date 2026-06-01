@@ -4,9 +4,23 @@ import * as crypto from './crypto.js';
 import * as indexdb from './indexdb.js';
 import Modal from '../ui/modal.js';
 import { utf8ToBase64, base64ToUtf8 } from '../helpers/helper.js';
+import { blobToBase64 } from './image-processor.js';
 
 const GITHUB_REPO = '0yy0yy/capgal';
 const GITHUB_BRANCH = 'master';
+
+/**
+ * Convert caps with imageWebP blobs to imageBase64 strings for JSON export
+ * @param {Array} caps - Array of cap objects with imageWebP blobs
+ * @returns {Promise<Array>} - Array of cap objects with imageBase64 strings
+ */
+export async function convertCapsToBase64(caps) {
+   return Promise.all(caps.map(async (cap) => ({
+      ...cap,
+      imageBase64: cap.imageWebP ? await blobToBase64(cap.imageWebP) : null,
+      imageWebP: undefined, // Remove the blob reference
+   })));
+}
 
 /**
  * Save app data to IndexDB (always) and GitHub (if configured)
@@ -37,8 +51,11 @@ export async function backupToGitHub() {
    }
 
    try {
+      // Convert blobs to base64 for export
+      const capsForExport = await convertCapsToBase64(store.store.caps);
+
       const dataForGitHub = {
-         caps: store.store.caps,
+         caps: capsForExport,
          categories: store.store.categories,
          userSettings: {
             ...store.store.userSettings,

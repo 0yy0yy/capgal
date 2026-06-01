@@ -89,7 +89,7 @@ export async function saveCap(capData) {
    try {
       showLoadingScreen('Saving cap to database...');
 
-      let imageBase64 = null;
+      let imageWebP = null;
       let capColor = '';
       let processed = null;
 
@@ -110,9 +110,7 @@ export async function saveCap(capData) {
       const img = await resizeImageIfNeeded(imgToDownsize);
       const color = processed ? processed.capColor : capData.capColor;
       updateLoadingScreen('Compressing image to WebP at 0.9 quality...');
-      const compressedImg = await compressToWebP(img);
-      updateLoadingScreen('Encoding image...');
-      imageBase64 = await fileToBase64(compressedImg);
+      imageWebP = await compressToWebP(img);
       capColor = clampToPalette(color || '#808080');
 
       // Add to store
@@ -121,7 +119,7 @@ export async function saveCap(capData) {
          title: capData.title || '',
          description: capData.description || '',
          category: capData.category || 'all', // Default to 'all' if not specified
-         imageBase64,
+         imageWebP,
          color: capColor,
          createdAt: new Date().toISOString(),
          updatedAt: new Date().toISOString(),
@@ -318,12 +316,12 @@ export async function replaceCapImage(capId) {
       updateLoadingScreen(`Detecting bottle cap in image '${fileName}'...`);
       const processed = await processCapImage(convertedJpegImage); // add the source to know if it is in bgr... --- todo
 
-      updateLoadingScreen('Encoding image...');
-      const imageBase64 = await fileToBase64(processed.imageBlob);
+      updateLoadingScreen('Compressing image to WebP...');
+      const imageWebP = await compressToWebP(processed.imageBlob);
 
       const cap = store.store.caps.find(c => c.id === capId);
       if (cap) {
-         cap.imageBase64 = imageBase64;
+         cap.imageWebP = imageWebP;
          cap.color = clampToPalette(processed.capColor);
          cap.updatedAt = new Date().toISOString();
       }
@@ -346,35 +344,14 @@ export async function replaceCapImage(capId) {
  */
 export async function exportCapImage(capId) {
    const cap = store.store.caps.find(c => c.id === capId);
-   if (!cap || !cap.imageBase64) return false;
+   if (!cap || !cap.imageWebP) return false;
 
    try {
-      const img = new Image();
-
-      img.src = `data:image/webp;base64,${cap.imageBase64}`;
-
-      await img.decode();
-
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-
-      const blob = await new Promise(resolve =>
-         canvas.toBlob(
-            resolve,
-            'image/png',
-            1
-         )
-      );
-
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(cap.imageWebP);
 
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${cap.title || 'cap' + cap.id}.png`;
+      a.download = `${cap.title || 'cap' + cap.id}.webp`;
 
       document.body.appendChild(a);
       a.click();
@@ -402,7 +379,7 @@ export async function deleteCapImage(capId) {
    if (confirmed) {
       const cap = store.store.caps.find(c => c.id === capId);
       if (cap) {
-         cap.imageBase64 = null;
+         cap.imageWebP = null;
          cap.updatedAt = new Date().toISOString();
       }
       await saveAppData();
@@ -416,13 +393,18 @@ export async function deleteCapImage(capId) {
  */
 export async function cropCapImage(capId) {
    const cap = store.store.caps.find(c => c.id === capId);
-   if (!cap || !cap.imageBase64) return false;
+   if (!cap || !cap.imageWebP) return false;
 
    try {
       showLoadingScreen('Opening image cropper...');
 
+      // Create a blob URL for the image
+      const blobUrl = URL.createObjectURL(cap.imageWebP);
+
       // Show the image cropper
-      const croppedBlob = await showImageCropper(`data:image/webp;base64,${cap.imageBase64}`);
+      const croppedBlob = await showImageCropper(blobUrl);
+
+      URL.revokeObjectURL(blobUrl);
 
       if (!croppedBlob) {
          // User cancelled
@@ -430,11 +412,11 @@ export async function cropCapImage(capId) {
          return false;
       }
 
-      updateLoadingScreen('Processing cropped image...');
-      const imageBase64 = await fileToBase64(croppedBlob);
+      updateLoadingScreen('Compressing cropped image...');
+      const imageWebP = await compressToWebP(croppedBlob);
 
       // Update the cap with the cropped image
-      cap.imageBase64 = imageBase64;
+      cap.imageWebP = imageWebP;
       cap.updatedAt = new Date().toISOString();
 
       await saveAppData();

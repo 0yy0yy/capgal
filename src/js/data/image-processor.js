@@ -588,3 +588,48 @@ export async function resizeImageIfNeeded(imageBlob, maxDimension = 600) {
       return imageBlob;
    }
 }
+
+/**
+ * Convert a Blob to base64 string
+ * Used for exporting images to JSON format
+ * @param {Blob} blob - The blob to convert
+ * @returns {Promise<string>} - Base64 encoded string (without data URI prefix)
+ */
+export async function blobToBase64(blob) {
+   return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+         // Extract base64 string without 'data:...;base64,' prefix
+         const result = reader.result.split(',')[1];
+         resolve(result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+   });
+}
+
+/**
+ * Convert a base64 string to a Blob
+ * Used for importing images from JSON format
+ * @param {string} base64String - Base64 encoded string (without data URI prefix)
+ * @param {string} mimeType - MIME type of the blob (default: 'image/webp')
+ * @returns {Blob} - The decoded blob
+ */
+export function base64ToBlob(base64String, mimeType = 'image/webp') {
+   try {
+      // Decode base64 to binary string
+      const binaryString = atob(base64String);
+      
+      // Convert binary string to Uint8Array
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+         bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // Create and return blob
+      return new Blob([bytes], { type: mimeType });
+   } catch (error) {
+      console.error('Base64 to blob conversion failed:', error);
+      throw error;
+   }
+}

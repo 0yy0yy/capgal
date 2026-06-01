@@ -5,8 +5,23 @@ import * as indexdb from './indexdb.js';
 import Modal from '../ui/modal.js';
 import { base64ToUtf8 } from '../helpers/helper.js';
 import { showLoadingScreen, updateLoadingScreen, hideLoadingScreen } from '../helpers/helper.js';
+import { convertCapsToBase64 } from './saving.js';
+import { base64ToBlob } from './image-processor.js';
 
 const GITHUB_REPO = '0yy0yy/capgal';
+
+/**
+ * Convert caps with imageBase64 strings to imageWebP blobs for internal storage
+ * @param {Array} caps - Array of cap objects with imageBase64 strings
+ * @returns {Promise<Array>} - Array of cap objects with imageWebP blobs
+ */
+async function convertBase64ToCaps(caps) {
+   return Promise.all(caps.map(async (cap) => ({
+      ...cap,
+      imageWebP: cap.imageBase64 ? base64ToBlob(cap.imageBase64, 'image/webp') : null,
+      imageBase64: undefined, // Remove the base64 reference
+   })));
+}
 
 /**
  * Load app data from IndexDB on startup
@@ -44,8 +59,14 @@ async function importData(appData) {
       noLabel: 'Merge'
    });
 
+   // Convert base64 images to blobs
+   showLoadingScreen('Processing images...');
+   if (appData.caps && Array.isArray(appData.caps)) {
+      appData.caps = await convertBase64ToCaps(appData.caps);
+   }
+
    if (importMode) { // replace
-      showLoadingScreen('Replacing data...');
+      updateLoadingScreen('Replacing data...');
       // Write directly to store without using setters
       store.store.caps = appData.caps || [];
       store.store.categories = appData.categories || [];
@@ -54,7 +75,7 @@ async function importData(appData) {
       Object.assign(store.store.userSettings, appData.userSettings || {});
       store.store.userSettings.lastGitHubSync = currentLastGitHubSync;
    } else { // merge otherwise
-      showLoadingScreen('Merging data...');
+      updateLoadingScreen('Merging data...');
       // Merge caps: keep existing, add new ones, update same ID with backup data
       const backupCaps = appData.caps || [];
       const mergedCaps = [...store.store.caps];
@@ -106,6 +127,7 @@ async function importData(appData) {
          store.store.userSettings.lastGitHubSync = currentLastGitHubSync;
       }
    }
+   hideLoadingScreen();
 }
 
 /**
@@ -240,8 +262,11 @@ export async function importFromDevice() {
  */
 export async function exportToDevice(encrypted = true) {
    try {
+      // Convert blobs to base64 for export
+      const capsForExport = await convertCapsToBase64(store.store.caps);
+
       const appData = {
-         caps: store.store.caps,
+         caps: capsForExport,
          categories: store.store.categories,
          userSettings: {
             ...store.store.userSettings,
