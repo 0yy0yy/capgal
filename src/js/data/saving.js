@@ -3,7 +3,7 @@ import * as store from './store.js';
 import * as crypto from './crypto.js';
 import * as indexdb from './indexdb.js';
 import Modal from '../ui/modal.js';
-import { utf8ToBase64, base64ToUtf8 } from '../helpers/helper.js';
+import { utf8ToBase64, base64ToUtf8, hideLoadingScreen, showLoadingScreen } from '../helpers/helper.js';
 import { blobToBase64 } from './image-processor.js';
 
 const GITHUB_REPO = '0yy0yy/capgal';
@@ -93,6 +93,7 @@ async function saveToGitHub(dataToSave) {
       // Ask for passphrase if not in memory
       if (!store.store.userSettings.encryptionPassphrase && !store.store.userSettings.githubDataHash) {
          try {
+            hideLoadingScreen();
             const passphrase = await Modal.getPassphrase(
                'GitHub Sync',
                'Enter your encryption passphrase'
@@ -104,6 +105,7 @@ async function saveToGitHub(dataToSave) {
             }
 
             store.store.userSettings.encryptionPassphrase = passphrase;
+            showLoadingScreen('Backing up gallery data to github... This may take a while.');
          } catch (passphraseError) {
             console.error('Error getting passphrase:', passphraseError);
             throw passphraseError;
@@ -112,6 +114,7 @@ async function saveToGitHub(dataToSave) {
 
       // Hash passphrase to get filename (SHA-256)
       const dataHash = store.store.userSettings.githubDataHash ? store.store.userSettings.githubDataHash : await crypto.hashPassphrase(store.store.userSettings.encryptionPassphrase);
+      store.store.userSettings.githubDataHash ??= dataHash;
       const fileName = `data/${dataHash}.json`;
 
       // Check for collision

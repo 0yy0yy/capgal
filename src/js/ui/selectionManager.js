@@ -9,6 +9,7 @@ export class SelectionManager {
       this.isSelectionMode = false;
       this.longPressTimer = null;
       this.longPressDelay = options.delay || 350;
+      this.lastSelectedIndex = -1;
       this.onSelectionChange = options.onSelectionChange || (() => { });
       this.onSelectionModeChange = options.onSelectionModeChange || (() => { });
    }
@@ -100,20 +101,50 @@ export class SelectionManager {
    toggleItemSelection(item, event) {
       event?.preventDefault();
 
-      if (this.selectedItems.has(item.id)) {
-         this.selectedItems.delete(item.id);
-         item.element.classList.remove('selected');
+      // Check if shift key is held and we have a previous selection
+      if (event?.shiftKey && this.lastSelectedIndex !== -1) {
+         const currentIndex = this.selectableItems.findIndex(i => i.id === item.id);
+         this.selectRange(this.lastSelectedIndex, currentIndex);
       } else {
-         this.selectedItems.add(item.id);
-         item.element.classList.add('selected');
+         // Normal toggle behavior
+         if (this.selectedItems.has(item.id)) {
+            this.selectedItems.delete(item.id);
+            item.element.classList.remove('selected');
+         } else {
+            this.selectedItems.add(item.id);
+            item.element.classList.add('selected');
+
+            // Update last selected index only if item was selected
+            const currentIndex = this.selectableItems.findIndex(i => i.id === item.id);
+            this.lastSelectedIndex = currentIndex;
+         }
       }
 
       this.onSelectionChange(Array.from(this.selectedItems));
    }
 
+   selectRange(startIndex, endIndex) {
+      // Normalize indices
+      const min = Math.min(startIndex, endIndex);
+      const max = Math.max(startIndex, endIndex);
+
+      // Select all items in the range
+      for (let i = min; i <= max; i++) {
+         const item = this.selectableItems[i];
+         if (item) {
+            this.selectedItems.add(item.id);
+            item.element.classList.add('selected');
+         }
+      }
+
+      // Update last selected index
+      this.lastSelectedIndex = endIndex;
+   }
+
    exitSelectionMode() {
       this.isSelectionMode = false;
       this.selectedItems.clear();
+      this.lastSelectedIndex = -1;
       this.selectableItems.forEach(item => {
          item.element.classList.remove('selected');
       });

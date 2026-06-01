@@ -619,7 +619,7 @@ export function base64ToBlob(base64String, mimeType = 'image/webp') {
    try {
       // Decode base64 to binary string
       const binaryString = atob(base64String);
-      
+
       // Convert binary string to Uint8Array
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
