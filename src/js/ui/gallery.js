@@ -3,12 +3,7 @@ import { slimSelectAfterChangeFunction } from '../data/gallery.js';
 export function initGalleryCapColorPicker() {
    document.querySelectorAll('#colorPickerCategoryCapsSelect option').forEach(option => {
       const color = option.value;
-
-      option.dataset.html = `
-        <span class="color-option">
-            <span class="color-swatch" style="background:${color}"></span>
-            ${color}
-        </span>`;
+      option.dataset.html = `<span class="color-swatch" style="background:${color}"></span>`;
    });
 
    const colorPicker = new SlimSelect({

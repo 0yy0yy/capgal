@@ -103,7 +103,7 @@ export function openGallery(category, focusSearch = false) {
          colorFilter = ' style="filter: none"';
       }
 
-      return `<li data-category="${cap.category}" data-id="${cap.id}" style="background:${cap.color}; color:${color}" title="${cap.title}">
+      return `<li data-category="${cap.category}" data-id="${cap.id}" data-color="${cap.color}" style="--clr-cap: ${cap.color}; background: ${cap.color}; color: ${color}" title="${cap.title}">
         <div class="cap-image-container">
           ${cap.imageWebP ? `<img src="blob:data" class="cap-image" data-blob="true" alt="${cap.title}" />` : '<div class="no-image">📷</div>'}
         </div>
@@ -352,10 +352,10 @@ export function openGallery(category, focusSearch = false) {
                }
             });
             await saveAppData();
+            refreshGallery(true);
          }
 
          exitGallerySelectionMode();
-         refreshGallery(true);
       }
    }
 

@@ -147,7 +147,7 @@ export function updateCategoryTitles(category) {
 }
 
 export function updateCategoryColor(category) {
-   const buttonToUpdate = document.querySelector(`#categories li button[data-cat=${category.id}]`);
+   const buttonToUpdate = document.querySelector(`#categories li button[data-cat=${category.id}]:not([data-cat='all'])`);
    buttonToUpdate.style.borderLeftColor = category.color;
    buttonToUpdate.style.setProperty('--clr-category', category.color);
 }

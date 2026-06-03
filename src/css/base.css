@@ -519,7 +519,7 @@
 .ss-main,
 .ss-content {
    /* Colors */
-   --ss-primary-color: var(--clr-accent);
+   --ss-primary-color: color-mix(in srgb, var(--clr-accent), transparent 80%);
    --ss-bg-color: var(--clr-bg);
    --ss-font-color: var(--clr-on-surface);
    --ss-border-color: var(--clr-border);
@@ -540,6 +540,16 @@
    /* Other Properties */
    --ss-border-radius: 4px;
    --ss-animation-timing: 0.2s;
+}
+
+.ss-optgroup-label-text {
+   font-size: 80%;
+}
+
+.ss-list {
+   display: flex;
+   gap: 7px;
+   flex-direction: column;
 }
 
 /* Safe area insets for modern devices */
@@ -913,10 +923,9 @@ main {
    display: flex;
    align-items: center;
    gap: 8px;
-   padding: 12px var(--sp);
+   padding: 12px var(--lsp);
    background: var(--clr-surface);
    border-bottom: 1px solid var(--clr-border);
-   min-height: 60px;
    flex-shrink: 0;
    z-index: 1;
 }
@@ -1090,7 +1099,7 @@ main {
 
 .filter-chip,
 .selecting-chip {
-   padding: 6px 14px !important;
+   padding: 6px 14px;
    border: 1px solid var(--clr-border);
    background: var(--clr-surface);
    color: var(--clr-muted);
@@ -1112,8 +1121,8 @@ main {
    border-color: var(--clr-primary);
    color: var(--clr-on-primary);
    font-size: 24px;
-   line-height: 13px;
-   display: flex;
+   line-height: 16px;
+   width: 42px;
 }
 
 .filter-chip-plus:hover {
@@ -1216,19 +1225,28 @@ button.stick-left {
    flex: none;
 }
 
-.color-option {
-   display: inline-flex;
-   align-items: center;
-   gap: 8px;
-}
-
 .color-swatch {
-   width: 14px;
-   height: 14px;
-   border-radius: 50%;
-   /* change to 3px for square */
+   width: 24px;
+   height: 24px;
+   border-radius: 4px;
    border: 1px solid rgba(0, 0, 0, .15);
    flex-shrink: 0;
+   display: inline-block;
+}
+
+/* Target SlimSelect's option rows inside optgroups to flow as a grid */
+.ss-option {
+   padding: 3px !important;
+   display: inline-flex !important;
+   width: auto !important;
+}
+
+/* Make the optgroup content wrap the swatches in a row */
+.ss-optgroup .ss-list {
+   display: flex !important;
+   flex-wrap: wrap !important;
+   gap: 4px !important;
+   padding: 6px !important;
 }
 
 .stick-down.danger {
@@ -1257,7 +1275,7 @@ button.stick-left {
    backdrop-filter: blur(10px);
    background: linear-gradient(to top, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.6));
    margin: 0px -16px;
-   padding: var(--sp) 12px 12px 12px;
+   padding: var(--lsp) 12px;
    z-index: 52;
 }
 
@@ -1288,7 +1306,9 @@ button.stick-left {
    overflow: hidden;
    cursor: pointer;
    background: var(--clr-surface);
-   box-shadow: var(--shadow-sm);
+   box-shadow:
+      -1px 1px 2px 1px color-mix(in srgb, var(--clr-cap), transparent 30%),
+      0px 0px 5px 0px color-mix(in srgb, var(--clr-cap), transparent 30%);
    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
    position: relative;
 }
@@ -2059,19 +2079,23 @@ button.stick-left {
    /* Smaller touch targets on mobile? No, keep at least 44px */
    .filter-chip,
    .selecting-chip {
-      padding: 8px 12px;
+      padding: 8px 7px;
       font-size: clamp(11px, 1.8vw, 13px);
    }
 
    .tab-header {
-      padding: 12px var(--lsp);
+      padding: var(--lsp);
+      height: 50px;
    }
 
    .tab-header .back-btn {
       padding: 8px 8px 8px 0px;
    }
 
-   .filter-chip.filter-chip-plus {}
+   .filter-chip-plus {
+      line-height: 12px;
+      width: 28px;
+   }
 
    .action-btn {
       padding: 8px 5px;
@@ -2080,7 +2104,7 @@ button.stick-left {
 
 @media (max-width: 510px) {
    .ss-main {
-      width: 140px !important;
+      width: 150px !important;
    }
 }
 
