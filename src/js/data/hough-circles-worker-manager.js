@@ -29,7 +29,6 @@ export async function initializeHoughCirclesWorker() {
          if (type === 'init' && status === 'ready') {
             isInitialized = true;
             console.log('[HoughCircles Worker] OpenCV loaded and ready');
-            return;
          }
 
          // Handle task responses
@@ -38,7 +37,7 @@ export async function initializeHoughCirclesWorker() {
             clearTimeout(timeoutId);
             pendingTasks.delete(taskId);
 
-            if (type === 'success') {
+            if (type === 'success' || type === 'init') {
                resolve(event.data);
             } else if (type === 'error') {
                reject(new Error(event.data.error));
@@ -62,7 +61,7 @@ export async function initializeHoughCirclesWorker() {
          const timeoutId = setTimeout(() => {
             console.warn('[HoughCircles Worker] Init timeout');
             resolve();
-         }, 4000);
+         }, 5000);
 
          pendingTasks.set(taskId, {
             resolve: () => {

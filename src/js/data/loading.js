@@ -37,13 +37,10 @@ export async function loadAppData() {
          store.store.caps = data.caps || [];
          store.store.categories = data.categories || [];
          Object.assign(store.store.userSettings, data.userSettings || {});
-         hideLoadingScreen();
          return true;
       }
-      hideLoadingScreen();
    } catch (error) {
       console.error('Error loading app data:', error);
-      hideLoadingScreen();
    }
    return false;
 }

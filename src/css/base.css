@@ -1351,10 +1351,12 @@ button.stick-left {
 
 .zoom-small .marquee-content {
    font-size: 75%;
+   letter-spacing: 0.7px;
 }
 
 .zoom-big .marquee-content {
    font-size: 125%;
+   letter-spacing: 1.5px;
 }
 
 .cap-image-container {

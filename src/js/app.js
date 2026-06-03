@@ -15,11 +15,10 @@ import { initializeHoughCirclesWorker } from './data/hough-circles-worker-manage
  */
 async function initApp() {
    try {
-      showLoadingScreen('Loading...');
+      showLoadingScreen('Loading data...');
       // Load user data from storage
       const hasData = await loadAppData();
 
-      showLoadingScreen('Data initialised...');
       // Attempt autosync from GitHub if credentials are available
       if (hasData && store.store.userSettings.githubToken && store.store.userSettings.encryptionPassphrase) {
          updateLoadingScreen('Checking GitHub backup for changes...');
@@ -57,7 +56,7 @@ async function initApp() {
       }
 
       // Initialize Web Worker for HoughCircles early (uses cached opencv.js)
-      updateLoadingScreen('Initializing circle detection worker...');
+      updateLoadingScreen('Initializing circle finder...');
       try {
          await initializeHoughCirclesWorker();
       } catch (error) {

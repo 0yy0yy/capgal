@@ -559,12 +559,12 @@ export async function compressToWebP(imageBlob) {
 }
 
 /**
- * Downsize image to max 600x600px if larger
+ * Downsize image to max 500x500px if larger
  * @param {Blob} imageBlob - The image blob to resize
- * @param {number} maxDimension - Maximum width or height (default: 600)
+ * @param {number} maxDimension - Maximum width or height (default: 500)
  * @returns {Promise<Blob>} - Resized image blob, or original if already smaller
  */
-export async function resizeImageIfNeeded(imageBlob, maxDimension = 600) {
+export async function resizeImageIfNeeded(imageBlob, maxDimension = 500) {
    try {
       const bitmap = await createImageBitmap(imageBlob);
 
