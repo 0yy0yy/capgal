@@ -109,7 +109,7 @@ export async function showImageCropper(imageSrc) {
          aspect-ratio: auto;
          background: #ddd;
          border: 1px solid #999;
-         overflow: hidden;
+         /* overflow: hidden; */
          cursor: grab;
       `;
       canvasContainer.addEventListener('mousedown', () => {

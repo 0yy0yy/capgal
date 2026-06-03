@@ -3,7 +3,7 @@ import * as store from '../data/store.js';
 import { pushTab, popTab } from '../ui/navigation.js';
 import { updateGallerySelection, exitGallerySelectionMode, getGallerySelectionManager } from '../ui/gallery-selection.js';
 import { replaceCapImage, exportCapImage, deleteCapImage, deleteSelectedCaps, cropCapImage } from './caps.js';
-import { handleAddCategoryClick, deleteCategory, updateCategoryTitles } from '../ui/categories.js';
+import { handleAddCategoryClick, deleteCategory, updateCategoryTitles, updateCategoryColor } from '../ui/categories.js';
 import { saveAppData } from './saving.js';
 import Modal from '../ui/modal.js';
 import { getWordForCount, setMarqueeScroll, isAllCategorySelected, checkBFVisibility, ALL_CAP_COLORS } from '../helpers/helper.js';
@@ -17,6 +17,20 @@ const searchInput = document.getElementById('searchInput');
 const filterRow = document.getElementById('filterRow');
 const deleteBtn = document.getElementById('gallery')?.querySelector('#deleteButton');
 
+// Gallery cap color changer
+let capColorSlimSelect = null;
+export let slimSelectAfterChangeFunction = null;
+
+// Details image buttons
+let replaceBtn = document.getElementById('replaceImageBtn');
+let cropBtn = document.getElementById('cropImageBtn');
+let exportBtn = document.getElementById('exportImageBtn');
+let deleteImageBtn = document.getElementById('deleteImageBtn');
+
+export function setSlimColorPicker(slimSelect) {
+   capColorSlimSelect = slimSelect;
+}
+
 export function openGallery(category, focusSearch = false) {
    store.setCurrentCategory(category);
 
@@ -26,6 +40,8 @@ export function openGallery(category, focusSearch = false) {
       deleteBtn.hidden = shouldHideDelete;
       deleteBtn.onclick = () => handleDeleteCategoryFromGallery(category);
    }
+
+   capColorSlimSelect?.setSelected('');
 
    // Get category data
    const categoryObj = store.store.categories.find(c => c.id === category);
@@ -55,6 +71,10 @@ export function openGallery(category, focusSearch = false) {
       galleryColor.value = categoryObj.color;
       galleryColor.oninput = async (e) => {
          categoryObj.color = e.target.value;
+
+         // Update the category view
+         updateCategoryColor(categoryObj);
+
          await saveAppData();
          // Update gallery background
          const gallery = document.getElementById('gallery');
@@ -65,6 +85,8 @@ export function openGallery(category, focusSearch = false) {
             const b = rgb & 255;
             gallery.style.background = `linear-gradient(185deg,rgba(${r}, ${g}, ${b}, 0.05) 0%, rgba(${r}, ${g}, ${b}, 0.2) 100%)`;
          }
+
+
       };
       galleryColor.hidden = false;
    }
@@ -73,12 +95,14 @@ export function openGallery(category, focusSearch = false) {
    galleryList.innerHTML = store.store.caps.map(cap => {
       let color;
       let colorFilter = "";
+
       if (checkBFVisibility(cap.color)) {
          color = cap.color;
       } else {
          color = '#111111';
          colorFilter = ' style="filter: none"';
       }
+
       return `<li data-category="${cap.category}" data-id="${cap.id}" style="background:${cap.color}; color:${color}" title="${cap.title}">
         <div class="cap-image-container">
           ${cap.imageWebP ? `<img src="blob:data" class="cap-image" data-blob="true" alt="${cap.title}" />` : '<div class="no-image">📷</div>'}
@@ -90,10 +114,11 @@ export function openGallery(category, focusSearch = false) {
     `}).join('');
 
    // Create blob URLs for all images
-   const imageElements = galleryList.querySelectorAll('img[data-blob="true"]');
-   imageElements.forEach((img, index) => {
-      const cap = store.store.caps[index];
-      if (cap?.imageWebP) {
+   const imageElements = galleryList.querySelectorAll('.cap-image-container');
+   imageElements.forEach((imageContainer, index) => {
+      const img = imageContainer.querySelector('img');
+      if (img) {
+         const cap = store.store.caps[index];
          const blobUrl = URL.createObjectURL(cap.imageWebP);
          img.src = blobUrl;
          img.dataset.blobUrl = blobUrl; // Store for cleanup
@@ -111,15 +136,13 @@ export function openGallery(category, focusSearch = false) {
          const isOnSmallScreen = getComputedStyle(topBar).display === 'flex';
          const numberOfFilters = filtersDiv.querySelectorAll('.filter-chip:not(.filter-chip-plus)').length;
          const shouldCompactTheButtons = isOnSmallScreen ? numberOfFilters >= 1 : numberOfFilters >= 3;
-         const selectButtons = selectingDiv.querySelectorAll('.selecting-chip');
+         const selectButtons = selectingDiv.querySelectorAll('.selecting-chip:not(.stick-down):not(.stick-left)');
          selectButtons.forEach(btn => {
-            if (shouldCompactTheButtons) {
+            if (shouldCompactTheButtons || category !== 'all') {
                const index = Array.from(selectButtons).indexOf(btn);
-               if (index !== 0) {
-                  btn.classList.add('compact');
-                  if (index === 1) btn.setAttribute('data-icon', '✔'); // select all
-                  else if (index === 2) btn.setAttribute('data-icon', '𐄂'); // deselect all
-               }
+               btn.classList.add('compact');
+               if (index === 0) btn.setAttribute('data-icon', '✔'); // select all
+               else if (index === 1) btn.setAttribute('data-icon', '𐄂'); // deselect all
             } else {
                btn.classList.remove('compact');
                btn.removeAttribute('data-icon');
@@ -215,14 +238,10 @@ export function openGallery(category, focusSearch = false) {
             }
          };
          filtersDiv.prepend(plusChip);
-         // Initial compact state check
-         updateSelectButtonCompactState();
       } else {
          // Non-ALL categories should show filter row with remove button in selection mode
          filtersDiv.style.display = 'none';
          filterRow.style.justifyContent = 'flex-end';
-
-         updateSelectButtonCompactState();
 
          // Filter to show only the appropriate caps
          galleryList.querySelectorAll('li').forEach(li => {
@@ -230,6 +249,8 @@ export function openGallery(category, focusSearch = false) {
             li.classList.toggle('hidden', !match);
          });
       }
+
+      updateSelectButtonCompactState();
    }
 
    // Search bar visibility (only in ALL gallery)
@@ -278,9 +299,10 @@ export function openGallery(category, focusSearch = false) {
    // Select All / Deselect All buttons
    const selectingChips = document.querySelectorAll('.selecting-chip');
    const removeSelectedBtn = selectingChips[0];
-   const selectAllBtn = selectingChips[1];
-   const deselectAllBtn = selectingChips[2];
-   const deleteSelectedBtn = selectingChips[3];
+   const capColorSelect = selectingChips[1];
+   const selectAllBtn = selectingChips[3];
+   const deselectAllBtn = selectingChips[4];
+   const deleteSelectedBtn = selectingChips[5];
 
    if (removeSelectedBtn) {
       removeSelectedBtn.onclick = async () => {
@@ -313,6 +335,28 @@ export function openGallery(category, focusSearch = false) {
             }
          }
       };
+   }
+
+   if (capColorSlimSelect) {
+      // add cap color logic for selected
+      slimSelectAfterChangeFunction = async (selectedColor) => {
+         const allSelected = isAllCategorySelected();
+         const selectionManager = getGallerySelectionManager(!allSelected, allSelected);
+
+         // If in selection mode, assign category to selected items
+         if (selectionManager && selectionManager.selectedItems.size > 0) {
+            selectionManager.selectedItems.forEach(capId => {
+               const capToUpdate = store.store.caps.find(c => c.id === capId);
+               if (capToUpdate) {
+                  capToUpdate.color = selectedColor;
+               }
+            });
+            await saveAppData();
+         }
+
+         exitGallerySelectionMode();
+         refreshGallery(true);
+      }
    }
 
    if (selectAllBtn) {
@@ -475,30 +519,23 @@ export function openDetails(id) {
       const blobUrl = URL.createObjectURL(cap.imageWebP);
       detailsImage.src = blobUrl;
       detailsImage.dataset.blobUrl = blobUrl; // Store for cleanup
-      detailsImage.style.minHeight = '180px';
-
-      // Show image actions when image is loaded
-      /* const actionBar = document.querySelector('.image-actions');
-      if (actionBar) {
-         actionBar.classList.add('visible');
-      } */
+      replaceBtn.innerText = '🔄 Replace';
+      cropBtn.style.display = 'block';
+      exportBtn.style.display = 'block';
+      deleteImageBtn.style.display = 'block';
    } else {
       detailsImage.src = '';
-      detailsImage.style.minHeight = '';
-      detailsImage.textContent = 'No image added yet for this cap entry';
-
-      // Hide image actions if no image
-      /* const actionBar = document.querySelector('.image-actions');
-      if (actionBar) {
-         actionBar.classList.remove('visible');
-      } */
+      detailsImage.alt = 'No image added yet for this cap';
+      replaceBtn.innerText = '➕ Add';
+      cropBtn.style.display = 'none';
+      exportBtn.style.display = 'none';
+      deleteImageBtn.style.display = 'none';
    }
 
    // Show/hide image actions on image focus
    detailsImage.onclick = () => {
       const actionBar = document.querySelector('.image-actions');
       if (actionBar) {
-         //actionBar.style.display = actionBar.style.display === 'none' ? 'flex' : 'none';
          actionBar.classList.add('visible');
       }
    };
@@ -506,7 +543,6 @@ export function openDetails(id) {
    document.addEventListener('click', (e) => {
       const actionBar = document.querySelector('.image-actions');
       if (actionBar && !actionBar.contains(e.target) && !detailsImage.contains(e.target)) {
-         //actionBar.style.display = 'none';
          actionBar.classList.remove('visible');
       }
    });
@@ -635,49 +671,48 @@ function setupDetailsImageActions(capId) {
    const actionBar = document.querySelector('.image-actions');
    if (!actionBar) return;
 
-   // Clear existing event listeners by cloning
-   const newActionBar = actionBar.cloneNode(true);
-   actionBar.parentNode.replaceChild(newActionBar, actionBar);
-
-   const replaceBtn = newActionBar.querySelector('#replaceImageBtn');
-   const cropBtn = newActionBar.querySelector('#cropImageBtn');
-   const exportBtn = newActionBar.querySelector('#exportImageBtn');
-   const deleteBtn = newActionBar.querySelector('#deleteImageBtn');
-
    if (replaceBtn) {
-      replaceBtn.addEventListener('click', async () => {
+      replaceBtn.onclick = async () => {
          const success = await replaceCapImage(capId);
          if (success) {
             openDetails(capId);
+            replaceBtn.innerText = '🔄 Replace';
+            cropBtn.style.display = 'block';
+            exportBtn.style.display = 'block';
+            deleteImageBtn.style.display = 'block';
          }
-      });
+      };
    }
 
    if (cropBtn) {
-      cropBtn.addEventListener('click', async () => {
+      cropBtn.onclick = async () => {
          const success = await cropCapImage(capId);
          if (success) {
             openDetails(capId);
          }
-      });
+      };
    }
 
    if (exportBtn) {
-      exportBtn.addEventListener('click', async () => {
+      exportBtn.onclick = async () => {
          const success = await exportCapImage(capId);
          if (success) {
             alert('Image exported to device!');
          }
-      });
+      };
    }
 
-   if (deleteBtn) {
-      deleteBtn.addEventListener('click', async () => {
+   if (deleteImageBtn) {
+      deleteImageBtn.onclick = async () => {
          const success = await deleteCapImage(capId);
          if (success) {
             openDetails(capId);
+            replaceBtn.innerText = '➕ Add';
+            cropBtn.style.display = 'none';
+            exportBtn.style.display = 'none';
+            deleteImageBtn.style.display = 'none';
          }
-      });
+      };
    }
 }
 
@@ -702,6 +737,7 @@ export function initGallerySearch() {
 }
 
 export function addLastCategoryToFilters() {
+   //const selectionManager = await import('../ui/gallery-selection.js');
    const filtersDiv = filterRow.querySelector('#filters');
    const cat = store.store.categories.at(-1);
 
@@ -763,7 +799,10 @@ export function updateGalleryList() {
       li.title = cap.title;
       li.dataset.id = cap.id;
       li.dataset.category = cap.category;
-      li.querySelector(".cap-image-container img").alt = cap.title;
+      const img = li.querySelector(".cap-image-container img");
+      if (img) {
+         img.alt = cap.title;
+      }
       li.querySelector(".cap-title").innerText = cap.title;
    });
 

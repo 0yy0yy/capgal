@@ -146,6 +146,12 @@ export function updateCategoryTitles(category) {
    buttonToUpdate.textContent = category.name;
 }
 
+export function updateCategoryColor(category) {
+   const buttonToUpdate = document.querySelector(`#categories li button[data-cat=${category.id}]`);
+   buttonToUpdate.style.borderLeftColor = category.color;
+   buttonToUpdate.style.setProperty('--clr-category', category.color);
+}
+
 function showDeleteButton(li, catId) {
    // Only add once
    if (li.querySelector('.cat-delete-btn')) return;
@@ -172,7 +178,7 @@ function showDeleteButton(li, catId) {
    li.style.alignItems = 'center';
    li.appendChild(del);
 
-   // Auto-dismiss after 4s if unused
+   // Auto-dismiss after 10s if unused
    setTimeout(() => {
       if (del.parentElement) del.remove();
    }, 10000);

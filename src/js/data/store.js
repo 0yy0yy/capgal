@@ -5,7 +5,7 @@ export const store = {
       {
          id: 'all',
          name: 'All caps',
-         color: '#808080',
+         color: '#8F8F8F',
       },
    ],
    userSettings: {
@@ -55,7 +55,7 @@ export async function addCap(capData) {
       description: capData.description || '',
       category: capData.category || 'all',
       imageWebP: capData.imageWebP || null,
-      color: capData.color || '#808080',
+      color: capData.color || '#8F8F8F',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
    };
@@ -98,7 +98,7 @@ export async function addCategory(categoryData) {
    const newCategory = {
       id: categoryData.id || categoryData.name?.toLowerCase().replace(/\s+/g, '-') || `cat-${Date.now()}`,
       name: categoryData.name || 'Untitled',
-      color: categoryData.color || '#808080',
+      color: categoryData.color || '#8F8F8F',
    };
 
    store.categories.push(newCategory);

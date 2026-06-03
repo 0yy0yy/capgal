@@ -1,14 +1,15 @@
 // ── UI Controls (Settings, Theme, Sidebar, Back Buttons) ──────────────────
 import * as store from '../data/store.js';
 import { popTab } from './navigation.js';
-import { openGallery, addLastCategoryToFilters, refreshGallery, updateGalleryTitleVisibility } from '../data/gallery.js';
+import { openGallery, addLastCategoryToFilters, refreshGallery, updateGalleryTitleVisibility, setSlimColorPicker as setSlimColorPickerGallery } from '../data/gallery.js';
 import { handleAddCategoryClick, initCategoryButtons, initCategoryDeleteHandlers, initCategoryUI } from './categories.js';
 import { addCapsInBatch } from '../data/caps.js';
 import { saveAppData, backupToGitHub } from '../data/saving.js';
 import { importFromDevice, importFromGitHub, exportToDevice } from '../data/loading.js';
 import { hideLoadingScreen, showLoadingScreen, isAllCategorySelected } from '../helpers/helper.js';
+import { initGalleryCapColorPicker } from './gallery.js';
+import { setSlimColorPicker } from './gallery-selection.js';
 import { initGalleryZoom } from './gallery-zoom.js';
-import { getGallerySelectionManager } from './gallery-selection.js';
 
 const settingsPanel = document.getElementById('settings');
 const settingsBackdrop = document.getElementById('settings-backdrop');
@@ -400,7 +401,7 @@ function initSearchButton() {
 }
 
 // ── Add category button (FAB) ───────────────────────────────────────────────
-function initAddCategoryButton() {
+async function initAddCategoryButton() {
    document.getElementById('addCategoryButton').addEventListener('click', async () => {
       await handleAddCategoryClick();
 
@@ -408,6 +409,8 @@ function initAddCategoryButton() {
          addLastCategoryToFilters();
 
          const allSelected = isAllCategorySelected();
+
+         const getGallerySelectionManager = await import('./gallery-selection.js');
          const selectionManager = getGallerySelectionManager(!allSelected, allSelected);
 
          // If in selection mode, assign category to selected items
@@ -466,13 +469,16 @@ function initSidebarHandlers() {
 
 // ── Initialize all UI handlers ──────────────────────────────────────────────
 export async function init() {
+   const slimSelect = initGalleryCapColorPicker();
+   setSlimColorPicker(slimSelect);
+   setSlimColorPickerGallery(slimSelect);
    initSettingsHandlers();
    initThemeSwitcher();
    initThemeStyleSwitcher();
    initFilterChips();
    initBackButtons();
    initSearchButton();
-   initAddCategoryButton();
+   await initAddCategoryButton();
    await initAddCapButton();
    initSidebarHandlers();
    initCategoryUI();  // Populate categories from store

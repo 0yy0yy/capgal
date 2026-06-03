@@ -848,7 +848,7 @@ const Modal = (() => {
       container.appendChild(field(label('Category name', true), nameInput));
 
       // Color
-      let currentColor = '#808080';
+      let currentColor = '#8F8F8F';
       const colorField = el('div', 'mdl-field');
       colorField.appendChild(label('Accent color'));
 
@@ -1240,7 +1240,7 @@ const Modal = (() => {
          errorEl.hide();
          return {
             image: imageFile,
-            capColor: _capColor || '#808080',
+            capColor: _capColor || '#8F8F8F',
             imageProcessed: _capColor ? true : false,
             title: titleInput.value.trim(),
             category: tagVal || 'all', // Default to 'all' if not selected

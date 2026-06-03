@@ -510,6 +510,38 @@
    color: color-mix(in srgb, var(--clr-on-surface) 50%, var(--clr-primary));
 }
 
+[data-theme$="-dark"] #detailsImage[src=''] {
+   mix-blend-mode: hard-light;
+}
+
+
+/*  SlimSelect css variables */
+.ss-main,
+.ss-content {
+   /* Colors */
+   --ss-primary-color: var(--clr-accent);
+   --ss-bg-color: var(--clr-bg);
+   --ss-font-color: var(--clr-on-surface);
+   --ss-border-color: var(--clr-border);
+   --ss-border-radius: 4px;
+
+   /* Heights */
+   --ss-main-height: 26px;
+   /* 32px */
+   --ss-search-height: 40px;
+   --ss-option-height: auto;
+   --ss-content-height: 350px;
+
+   /* Spacing */
+   --ss-spacing-l: 5px;
+   --ss-spacing-m: 5px;
+   --ss-spacing-s: 5px;
+
+   /* Other Properties */
+   --ss-border-radius: 4px;
+   --ss-animation-timing: 0.2s;
+}
+
 /* Safe area insets for modern devices */
 body {
    padding-bottom: env(safe-area-inset-bottom, 0);
@@ -1044,6 +1076,7 @@ main {
    display: flex;
    gap: 8px;
    flex-wrap: wrap;
+   align-items: center;
 }
 
 #selecting {
@@ -1051,9 +1084,13 @@ main {
 }
 
 .filter-chip,
-.selecting-chip {
-   padding: 6px 14px;
+.selecting-chip:not(.ss-content):not(.ss-main:focus) {
    border-radius: var(--radius-pill);
+}
+
+.filter-chip,
+.selecting-chip {
+   padding: 6px 14px !important;
    border: 1px solid var(--clr-border);
    background: var(--clr-surface);
    color: var(--clr-muted);
@@ -1147,16 +1184,56 @@ main {
    background-image: url('data:image/svg+xml,<svg width="800" height="800" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M23 4a3 3 0 0 0-3-3H4a3 3 0 0 0-3 3v16a3 3 0 0 0 3 3h16a3 3 0 0 0 3-3zm-2 0a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1z" fill="currentcolor" /><path d="M16 11a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2z" fill="currentcolor" /></svg>');
 } */
 
+.ss-main {
+   width: 160px !important;
+   padding: 0px 14px !important;
+}
+
+.ss-content {
+   display: none !important;
+}
+
+.ss-content.ss-open {
+   display: flex !important;
+}
+
 .stick-left {
-   color: red;
    display: none;
+   /* pointer-events: all; */
+}
+
+.detach-left {
    position: absolute;
    left: 12px;
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   /* pointer-events: none; */
+}
+
+button.stick-left {
+   color: var(--clr-destructive);
+   flex: none;
+}
+
+.color-option {
+   display: inline-flex;
+   align-items: center;
+   gap: 8px;
+}
+
+.color-swatch {
+   width: 14px;
+   height: 14px;
+   border-radius: 50%;
+   /* change to 3px for square */
+   border: 1px solid rgba(0, 0, 0, .15);
+   flex-shrink: 0;
 }
 
 .stick-down.danger {
    border-color: var(--clr-destructive);
-   color: var(--clr-destructive)
+   color: var(--clr-destructive);
 }
 
 .mdl-footer hr,
@@ -1168,6 +1245,10 @@ main {
 
 #showForTheDeleteButton:has(+ .selecting-chip.stick-down[hidden]) {
    display: none;
+}
+
+#showForTheDeleteButton {
+   place-self: stretch;
 }
 
 #stickyTop {
@@ -1280,6 +1361,10 @@ main {
    aspect-ratio: 1 !important;
 }
 
+.cap-image-container .no-image {
+   justify-self: center;
+}
+
 #galleryColor {
    -webkit-appearance: none;
    appearance: none;
@@ -1347,12 +1432,21 @@ main {
 #detailsImage {
    width: auto;
    max-height: 100%;
+   min-height: 300px;
    aspect-ratio: 1;
    object-fit: contain;
    border-radius: var(--radius-md);
    box-shadow: var(--shadow-md);
    cursor: pointer;
    transition: opacity var(--dur) var(--ease);
+}
+
+#detailsImage[src=''] {
+   font-size: 32px;
+   line-height: 1;
+   align-content: center;
+   padding: 20px;
+   mix-blend-mode: color-burn;
 }
 
 /* #detailsImage:hover {
@@ -1979,6 +2073,12 @@ main {
 
    .action-btn {
       padding: 8px 5px;
+   }
+}
+
+@media (max-width: 510px) {
+   .ss-main {
+      width: 140px !important;
    }
 }
 

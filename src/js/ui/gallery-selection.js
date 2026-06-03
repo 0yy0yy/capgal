@@ -6,7 +6,13 @@ import { SelectionManager } from './selectionManager.js';
 
 let gallerySelectionManager = null;
 const removeButton = document.getElementsByClassName("selecting-chip stick-left")[0];
+const capColorPicker = document.getElementById("colorPickerCategoryCapsSelect");
+let capColorSlimSelect = null;
 const deleteButton = document.getElementsByClassName("selecting-chip stick-down")[0];
+
+export function setSlimColorPicker(slimSelect) {
+   capColorSlimSelect = slimSelect.slimSelect;
+}
 
 export function initGallerySelection(showRemoveButton = false, showDeleteButton = false) {
    const galleryList = document.getElementById('galleryList');
@@ -35,10 +41,12 @@ export function initGallerySelection(showRemoveButton = false, showDeleteButton 
          //Show/hide the remove button
          if (showRemoveButton) {
             removeButton.style.display = isActive ? 'block' : 'none';
+            //capColorPicker.style.display = isActive ? 'block' : 'none';
+            isActive ? capColorSlimSelect.removeAttribute('hidden') : capColorSlimSelect.setAttribute('hidden', 'hidden');
          }
 
          if (showDeleteButton) {
-            isActive ? deleteButton.removeAttribute("hidden") : deleteButton.setAttribute("hidden", "");
+            isActive ? deleteButton.removeAttribute("hidden") : deleteButton.setAttribute("hidden", "hidden");
          }
       }
    });
@@ -68,10 +76,12 @@ export function getGallerySelectionManager(showRemoveButton = false, showDeleteB
    //Show/hide the remove button
    if (showRemoveButton) {
       removeButton.style.display = gallerySelectionManager ? 'block' : 'none';
+      //capColorPicker.style.display = gallerySelectionManager ? 'block' : 'none';
+      gallerySelectionManager ? capColorSlimSelect.removeAttribute('hidden') : capColorSlimSelect.setAttribute('hidden', 'hidden');
    }
 
    if (showDeleteButton) {
-      gallerySelectionManager ? deleteButton.removeAttribute("hidden") : deleteButton.setAttribute("hidden", "");
+      gallerySelectionManager ? deleteButton.removeAttribute("hidden") : deleteButton.setAttribute("hidden", "hidden");
    }
 
    return gallerySelectionManager;

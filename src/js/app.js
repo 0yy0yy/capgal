@@ -8,16 +8,18 @@ import * as store from './data/store.js';
 import { loadAppData, autoSyncFromGitHub } from './data/loading.js';
 import { initCategoryUI } from './ui/categories.js';
 import { showLoadingScreen, hideLoadingScreen, updateLoadingScreen } from './helpers/helper.js'
+import { initializeHoughCirclesWorker } from './data/hough-circles-worker-manager.js';
 
 /**
  * Initialize app
  */
 async function initApp() {
    try {
-      showLoadingScreen('Loading data...');
+      showLoadingScreen('Loading...');
       // Load user data from storage
       const hasData = await loadAppData();
 
+      showLoadingScreen('Data initialised...');
       // Attempt autosync from GitHub if credentials are available
       if (hasData && store.store.userSettings.githubToken && store.store.userSettings.encryptionPassphrase) {
          updateLoadingScreen('Checking GitHub backup for changes...');
@@ -36,7 +38,7 @@ async function initApp() {
             store.store.categories.push({
                id: 'all',
                name: 'All caps',
-               color: '#808080',
+               color: '#8F8F8F',
             });
          }
       }
@@ -53,13 +55,21 @@ async function initApp() {
       } else {
          applyTabStates();
       }
+
+      // Initialize Web Worker for HoughCircles early (uses cached opencv.js)
+      updateLoadingScreen('Initializing circle detection worker...');
+      try {
+         await initializeHoughCirclesWorker();
+      } catch (error) {
+         console.warn('HoughCircles worker initialization failed, will use fallback:', error);
+      }
    } catch (error) {
       console.error('Error initializing app:', error);
       alert('Failed to initialize app');
    } finally {
       // Hide loading screen
-      hideLoadingScreen();
       console.log('Bottle Cap Gallery initialized');
+      hideLoadingScreen();
    }
 }
 

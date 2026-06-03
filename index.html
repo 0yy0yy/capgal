@@ -11,6 +11,11 @@
 
    <link rel="stylesheet" href="./src/css/base.css">
    <script src="./src/js/app.js" type="module"></script>
+
+   <!--  SlimSelect -->
+   <link rel="stylesheet" href="https://unpkg.com/slim-select@latest/dist/slimselect.css">
+   <script src="https://unpkg.com/slim-select@latest/dist/slimselect.js"></script>
+
    <script async src="./src/js/cv/opencv.js?v=4.13.0" type="text/javascript"></script>
    <script async src="./src/js/cv/heic2any.min.js?v=0.0.4" type="text/javascript"></script>
 
@@ -100,8 +105,64 @@
                      </div>
 
                      <div id="selecting">
-                        <button class="selecting-chip stick-left" title="Remove caps from this category">Remove from
-                           category</button>
+                        <div class="detach-left">
+                           <button class="selecting-chip stick-left"
+                              title="Remove cap(s) from this category">Untag</button> <!-- Uncategorize -->
+                           <select id="colorPickerCategoryCapsSelect" class="selecting-chip stick-left"
+                              title="Set cap(s) color">
+                              <optgroup label="COLOR WHEEL">
+                                 <option value="#E05252">#E05252</option>
+                                 <option value="#E07552">#E07552</option>
+                                 <option value="#E09952">#E09952</option>
+                                 <option value="#E0BD52">#E0BD52</option>
+                                 <option value="#E0E052">#E0E052</option>
+                                 <option value="#BDE052">#BDE052</option>
+                                 <option value="#99E052">#99E052</option>
+                                 <option value="#75E052">#75E052</option>
+                                 <option value="#52E052">#52E052</option>
+                                 <option value="#52E075">#52E075</option>
+                                 <option value="#52E099">#52E099</option>
+                                 <option value="#52E0BD">#52E0BD</option>
+                                 <option value="#52E0E0">#52E0E0</option>
+                                 <option value="#52BDE0">#52BDE0</option>
+                                 <option value="#5299E0">#5299E0</option>
+                                 <option value="#5275E0">#5275E0</option>
+                                 <option value="#5252E0">#5252E0</option>
+                                 <option value="#7552E0">#7552E0</option>
+                                 <option value="#9952E0">#9952E0</option>
+                                 <option value="#BD52E0">#BD52E0</option>
+                                 <option value="#E052E0">#E052E0</option>
+                                 <option value="#E052BD">#E052BD</option>
+                                 <option value="#E05299">#E05299</option>
+                                 <option value="#E05275">#E05275</option>
+                              </optgroup>
+
+                              <optgroup label="GRAYSCALE">
+                                 <option value="#111111">#111111</option>
+                                 <option value="#2A2A2A">#2A2A2A</option>
+                                 <option value="#444444">#444444</option>
+                                 <option value="#6B6B6B">#6B6B6B</option>
+                                 <option value="#8F8F8F">#8F8F8F</option>
+                                 <option value="#B5B5B5">#B5B5B5</option>
+                                 <option value="#D9D9D9">#D9D9D9</option>
+                                 <option value="#F5F5F5">#F5F5F5</option>
+                              </optgroup>
+
+                              <optgroup label="METALLIC COLORS">
+                                 <option value="#D3AF37">#D3AF37</option>
+                                 <option value="#FFD700">#FFD700</option>
+                                 <option value="#CD7F32">#CD7F32</option>
+                                 <option value="#6E4A2D">#6E4A2D</option>
+                                 <option value="#E5A01D">#E5A01D</option>
+                                 <option value="#C9AE5D">#C9AE5D</option>
+                                 <option value="#CFA35D">#CFA35D</option>
+                                 <option value="#A86E3A">#A86E3A</option>
+                                 <option value="#CE8946">#CE8946</option>
+                                 <option value="#302716">#302716</option>
+                                 <option value="#C0C0C0">#C0C0C0</option>
+                              </optgroup>
+                           </select>
+                        </div>
                         <button class="selecting-chip" title="Select all caps">Select all</button>
                         <button class="selecting-chip" title="Deselect all selected caps">Deselect all</button>
 

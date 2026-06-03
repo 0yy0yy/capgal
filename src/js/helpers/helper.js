@@ -141,10 +141,6 @@ export function checkBFVisibility(hexColor) {
       "#CE8946"
    ];
    return !badVidiblityRatioColors.includes(hexColor);
-   /* const value = parseInt(hexColor.replace('#', ''), 16);
-   return !(
-      value >= parseInt('6B6B6B', 16) && value <= parseInt('8F8F8F', 16)
-   ); */
 }
 
 export const isValidCssColor = (color) => {
@@ -221,7 +217,9 @@ const hueDistance = (a, b) => {
    const hsvA = rgbToHsv(a);
    const hsvB = rgbToHsv(b);
 
-   if (hsvA.v > 0.2) {
+   const isGray = a.r === a.g && a.g === a.b;
+
+   if (hsvA.v > 0.2 || !isGray) {
       const diff = Math.abs(hsvB.h - hsvA.h);
       return Math.min(diff, 360 - diff);
    } else { //input color too dark to see the actualy hue
@@ -234,9 +232,6 @@ const hueDistance = (a, b) => {
  * Needed for the colors that are too dark to correctly determine the right "visual" color
  */
 const hsvDistance = (A, B) => {
-   /* const A = rgbToHsv(a);
-   const B = rgbToHsv(b); */
-
    // Circular hue difference
    let h = Math.abs(B.h - A.h);
    h = Math.min(h, 360 - h) / 180; // normalize 0-1
@@ -252,16 +247,21 @@ const hsvDistance = (A, B) => {
       s * 1.5 +
       v * 2.5
    );
-   //return Math.sqrt(h * h + s * s + v * v);
 };
 
 export function clampToPalette(inputHex) {
+   const possibleColors = [...COLOR_WHEEL_24, ...GRAYSCALE_UI, ...METALLIC_COLORS];
+
+   if (possibleColors.includes(inputHex)) {
+      return inputHex;
+   }
+
    const input = hexToRgb(inputHex);
 
    let closest = '#000000';
    let minDist = Infinity;
 
-   for (const hex of [...COLOR_WHEEL_24, ...GRAYSCALE_UI, ...METALLIC_COLORS]) {
+   for (const hex of possibleColors) {
       const dist = hueDistance(input, hexToRgb(hex));
       if (dist < minDist) {
          minDist = dist;

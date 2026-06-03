@@ -1,4 +1,5 @@
 import { updateLoadingScreen } from '../helpers/helper.js';
+import { detectCirclesInWorker, isHoughCirclesWorkerReady } from './hough-circles-worker-manager.js';
 
 // Web Worker for OpenCV processing
 //let openCVWorker = null;
@@ -172,14 +173,16 @@ async function getSetting(settingKey) {
  * @param {AbortSignal} signal - Optional abort signal for cancellation
  */
 async function detectAndProcessWithOpenCV(imageBlob, signal = null) {
+   const MAX_CIRCLE_DETECTION_TIME_MS = 12000; // 12 seconds max for circle detection
+
    // Check if already aborted
    if (signal?.aborted) {
       throw new DOMException('Image processing cancelled', 'AbortError');
    }
 
    try {
-      // Initialize worker
-      //initOpenCVWorker();
+      // Wait for OpenCV to load on main thread
+      await waitForOpenCV();
 
       // Load image on main thread
       const bitmap = await createImageBitmap(imageBlob);
@@ -189,100 +192,117 @@ async function detectAndProcessWithOpenCV(imageBlob, signal = null) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(bitmap, 0, 0);
 
-      // Convert to grayscale
+      // Convert to grayscale on main thread
       let src = cv.imread(canvas);
       let gray = new cv.Mat();
       cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
       // Check abort before expensive operation
       if (signal?.aborted) {
+         src.delete();
+         gray.delete();
          throw new DOMException('Image processing cancelled', 'AbortError');
       }
 
-      // Detect circles using Hough Circle Detection
-      updateLoadingScreen('Searching for the cap in the image...');
-      let circles = new cv.Mat();
-
-      /* Parameters:
-            image	      8-bit, single-channel, grayscale input image.
-            circles	   output vector of found circles(cv.CV_32FC3 type). Each vector is encoded as a 3-element floating-point vector (x,y,radius) .
-            method	   detection method(see cv.HoughModes). Currently, the only implemented method is HOUGH_GRADIENT
-            dp	         inverse ratio of the accumulator resolution to the image resolution. For example, if dp = 1 , the accumulator has the same resolution as the input image. If dp = 2 , the accumulator has half as big width and height.
-            minDist	   minimum distance between the centers of the detected circles. If the parameter is too small, multiple neighbor circles may be falsely detected in addition to a true one. If it is too large, some circles may be missed.
-            param1	   first method-specific parameter. In case of HOUGH_GRADIENT , it is the higher threshold of the two passed to the Canny edge detector (the lower one is twice smaller).
-            param2	   second method-specific parameter. In case of HOUGH_GRADIENT , it is the accumulator threshold for the circle centers at the detection stage. The smaller it is, the more false circles may be detected. Circles, corresponding to the larger accumulator values, will be returned first.
-            minRadius	minimum circle radius.
-            maxRadius	maximum circle radius. 
-      */
-      cv.HoughCircles(
-         gray,
-         circles,
-         cv.HOUGH_GRADIENT,
-         1, 45, 175, 40, 0, 0
-      );
-      /* -- SHOULD MAKE A BIT SMARTER.. checking distance to know how big will the cap be on the image or something... todo
-         1,
-         gray.rows / 8, 
-         100,
-         30,
-         20,
-         100 */
-
-      let capColor = '#808080';
+      let capColor = '#8F8F8F';
       let processedBlob = imageBlob;
       let detected = false;
+      let circle = null;
+
+      // Try to use worker if available, otherwise fallback to main thread
+      if (isHoughCirclesWorkerReady()) {
+         try {
+            updateLoadingScreen(`Searching for the cap in the image (${MAX_CIRCLE_DETECTION_TIME_MS / 1000} seconds max, worker)...`);
+
+            // Extract pixel data from grayscale Mat (serializable)
+            const pixelData = new Uint8Array(gray.data);
+            const width = gray.cols;
+            const height = gray.rows;
+
+            // HoughCircles parameters
+            const params = {
+               dp: 1,
+               minDist: 45,
+               param1: 175,
+               param2: 40,
+               minRadius: 0,
+               maxRadius: 0
+            };
+
+            // Send to worker with 12-second timeout (can kill worker thread)
+            try {
+               const result = await detectCirclesInWorker({
+                  pixelData,
+                  width,
+                  height,
+                  params
+               }, MAX_CIRCLE_DETECTION_TIME_MS);
+
+               if (result.detected && result.circlesData) {
+                  detected = true;
+                  circle = result.circlesData;
+               }
+            } catch (workerError) {
+               if (workerError.message.includes('timed out')) {
+                  console.warn('Circle detection timed out, killing worker');
+                  updateLoadingScreen('Circle detection timed out. Using original image...');
+               } else {
+                  console.warn('Worker detection failed, using fallback:', workerError);
+               }
+               //await initializeHoughCirclesWorker();
+            }
+         } catch (error) {
+            console.warn('Worker-based detection failed, falling back to main thread:', error);
+         }
+      }
+
+      /* // Fallback: if no circle detected, try main thread detection
+      if (!detected) {
+         updateLoadingScreen('Searching for the cap in the image...');
+
+         // TODO: SMART PARAMETER ADJUSTMENT
+         // Future enhancement: Analyze image properties to adjust HoughCircles parameters
+         // Consider: image.rows/cols for relative sizing, histogram to detect bottle cap colors,
+         // edge detection intensity to adjust Canny thresholds, etc.
+
+         let circles = new cv.Mat();
+         cv.HoughCircles(
+            gray,
+            circles,
+            cv.HOUGH_GRADIENT,
+            1,      // dp: resolution ratio
+            45,     // minDist: minimum distance between circle centers
+            175,    // param1: Canny edge detector upper threshold
+            40,     // param2: accumulator threshold
+            0,      // minRadius: 0 = no minimum
+            0       // maxRadius: 0 = no maximum
+         );
+
+         if (circles.rows > 0) {
+            detected = true;
+            circle = [
+               circles.data32F[0],
+               circles.data32F[1],
+               circles.data32F[2],
+            ];
+         }
+         circles.delete();
+      } */
 
       // Check abort before continuing with processing
       if (signal?.aborted) {
          src.delete();
          gray.delete();
-         circles.delete();
          throw new DOMException('Image processing cancelled', 'AbortError');
       }
 
-      if (circles.rows > 0) {
-         detected = true;
-         // Get the best circle (first one detected)
-         const circle = [
-            circles.data32F[0],
-            circles.data32F[1],
-            circles.data32F[2],
-         ];
-
-         // testing circles lol
-         /* const crcdst = cv.Mat.zeros(src.rows, src.cols, cv.CV_8U);
-         const colors = [
-            new cv.Scalar(0, 0, 255),     // Red
-            new cv.Scalar(0, 255, 0),     // Green
-            new cv.Scalar(255, 0, 0),     // Blue
-            new cv.Scalar(0, 165, 255),   // Orange
-            new cv.Scalar(255, 0, 255),   // Purple (Magenta)
-            new cv.Scalar(255, 255, 0),   // Cyan
-         ];
-         // draw circles
-         for (let i = 0; i < circles.cols; ++i) {
-            let x = circles.data32F[i * 3];
-            let y = circles.data32F[i * 3 + 1];
-            let radius = circles.data32F[i * 3 + 2];
-            let center = new cv.Point(x, y);
-            cv.circle(crcdst, center, radius, colors[i % 6]);
-         }
-         const alpha = 0.5;
-         const overlay = new cv.Mat();
-         cv.addWeighted(gray, alpha, crcdst, 1 - alpha, 0, overlay);
-         cv.imshow('circlesOutput', crcdst); */
-         //crcdst.delete();
-         //overlay.delete();
-
-
+      if (detected && circle) {
          // Extract color from circle
          updateLoadingScreen('Extracting dominant color of the cap...');
          // Check if auto color finding is enabled
          const useAutoColorFinder = await getSetting('toggleUseAutoColorFinder');
          if (useAutoColorFinder) {
             capColor = extractColorFromCircle(src, circle, 'RGBA');
-         } else {
-            capColor = '#808080'; // Use grey when auto color finding is disabled
          }
 
          // Crop to circle with padding
@@ -293,7 +313,6 @@ async function detectAndProcessWithOpenCV(imageBlob, signal = null) {
       // Cleanup
       src.delete();
       gray.delete();
-      circles.delete();
 
       return {
          imageBlob: processedBlob,
@@ -301,7 +320,7 @@ async function detectAndProcessWithOpenCV(imageBlob, signal = null) {
          detected,
       };
    } catch (error) {
-      console.error('OpenCV processing error:', cv.exceptionFromPtr(error).msg);
+      console.error('OpenCV processing error:', error);
       throw error;
    }
 }
@@ -415,7 +434,7 @@ function extractColorFromCircle(mat, circle, colorSpace = 'BGR') {
       roi.delete();
       roiRgba.delete();
 
-      if (buckets.size === 0) return '#808080';
+      if (buckets.size === 0) return '#8F8F8F';
 
       const sorted = [...buckets.values()].sort((a, b) => b.count - a.count);
       const topCount = sorted[0].count;
@@ -431,7 +450,7 @@ function extractColorFromCircle(mat, circle, colorSpace = 'BGR') {
       return `#${toHex(blendedR)}${toHex(blendedG)}${toHex(blendedB)}`;
    } catch (error) {
       console.error('Color extraction error:', error);
-      return '#808080';
+      return '#8F8F8F';
    }
 }
 
@@ -469,7 +488,7 @@ async function processWithColorExtraction(imageBlob) {
 
    // Check if auto color finding is enabled
    const useAutoColorFinder = await getSetting('toggleUseAutoColorFinder');
-   let capColor = '#808080'; // Default to grey
+   let capColor = '#8F8F8F'; // Default to grey
 
    if (useAutoColorFinder) {
       const bitmap = await createImageBitmap(imageBlob);

@@ -111,7 +111,7 @@ export async function saveCap(capData) {
       const color = processed ? processed.capColor : capData.capColor;
       updateLoadingScreen('Compressing image to WebP at 0.9 quality...');
       imageWebP = await compressToWebP(img);
-      capColor = clampToPalette(color || '#808080');
+      capColor = clampToPalette(color || '#8F8F8F');
 
       // Add to store
       const newCap = {
