@@ -328,7 +328,8 @@ export function setMarqueeScroll(defaultSpeed = 0.17) {
 
    marquees.forEach((marquee) => {
       const text = marquee.dataset.text;
-      marquee.innerHTML = `${text}  ——  ${text}`;
+      marquee.innerHTML = `${text} &nbsp;○○○&nbsp; ${text}`;
+      /* marquee.innerHTML = `${text}  ——  ${text}`; */
 
       let pos = 0;
       let isPaused = false;

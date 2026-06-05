@@ -314,7 +314,7 @@ export async function replaceCapImage(capId) {
 
       const fileName = imageFile.name ? imageFile.name : String(Date.now());
       updateLoadingScreen(`Detecting bottle cap in image '${fileName}'...`);
-      const processed = await processCapImage(convertedJpegImage); // add the source to know if it is in bgr... --- todo
+      const processed = await processCapImage(convertedJpegImage);
 
       updateLoadingScreen('Compressing image to WebP...');
       const imageWebP = await compressToWebP(processed.imageBlob);

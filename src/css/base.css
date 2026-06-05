@@ -1123,6 +1123,11 @@ main {
    font-size: 24px;
    line-height: 16px;
    width: 42px;
+   -webkit-text-fill-color: transparent;
+   -webkit-text-stroke: 1px;
+   font-weight: 900;
+   display: flex;
+   justify-content: center;
 }
 
 .filter-chip-plus:hover {
@@ -1609,25 +1614,18 @@ button.stick-left {
 .carousel-nav:hover:not(:disabled) {
    background: var(--clr-surface-2);
    border-color: var(--clr-on-surface);
-   transform: scale(0.9);
+   transform: scale(0.77);
 }
 
 .carousel-nav:focus {
    outline: none;
 }
 
-/* Prevent color buttons from showing hover when carousel nav is hovered */
-.color-picker-btn:hover {
-   transform: scale(1.1);
-   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-   border-color: var(--clr-on-surface);
-}
-
-.color-picker-track.is-dragging .color-picker-btn:hover {
+/* .color-picker-track.is-dragging .color-picker-btn:hover {
    transform: scale(0.9);
    box-shadow: none;
    border-color: var(--clr-border);
-}
+} */
 
 .carousel-nav:active:not(:disabled) {
    transform: scale(0.8);
@@ -1693,7 +1691,7 @@ button.stick-left {
 }
 
 .color-picker-btn:hover {
-   transform: scale(1.15);
+   transform: scale(0.9);
    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
    border-color: var(--clr-on-surface);
 }
@@ -1819,6 +1817,8 @@ button.stick-left {
    flex-direction: column;
    align-items: center;
    gap: 1rem;
+   margin: 0 15vw;
+   text-align: center;
 }
 
 .bottle-cap-loader {
@@ -2099,6 +2099,18 @@ button.stick-left {
 
    .action-btn {
       padding: 8px 5px;
+   }
+
+   .color-group {
+      padding: 11px;
+   }
+
+   .carousel-nav {
+      width: 26px;
+   }
+
+   .details-color-picker {
+      padding: 3px;
    }
 }
 

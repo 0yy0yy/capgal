@@ -19,7 +19,7 @@ export function initGalleryCapColorPicker() {
       events: {
          afterChange(newVal) {
             const selectedColor = newVal[0]?.value;
-            if (slimSelectAfterChangeFunction) {
+            if (slimSelectAfterChangeFunction && selectedColor) {
                slimSelectAfterChangeFunction(selectedColor)
             }
          }

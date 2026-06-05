@@ -223,7 +223,7 @@ export async function initSettingsHandlers() {
          }
       });
 
-      if (githubTokenInput.dataset.fullToken.length > 13) { // change --- todo
+      if (githubTokenInput.dataset.fullToken.length > 13) { // change --- todo: use the regex for the github fine grained token
          fitGithubToken(githubTokenInput, githubTokenInput.dataset.fullToken);
       }
    }

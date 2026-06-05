@@ -211,7 +211,7 @@ export function openGallery(category, focusSearch = false) {
          // Add plus chip to add new category
          const plusChip = document.createElement('button');
          plusChip.className = 'filter-chip filter-chip-plus';
-         plusChip.textContent = '+';
+         plusChip.textContent = '＋';
          plusChip.title = 'Add new category';
          plusChip.onclick = async () => {
             const status = await handleAddCategoryClick();
@@ -352,7 +352,7 @@ export function openGallery(category, focusSearch = false) {
                }
             });
             await saveAppData();
-            refreshGallery(true);
+            refreshGallery();
          }
 
          exitGallerySelectionMode();
