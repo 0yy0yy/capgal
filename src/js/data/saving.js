@@ -23,9 +23,10 @@ export async function convertCapsToBase64(caps) {
 }
 
 /**
- * Save app data to IndexDB (always) and GitHub (if configured)
+ * Save app data to IndexDB (always)
  */
 export async function saveAppData() {
+   //if (store.store.caps.length > 0 && !Object.hasOwn(store.store.caps[0], "imageBase64")) {
    try {
       // Always save locally to IndexDB (including encryptionPassphrase)
       const dataToSave = {
@@ -39,6 +40,7 @@ export async function saveAppData() {
    } catch (error) {
       console.error('Error saving app data:', error);
    }
+   //}
 }
 
 /**

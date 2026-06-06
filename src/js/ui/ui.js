@@ -186,7 +186,7 @@ export async function initSettingsHandlers() {
          } else {
             // Mask token when not focused
             const fullToken = githubTokenInput.dataset.fullToken;
-            if (fullToken && fullToken.length > 13) { // change number to fit -- todo
+            if (fullToken) {
                fitGithubToken(githubTokenInput, githubTokenInput.dataset.fullToken);
             }
          }
@@ -223,7 +223,7 @@ export async function initSettingsHandlers() {
          }
       });
 
-      if (githubTokenInput.dataset.fullToken.length > 13) { // change --- todo: use the regex for the github fine grained token
+      if (githubTokenInput.dataset.fullToken) {
          fitGithubToken(githubTokenInput, githubTokenInput.dataset.fullToken);
       }
    }

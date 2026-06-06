@@ -16,11 +16,14 @@ const GITHUB_REPO = '0yy0yy/capgal';
  * @returns {Promise<Array>} - Array of cap objects with imageWebP blobs
  */
 async function convertBase64ToCaps(caps) {
-   return Promise.all(caps.map(async (cap) => ({
-      ...cap,
-      imageWebP: cap.imageBase64 ? base64ToBlob(cap.imageBase64, 'image/webp') : null,
-      imageBase64: undefined, // Remove the base64 reference
-   })));
+   return Promise.all(
+      caps.map(async ({ imageBase64, ...cap }) => ({ // destructure imageBase64 out of cap obj
+         ...cap,
+         imageWebP: imageBase64
+            ? base64ToBlob(imageBase64, 'image/webp')
+            : null
+      }))
+   );
 }
 
 /**
@@ -368,6 +371,12 @@ export async function autoSyncFromGitHub() {
       const encrypted = await response.json();
       const decrypted = await crypto.decrypt(encrypted, store.store.userSettings.encryptionPassphrase);
       const appData = JSON.parse(decrypted);
+
+      // Convert base64 images to blobs
+      showLoadingScreen('Processing images...');
+      if (appData.caps && Array.isArray(appData.caps)) {
+         appData.caps = await convertBase64ToCaps(appData.caps);
+      }
 
       // Perform merge with existing data
       updateLoadingScreen('Merging data...');
