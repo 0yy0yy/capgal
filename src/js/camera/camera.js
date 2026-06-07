@@ -134,7 +134,7 @@ export async function showCameraModal() {
             video.play();
 
             const tracks = stream.getVideoTracks();
-            await toggleTorch(tracks, false);
+            //await toggleTorch(tracks, false);
 
             captureBtn.addEventListener('click', () => {
                // ── Trigger animations ──
@@ -161,7 +161,7 @@ export async function showCameraModal() {
                }, 'image/webp', 1);
             });
 
-            lightBtn.addEventListener('click', () => {
+            lightBtn.addEventListener('click', async () => {
                lightBtn.classList.toggle('on');
                lightBtn.classList.toggle('off');
                const lightOn = lightBtn.classList.contains('on');
@@ -183,16 +183,11 @@ export async function showCameraModal() {
 
 
 async function toggleTorch(tracks, turnOn) {
-   tracks.forEach(track => {
-      /* if ('torch' in track.getCapabilities()) {
-         track.applyConstraints({
-            advanced: [{ torch: false }]
-         })
-      } */
+   for (const track of tracks) {
       try {
          await track.applyConstraints({ torch: turnOn });
       } catch (e) {
-         console.error("direct failed", e);
+         console.error("direct camera's torch access failed", e);
       }
 
       try {
@@ -200,9 +195,9 @@ async function toggleTorch(tracks, turnOn) {
             advanced: [{ torch: turnOn }]
          });
       } catch (e) {
-         console.error("advanced failed", e);
+         console.error("advanced camera's torch access failed", e);
       }
-   });
+   }
 }
 
 
