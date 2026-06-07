@@ -118,25 +118,8 @@ export async function showCameraModal() {
       modal.appendChild(lightBtn);
       modal.appendChild(cancelBtn);
 
-      lightBtn.addEventListener('click', () => {
-         lightBtn.classList.toggle('on');
-         lightBtn.classList.toggle('off');
-      });
-      captureBtn.addEventListener('click', () => {
-         // ── Trigger animations ──
-         captureBtn.classList.remove('camera-capture-animate');
-         void captureBtn.offsetWidth; // force reflow to re-trigger
-         captureBtn.classList.add('camera-capture-animate');
-
-         flashOverlay.style.animation = 'none';
-         void flashOverlay.offsetWidth;
-         flashOverlay.style.animation = 'shutter-flash 0.4s ease forwards';
-      });
-
-      document.body.appendChild(modal);
-
       // Request camera access
-      /* navigator.mediaDevices
+      navigator.mediaDevices
          .getUserMedia({
             video: {
                facingMode: 'environment',
@@ -197,7 +180,7 @@ export async function showCameraModal() {
          .catch((error) => {
             console.error('Camera error:', error);
             reject(new Error('Could not access camera. Please check permissions.'));
-         }); */
+         });
    });
 }
 
