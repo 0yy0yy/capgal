@@ -436,6 +436,29 @@ export function base64ToUtf8(base64) {
    return new TextDecoder().decode(bytes);
 }
 
+
+export async function gitBlobSha(content) {
+   const encoder = new TextEncoder();
+
+   const contentBytes =
+      typeof content === 'string'
+         ? encoder.encode(content)
+         : content;
+
+   const header = encoder.encode(`blob ${contentBytes.length}\0`);
+
+   const blob = new Uint8Array(header.length + contentBytes.length);
+   blob.set(header);
+   blob.set(contentBytes, header.length);
+
+   const hashBuffer = await crypto.subtle.digest('SHA-1', blob);
+
+   return [...new Uint8Array(hashBuffer)]
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+}
+
+
 /**
  * Setup encryption for first time
  */

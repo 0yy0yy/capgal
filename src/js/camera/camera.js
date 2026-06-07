@@ -4,6 +4,7 @@
  * Show camera modal for taking photos
  */
 export async function showCameraModal() {
+   injectCameraStyles();
    return new Promise((resolve, reject) => {
       // Create a hidden video element
       const video = document.createElement('video');
@@ -49,40 +50,99 @@ export async function showCameraModal() {
 
       // Capture button
       const captureBtn = document.createElement('button');
-      captureBtn.textContent = '📸 Take Photo';
+      //captureBtn.textContent = '📸 Take Photo';
       captureBtn.style.cssText = `
-         padding: 12px 24px;
+         padding: 6px;
          font-size: 16px;
-         background: #4CAF50;
+         width: 52px;
+         height: 52px;
+         background: transparent;
          color: white;
-         border: none;
-         border-radius: 8px;
+         border: 2px solid #4CAF50;
+         box-shadow: inset 0 0 15px 0px #4CAF50;
+         border-radius: 50%;
          cursor: pointer;
          font-weight: bold;
       `;
 
+      // Flash button
+      const lightBtn = document.createElement('button');
+      lightBtn.classList.add('off')
+      lightBtn.style.cssText = `
+         position: absolute;
+         top: 20px;
+         left: 20px;
+         width: 48px;
+         height: 48px;
+         border: none;
+         border-color: transparent;
+         cursor: pointer;
+         background-repeat: no-repeat;
+         background-position: center;
+         background-size: contain;
+         background-color: transparent;
+      `;
+
+      // Flash overlay (add this after modal is created)
+      const flashOverlay = document.createElement('div');
+      flashOverlay.style.cssText = `
+         position: absolute;
+         inset: 0;
+         background: white;
+         opacity: 0;
+         pointer-events: none;
+         z-index: 1;
+      `;
+      modal.appendChild(flashOverlay);
+
       // Cancel button
       const cancelBtn = document.createElement('button');
-      cancelBtn.textContent = '✕ Cancel';
+      cancelBtn.textContent = '✕';
       cancelBtn.style.cssText = `
-         padding: 12px 24px;
-         font-size: 16px;
-         background: #f44336;
-         color: white;
+         position: absolute;
+         top: 20px;
+         right: 20px;
+         font-size: 48px;
+         line-height: 1;
+         background: transparent;
+         color: #f44336;
          border: none;
-         border-radius: 8px;
+         border-color: transparent;
          cursor: pointer;
          font-weight: bold;
       `;
 
       buttons.appendChild(captureBtn);
-      buttons.appendChild(cancelBtn);
+      //buttons.appendChild(cancelBtn);
       modal.appendChild(buttons);
+      modal.appendChild(lightBtn);
+      modal.appendChild(cancelBtn);
+
+      lightBtn.addEventListener('click', () => {
+         lightBtn.classList.toggle('on');
+         lightBtn.classList.toggle('off');
+      });
+      captureBtn.addEventListener('click', () => {
+         // ── Trigger animations ──
+         captureBtn.classList.remove('camera-capture-animate');
+         void captureBtn.offsetWidth; // force reflow to re-trigger
+         captureBtn.classList.add('camera-capture-animate');
+
+         flashOverlay.style.animation = 'none';
+         void flashOverlay.offsetWidth;
+         flashOverlay.style.animation = 'shutter-flash 0.4s ease forwards';
+      });
+
+      document.body.appendChild(modal);
 
       // Request camera access
-      navigator.mediaDevices
+      /* navigator.mediaDevices
          .getUserMedia({
-            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+            video: {
+               facingMode: 'environment',
+               height: { ideal: 1080 },
+               width: { ideal: 1920 }
+            },
          })
          .then((stream) => {
             document.body.appendChild(modal);
@@ -90,8 +150,20 @@ export async function showCameraModal() {
             video.play();
 
             const tracks = stream.getTracks();
+            tracks.forEach(track => track.applyConstraints({
+               advanced: [{ torch: false }]
+            }));
 
             captureBtn.addEventListener('click', () => {
+               // ── Trigger animations ──
+               captureBtn.classList.remove('camera-capture-animate');
+               void captureBtn.offsetWidth; // force reflow to re-trigger
+               captureBtn.classList.add('camera-capture-animate');
+
+               flashOverlay.style.animation = 'none';
+               void flashOverlay.offsetWidth;
+               flashOverlay.style.animation = 'shutter-flash 0.4s ease forwards';
+
                const canvas = document.createElement('canvas');
                canvas.width = video.videoWidth;
                canvas.height = video.videoHeight;
@@ -107,6 +179,15 @@ export async function showCameraModal() {
                }, 'image/webp', 1);
             });
 
+            lightBtn.addEventListener('click', () => {
+               lightBtn.classList.toggle('on');
+               lightBtn.classList.toggle('off');
+               const lightOn = lightBtn.classList.contains('on');
+               tracks.forEach(track => track.applyConstraints({
+                  advanced: [{ torch: lightOn }]
+               }));
+            });
+
             cancelBtn.addEventListener('click', () => {
                tracks.forEach(track => track.stop());
                modal.remove();
@@ -116,6 +197,40 @@ export async function showCameraModal() {
          .catch((error) => {
             console.error('Camera error:', error);
             reject(new Error('Could not access camera. Please check permissions.'));
-         });
+         }); */
    });
+}
+
+
+// ── Inject camera animation styles ─────────────────────────────────────────
+
+function injectCameraStyles() {
+   if (document.getElementById('camera-modal-styles')) return;
+   const style = document.createElement('style');
+   style.id = 'camera-modal-styles';
+   style.textContent = `
+      @keyframes shutter-flash {
+         0%   { opacity: 0; }
+         15%  { opacity: 0.3; }
+         100% { opacity: 0; }
+      }
+
+      @keyframes ring-pulse {
+         0%   { box-shadow: inset 0 0 15px 0px #4CAF50, 0 0 0 0px rgba(76, 175, 80, 0.7); }
+         70%  { box-shadow: inset 0 0 15px 0px #4CAF50, 0 0 0 18px rgba(76, 175, 80, 0); }
+         100% { box-shadow: inset 0 0 15px 0px #4CAF50, 0 0 0 0px rgba(76, 175, 80, 0); }
+      }
+
+      @keyframes btn-press {
+         0%   { transform: scale(1); }
+         30%  { transform: scale(0.88); }
+         70%  { transform: scale(1.06); }
+         100% { transform: scale(1); }
+      }
+
+      .camera-capture-animate {
+         animation: btn-press 0.35s ease, ring-pulse 0.5s ease;
+      }
+   `;
+   document.head.appendChild(style);
 }

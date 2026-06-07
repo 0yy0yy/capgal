@@ -126,6 +126,10 @@ async function saveToGitHub(dataToSave) {
          throw new Error('File collision detected on GitHub - hash mismatch');
       }
 
+      //
+      const lastSyncBckp = store.store.userSettings.lastGitHubSync;
+      store.store.userSettings.lastGitHubSync = new Date().toISOString();
+
       // Encrypt data
       const encrypted = await crypto.encrypt(JSON.stringify(dataToSave), store.store.userSettings.encryptionPassphrase);
       const encryptedJson = JSON.stringify(encrypted);
@@ -138,6 +142,7 @@ async function saveToGitHub(dataToSave) {
       //const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
       try {
+
          const response = await fetch(
             `https://api.github.com/repos/${GITHUB_REPO}/contents/${fileName}`,
             {
@@ -163,16 +168,12 @@ async function saveToGitHub(dataToSave) {
 
          const responseData = await response.json();
 
-         if (!store.store.userSettings.githubDataHash) {
-            store.store.userSettings.githubDataHash = dataHash;
-         }
-
          // Store the file SHA for versioning/autosync
          store.store.userSettings.githubFileSha = responseData.content.sha;
-         store.store.userSettings.lastGitHubSync = new Date().toISOString();
 
-         return responseData.content.sha;
+         return true;
       } catch (fetchError) {
+         store.store.userSettings.lastGitHubSync = lastSyncBckp;
          //clearTimeout(timeoutId);
          throw fetchError;
       }

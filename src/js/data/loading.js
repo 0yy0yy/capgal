@@ -70,15 +70,13 @@ async function importData(appData) {
       // Write directly to store without using setters
       store.store.caps = appData.caps || [];
       store.store.categories = appData.categories || [];
-      // Preserve current lastGitHubSync - don't overwrite with stale backup data
-      const currentLastGitHubSync = store.store.userSettings.lastGitHubSync;
+      //appData.userSettings.lastGitHubSync = new Date().toISOString();
       Object.assign(store.store.userSettings, appData.userSettings || {});
-      store.store.userSettings.lastGitHubSync = currentLastGitHubSync;
    } else { // merge otherwise
       updateLoadingScreen('Merging data...');
       // Merge caps: keep existing, add new ones, update same ID with backup data
       const backupCaps = appData.caps || [];
-      const mergedCaps = [...store.store.caps];
+      const mergedCaps = []; // [...store.store.caps]; -> this to preserve caps when deleted across devices and github synchs
 
       backupCaps.forEach(backupCap => {
          const existingCapIndex = [...store.store.caps].findIndex(c => c.id === backupCap.id);
@@ -121,10 +119,8 @@ async function importData(appData) {
 
       if (syncPrefs) {
          showLoadingScreen('Synchronizing user settings...');
-         // Preserve current lastGitHubSync - don't overwrite with stale backup data
-         const currentLastGitHubSync = store.store.userSettings.lastGitHubSync;
+         //appData.userSettings.lastGitHubSync = new Date().toISOString();
          Object.assign(store.store.userSettings, appData.userSettings);
-         store.store.userSettings.lastGitHubSync = currentLastGitHubSync;
       }
    }
    hideLoadingScreen();
@@ -168,6 +164,15 @@ export async function importFromGitHub() {
       const appData = JSON.parse(decrypted);
       appData.userSettings.encryptionPassphrase = passphrase;
       appData.userSettings.githubDataHash = dataHash;
+
+      // store newest SHA
+      updateLoadingScreen('Getting the newest SHA...');
+      const shaResponse = await fetch(
+         `https://api.github.com/repos/${GITHUB_REPO}/contents/${fileName}`
+      );
+      const { sha } = await shaResponse.json();
+      appData.userSettings.githubFileSha = sha;
+
       await importData(appData);
       return true;
    } catch (error) {

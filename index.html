@@ -319,7 +319,8 @@
                   </div>
                   <label>
                      <span class="meta-key" for="description">Cap's description</span>
-                     <textarea class="meta-val" id="detailsDesc" name="description" maxlength="280"></textarea>
+                     <textarea class="meta-val" id="detailsDesc" name="description" maxlength="280"
+                        placeholder="A short cap's description"></textarea>
                      <div class="mdl-char-count"></div>
                   </label>
                </div>
@@ -408,6 +409,14 @@
                      <div class="settings-buttons">
                         <button type="button" class="theme-btn" id="exportPlainBtn">Plain JSON</button>
                         <button type="button" class="theme-btn" id="exportEncryptedBtn">Encrypted</button>
+                     </div>
+                  </div>
+                  <div class="setting-row">
+                     <span class="setting-label">Export images</span>
+                     <div class="settings-buttons">
+                        <button type="button" class="theme-btn" id="exportAllImagesBtn">All caps</button>
+                        <button type="button" class="theme-btn" id="exportSelectedImagesBtn" disabled>Selected
+                           caps</button>
                      </div>
                   </div>
                </details>

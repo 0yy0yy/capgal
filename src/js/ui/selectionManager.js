@@ -12,6 +12,14 @@ export class SelectionManager {
       this.lastSelectedIndex = -1;
       this.onSelectionChange = options.onSelectionChange || (() => { });
       this.onSelectionModeChange = options.onSelectionModeChange || (() => { });
+
+      // Dragging variables
+      this.isDragSelecting = false;
+      this.lastHoveredItemId = null;
+      this.dragSelectedIds = new Set();    // items selected in this gesture
+      this.dragDeselectedIds = new Set();  // items deselected in this gesture
+
+      this.exportSelectedCapImagesButton = document.getElementById("exportSelectedImagesBtn"); // Should I move this to gallery-selection.js instead?
    }
 
    addSelectableItem(element, itemId) {
@@ -24,20 +32,41 @@ export class SelectionManager {
       let justToggledSelection = false;
 
       const start = (e) => {
-         // Ignore multi-touch events (e.g., pinch zoom, two-finger gestures)
-         if (e.touches && e.touches.length > 1) {
-            return;
-         }
+         if (e.touches && e.touches.length > 1) return;
 
-         // Store the start event coordinates
-         startEvent = e;
+         startEvent = { clientX: e.clientX, clientY: e.clientY };
          longPressTriggered = false;
          justToggledSelection = false;
+         let dragSelectTriggered = false;  // ← track drag-select separately
+
+         // Capture pointer so pointermove keeps firing even outside the element
+         element.setPointerCapture(e.pointerId);
 
          timer = setTimeout(() => {
             longPressTriggered = true;
             this.startSelectionMode(item, e);
          }, this.longPressDelay);
+      };
+
+      const move = (e) => {
+         if (!startEvent) return;
+
+         const dx = Math.abs(e.clientX - startEvent.clientX);
+         const dy = Math.abs(e.clientY - startEvent.clientY);
+         if (dx <= 10 && dy <= 10) return;
+
+         if (timer) {
+            clearTimeout(timer);
+            timer = null;
+         }
+
+         if (!this.isSelectionMode) {
+            longPressTriggered = true;
+            this.isDragSelecting = true;
+            this.dragSelectedIds.clear();
+            this.dragDeselectedIds.clear();
+            this.startSelectionMode(item, e);
+         }
       };
 
       const cancel = (e) => {
@@ -46,28 +75,52 @@ export class SelectionManager {
             timer = null;
          }
 
-         // If long press wasn't triggered and we're in selection mode, handle click
+         startEvent = null;
+         this.isDragSelecting = false;
+         this.lastHoveredItemId = null;
+         this.dragSelectedIds.clear();
+         this.dragDeselectedIds.clear();
+
          if (!longPressTriggered && this.isSelectionMode && e.type === 'pointerup') {
-            justToggledSelection = true;
-            this.toggleItemSelection(item, e);
-            // Prevent click event from firing after this
             e.preventDefault();
             e.stopPropagation();
+            justToggledSelection = true;
+            this.toggleItemSelection(item, e);
          }
-
-         startEvent = null;
       };
 
-      const move = (e) => {
-         // Cancel if moved too far from start
-         if (startEvent) {
-            const dx = Math.abs(e.clientX - startEvent.clientX);
-            const dy = Math.abs(e.clientY - startEvent.clientY);
-            if (dx > 10 || dy > 10) {
-               clearTimeout(timer);
-               timer = null;
-            }
+      const onPointerEnter = (e) => {
+         if (!this.isDragSelecting) return;
+
+         // Same item as before — do nothing
+         if (this.lastHoveredItemId === item.id) return;
+         this.lastHoveredItemId = item.id;
+
+         if (this.dragDeselectedIds.has(item.id)) {
+            // Already deselected in this gesture — leave it alone
+            return;
          }
+
+         if (this.dragSelectedIds.has(item.id)) {
+            // Already selected in this gesture — leave it alone
+            return;
+         }
+
+         if (this.selectedItems.has(item.id)) {
+            // Was selected before gesture — deselect it
+            this.selectedItems.delete(item.id);
+            item.element.classList.remove('selected');
+            this.dragDeselectedIds.add(item.id);
+         } else {
+            // Not selected — select it
+            this.selectedItems.add(item.id);
+            item.element.classList.add('selected');
+            this.dragSelectedIds.add(item.id);
+         }
+
+         this.onSelectionChange(Array.from(this.selectedItems));
+         this.exportSelectedCapImagesButton.textContent =
+            `Selected caps (${this.selectedItems.size})`;
       };
 
       const clickHandler = (e) => {
@@ -82,7 +135,7 @@ export class SelectionManager {
 
       element.addEventListener('pointerdown', start);
       element.addEventListener('pointerup', cancel);
-      element.addEventListener('pointerleave', cancel);
+      //element.addEventListener('pointerleave', cancel);
       element.addEventListener('pointermove', move);
       element.addEventListener('click', clickHandler);
 
@@ -96,6 +149,9 @@ export class SelectionManager {
          this.onSelectionModeChange(true);
       }
       this.toggleItemSelection(item, event);
+
+      this.exportSelectedCapImagesButton.textContent = `Selected caps (${this.selectedItems.size})`;
+      this.exportSelectedCapImagesButton.removeAttribute("disabled");
    }
 
    toggleItemSelection(item, event) {
@@ -121,6 +177,8 @@ export class SelectionManager {
       }
 
       this.onSelectionChange(Array.from(this.selectedItems));
+
+      this.exportSelectedCapImagesButton.textContent = `Selected caps (${this.selectedItems.size})`;
    }
 
    selectRange(startIndex, endIndex) {
@@ -139,6 +197,8 @@ export class SelectionManager {
 
       // Update last selected index
       this.lastSelectedIndex = endIndex;
+
+      this.exportSelectedCapImagesButton.textContent = `Selected caps (${this.selectedItems.size})`;
    }
 
    exitSelectionMode() {
@@ -150,6 +210,8 @@ export class SelectionManager {
       });
       this.onSelectionModeChange(false);
       this.onSelectionChange([]);
+      this.exportSelectedCapImagesButton.textContent = "Selected caps";
+      this.exportSelectedCapImagesButton.setAttribute("disabled", "disabled");
    }
 
    getSelectedItems() {
@@ -170,6 +232,8 @@ export class SelectionManager {
          }
       });
       this.onSelectionChange(Array.from(this.selectedItems));
+
+      this.exportSelectedCapImagesButton.textContent = `Selected caps (${this.selectedItems.size})`;
    }
 
    deselectAll() {

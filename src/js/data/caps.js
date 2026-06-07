@@ -106,8 +106,7 @@ export async function saveCap(capData) {
       }
 
       updateLoadingScreen('Downsizing to 600x600 if needed...');
-      const imgToDownsize = processed ? processed.imageBlob : capData.image;
-      const img = await resizeImageIfNeeded(imgToDownsize);
+      const img = processed ? await resizeImageIfNeeded(processed.imageBlob) : capData.image;
       const color = processed ? processed.capColor : capData.capColor;
       updateLoadingScreen('Compressing image to WebP at 0.9 quality...');
       imageWebP = await compressToWebP(img);

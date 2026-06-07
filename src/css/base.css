@@ -779,6 +779,16 @@ main {
    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'/%3E%3C/svg%3E");
 }
 
+/* Light OFF */
+.off {
+   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Cpath d='M704 469.333H503.467L640 106.667H405.333l-128 448H460.8L362.667 960z' fill='%23ffc107'/%3E%3Cpath d='m76.01 136.448 60.31-60.33 809.941 809.94-60.33 60.331z' fill='%2337474f'/%3E%3C/svg%3E");
+}
+
+/* Light ON */
+.on {
+   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Cpath d='M704 469.333H503.467L640 106.667H405.333l-128 448H460.8L362.667 960z' fill='%23ffc107'/%3E%3C/svg%3E");
+}
+
 /* Active sidebar button highlight */
 #fabs button.active-nav {
    background: color-mix(in srgb, var(--clr-primary) 12%, transparent);
@@ -1458,9 +1468,7 @@ button.stick-left {
 
 #detailsImage {
    width: auto;
-   height: auto;
    max-height: 300px;
-   min-height: 300px;
    aspect-ratio: 1;
    object-fit: contain;
    border-radius: var(--radius-md);
@@ -1485,6 +1493,7 @@ button.stick-left {
    position: relative;
    overflow: clip;
    max-height: 45%;
+   padding: 5px;
    display: flex;
    justify-content: center;
 }
@@ -2022,6 +2031,13 @@ button.stick-left {
    border-color: var(--clr-destructive);
 }
 
+.theme-btn[disabled] {
+   filter: grayscale(1) opacity(0.6);
+   pointer-events: none;
+   cursor: not-allowed;
+}
+
+
 /* =====================================================
        RESPONSIVE DESIGN
        ===================================================== */
@@ -2113,13 +2129,17 @@ button.stick-left {
    .details-color-picker {
       padding: 3px;
    }
-}
 
-@media (max-width: 510px) {
    .ss-main {
       width: 150px !important;
    }
+
+   .color-group>*:not(label) {
+      grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+   }
 }
+
+@media (max-width: 510px) {}
 
 /* =====================================================
        UTILITY CLASSES
