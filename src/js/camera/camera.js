@@ -124,7 +124,8 @@ export async function showCameraModal() {
             video: {
                facingMode: 'environment',
                height: { ideal: 1080 },
-               width: { ideal: 1920 }
+               width: { ideal: 1920 },
+               torch: false
             },
          })
          .then((stream) => {
@@ -133,13 +134,7 @@ export async function showCameraModal() {
             video.play();
 
             const tracks = stream.getVideoTracks();
-            tracks.forEach(track => {
-               if ('torch' in track.getCapabilities()) {
-                  track.applyConstraints({
-                     advanced: [{ torch: false }]
-                  })
-               }
-            });
+            await toggleTorch(tracks, false);
 
             captureBtn.addEventListener('click', () => {
                // ── Trigger animations ──
@@ -170,13 +165,7 @@ export async function showCameraModal() {
                lightBtn.classList.toggle('on');
                lightBtn.classList.toggle('off');
                const lightOn = lightBtn.classList.contains('on');
-               tracks.forEach(track => {
-                  if ('torch' in track.getCapabilities()) {
-                     track.applyConstraints({
-                        advanced: [{ torch: false }]
-                     })
-                  }
-               });
+               await toggleTorch(tracks, lightOn);
             });
 
             cancelBtn.addEventListener('click', () => {
@@ -193,8 +182,31 @@ export async function showCameraModal() {
 }
 
 
-// ── Inject camera animation styles ─────────────────────────────────────────
+async function toggleTorch(tracks, turnOn) {
+   tracks.forEach(track => {
+      /* if ('torch' in track.getCapabilities()) {
+         track.applyConstraints({
+            advanced: [{ torch: false }]
+         })
+      } */
+      try {
+         await track.applyConstraints({ torch: turnOn });
+      } catch (e) {
+         console.error("direct failed", e);
+      }
 
+      try {
+         await track.applyConstraints({
+            advanced: [{ torch: turnOn }]
+         });
+      } catch (e) {
+         console.error("advanced failed", e);
+      }
+   });
+}
+
+
+// ── Inject camera animation styles ─────────────────────────────────────────
 function injectCameraStyles() {
    if (document.getElementById('camera-modal-styles')) return;
    const style = document.createElement('style');
