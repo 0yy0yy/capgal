@@ -5,7 +5,7 @@
  */
 export async function showCameraModal() {
    injectCameraStyles();
-   return new Promise((resolve, reject) => {
+   return new Promise(async (resolve, reject) => {
       // Create a hidden video element
       const video = document.createElement('video');
       video.playsInline = true;
@@ -118,23 +118,26 @@ export async function showCameraModal() {
       modal.appendChild(lightBtn);
       modal.appendChild(cancelBtn);
 
+      const torchCameraId = await findTorchCamera();
+      if (!torchCameraId) {
+         lightBtn.style.display = 'none';
+      }
+
       // Request camera access
       navigator.mediaDevices
          .getUserMedia({
-            video: {
-               facingMode: 'environment',
-               height: { ideal: 1080 },
-               width: { ideal: 1920 },
-               torch: false
-            },
+            video: torchCameraId
+               ? { deviceId: { exact: torchCameraId } }
+               : { facingMode: 'environment' }
          })
-         .then((stream) => {
+         .then(async (stream) => {
             document.body.appendChild(modal);
             video.srcObject = stream;
-            video.play();
-
+            await video.play();
             const tracks = stream.getVideoTracks();
-            //await toggleTorch(tracks, false);
+            if (torchCameraId) {
+               await toggleTorch(tracks, false);
+            }
 
             captureBtn.addEventListener('click', () => {
                // ── Trigger animations ──
@@ -146,19 +149,20 @@ export async function showCameraModal() {
                void flashOverlay.offsetWidth;
                flashOverlay.style.animation = 'shutter-flash 0.4s ease forwards';
 
-               const canvas = document.createElement('canvas');
-               canvas.width = video.videoWidth;
-               canvas.height = video.videoHeight;
-               const ctx = canvas.getContext('2d');
-               ctx.drawImage(video, 0, 0);
+               setTimeout(() => {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = video.videoWidth;
+                  canvas.height = video.videoHeight;
+                  const ctx = canvas.getContext('2d');
+                  ctx.drawImage(video, 0, 0);
 
-               // Stop camera
-               tracks.forEach(track => track.stop());
-               modal.remove();
+                  tracks.forEach(track => track.stop());
+                  modal.remove();
 
-               canvas.toBlob((blob) => {
-                  resolve(blob);
-               }, 'image/webp', 1);
+                  canvas.toBlob((blob) => {
+                     resolve(blob);
+                  }, 'image/webp', 1);
+               }, 400);
             });
 
             lightBtn.addEventListener('click', async () => {
@@ -182,20 +186,52 @@ export async function showCameraModal() {
 }
 
 
+async function findTorchCamera() {
+   const devices = await navigator.mediaDevices.enumerateDevices();
+
+   const rearCameras = devices.filter(
+      d =>
+         d.kind === 'videoinput' &&
+         d.label.toLowerCase().includes('back')
+   );
+
+   for (const camera of rearCameras) {
+      let stream;
+
+      try {
+         stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+               deviceId: { exact: camera.deviceId }
+            }
+         });
+
+         const track = stream.getVideoTracks()[0];
+         const capabilities = track.getCapabilities();
+         stream.getTracks().forEach(t => t.stop());
+         if (capabilities.torch) {
+            return camera.deviceId;
+         }
+      } catch (err) {
+         if (stream) {
+            stream.getTracks().forEach(t => t.stop());
+         }
+      }
+   }
+
+   return null;
+}
+
+
 async function toggleTorch(tracks, turnOn) {
    for (const track of tracks) {
       try {
-         await track.applyConstraints({ torch: turnOn });
+         await track.applyConstraints({ advanced: [{ torch: turnOn }] });
       } catch (e) {
-         console.error("direct camera's torch access failed", e);
-      }
-
-      try {
-         await track.applyConstraints({
-            advanced: [{ torch: turnOn }]
-         });
-      } catch (e) {
-         console.error("advanced camera's torch access failed", e);
+         try {
+            await track.applyConstraints({ torch: turnOn });
+         } catch (e2) {
+            console.error("torch access failed", e2);
+         }
       }
    }
 }
