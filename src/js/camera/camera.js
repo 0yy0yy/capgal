@@ -186,7 +186,7 @@ export async function showCameraModal() {
 }
 
 
-async function findTorchCamera() {
+/* async function findTorchCamera() {
    const devices = await navigator.mediaDevices.enumerateDevices();
 
    const rearCameras = devices.filter(
@@ -219,6 +219,41 @@ async function findTorchCamera() {
    }
 
    return null;
+} */
+
+async function findTorchCamera() {
+   const devices = await navigator.mediaDevices.enumerateDevices();
+   const rearCameras = devices.filter(
+      d =>
+         d.kind === 'videoinput' &&
+         d.label.toLowerCase().includes('back')
+   );
+
+   let best = null; // { deviceId, resolution }
+
+   for (const camera of rearCameras) {
+      let stream;
+      try {
+         stream = await navigator.mediaDevices.getUserMedia({
+            video: { deviceId: { exact: camera.deviceId } }
+         });
+
+         const track = stream.getVideoTracks()[0];
+         const capabilities = track.getCapabilities();
+         stream.getTracks().forEach(t => t.stop());
+
+         if (capabilities.torch) {
+            const resolution = (capabilities.width?.max ?? 0) * (capabilities.height?.max ?? 0);
+            if (!best || resolution > best.resolution) {
+               best = { deviceId: camera.deviceId, resolution };
+            }
+         }
+      } catch (err) {
+         if (stream) stream.getTracks().forEach(t => t.stop());
+      }
+   }
+
+   return best?.deviceId ?? null;
 }
 
 
