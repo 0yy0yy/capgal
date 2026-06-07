@@ -132,10 +132,14 @@ export async function showCameraModal() {
             video.srcObject = stream;
             video.play();
 
-            const tracks = stream.getTracks();
-            tracks.forEach(track => track.applyConstraints({
-               advanced: [{ torch: false }]
-            }));
+            const tracks = stream.getVideoTracks();
+            tracks.forEach(track => {
+               if ('torch' in track.getCapabilities()) {
+                  track.applyConstraints({
+                     advanced: [{ torch: false }]
+                  })
+               }
+            });
 
             captureBtn.addEventListener('click', () => {
                // ── Trigger animations ──
@@ -166,9 +170,13 @@ export async function showCameraModal() {
                lightBtn.classList.toggle('on');
                lightBtn.classList.toggle('off');
                const lightOn = lightBtn.classList.contains('on');
-               tracks.forEach(track => track.applyConstraints({
-                  advanced: [{ torch: lightOn }]
-               }));
+               tracks.forEach(track => {
+                  if ('torch' in track.getCapabilities()) {
+                     track.applyConstraints({
+                        advanced: [{ torch: false }]
+                     })
+                  }
+               });
             });
 
             cancelBtn.addEventListener('click', () => {
