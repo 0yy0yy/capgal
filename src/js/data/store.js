@@ -13,7 +13,6 @@ export const store = {
       appearance: 'android',
       showCapNames: true,
       useAutoCapFinder: true,
-      toggleUseAutoColorFinder: true,
       openGalleryByDefault: false,
       galleryBackgroundTexture: 'none',
       galleryZoom: 1,
@@ -49,6 +48,7 @@ export let settingsOpen = false;
 export async function addCap(capData) {
    // Import saveAppData here to avoid circular imports
    const { saveAppData } = await import('./saving.js');
+   const date = new Date().toISOString();
    const newCap = {
       id: String(Date.now()),
       title: capData.title || '',
@@ -56,8 +56,8 @@ export async function addCap(capData) {
       category: capData.category || 'all',
       imageWebP: capData.imageWebP || null,
       color: capData.color || '#8F8F8F',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: date,
+      updatedAt: date,
    };
 
    store.caps.push(newCap);
@@ -119,6 +119,37 @@ export async function deleteCategory(categoryId) {
          cap.category = 'all';
       }
    });
+   await saveAppData();
+}
+
+/**
+ * Reset app data to the initial settings and delete caps and categories
+ */
+export async function resetAppData() {
+   const { saveAppData } = await import('./saving.js');
+   store.caps = [];
+   store.categories = [
+      {
+         id: 'all',
+         name: 'All caps',
+         color: '#8F8F8F',
+      }
+   ];
+   store.userSettings = {
+      theme: 'auto',
+      appearance: 'android',
+      showCapNames: true,
+      useAutoCapFinder: true,
+      openGalleryByDefault: false,
+      galleryBackgroundTexture: 'none',
+      galleryZoom: 1,
+      githubToken: null,
+      githubDataHash: null,
+      githubFileSha: null,
+      lastGitHubSync: null,
+      lastGitHubAutoSync: null,
+      encryptionPassphrase: null,
+   };
    await saveAppData();
 }
 

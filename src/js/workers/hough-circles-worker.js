@@ -34,10 +34,25 @@ self.onmessage = async (event) => {
       }
 
       try {
-         const { pixelData, width, height, params } = data;
+         const { imageBlob, params } = data;
 
-         // Reconstruct grayscale Mat from Uint8Array
-         const gray = cv.matFromArray(height, width, cv.CV_8U, pixelData);
+         const bitmap = await createImageBitmap(imageBlob);
+
+         const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+         const ctx = canvas.getContext('2d');
+         ctx.drawImage(bitmap, 0, 0);
+
+         const imageData = ctx.getImageData(
+            0,
+            0,
+            bitmap.width,
+            bitmap.height
+         );
+
+         const src = cv.matFromImageData(imageData);
+         let gray = new cv.Mat();
+         cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+         src.delete();
 
          // Perform circle detection
          let circles = new cv.Mat();
@@ -52,6 +67,7 @@ self.onmessage = async (event) => {
             params.minRadius,
             params.maxRadius
          );
+         gray.delete();
 
          // Extract circle data if found
          let circlesData = null;
@@ -63,9 +79,6 @@ self.onmessage = async (event) => {
                circles.data32F[2],  // radius
             ];
          }
-
-         // Cleanup
-         gray.delete();
          circles.delete();
 
          self.postMessage({

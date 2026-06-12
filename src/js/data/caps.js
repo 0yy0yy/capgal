@@ -4,7 +4,7 @@ import * as store from './store.js';
 import { saveAppData } from './saving.js';
 import { processCapImage, resizeImageIfNeeded, compressToWebP } from './image-processor.js';
 import { openGallery, refreshGallery } from './gallery.js';
-import { getWordForCount, tryHeicConversion, clampToPalette, showLoadingScreen, updateLoadingScreen, hideLoadingScreen } from '../helpers/helper.js';
+import { getWordForCount, tryHeicConversion, clampToPalette, showLoadingScreen, updateLoadingScreen, hideLoadingScreen, getSelectedCaps } from '../helpers/helper.js';
 import * as camera from '../camera/camera.js';
 import { showImageCropper } from '../ui/image-cropper.js';
 
@@ -42,7 +42,7 @@ export async function deleteSelectedCaps(capIds) {
 
    if (confirmed) {
       try {
-         showLoadingScreen(`Deleting ${numberOfCapsSelected} cap(s)...`);
+         showLoadingScreen(`Deleting ${numberOfCapsSelected} ${getWordForCount(numberOfCapsSelected, 'cap')}...`);
 
          // Use for...of instead of forEach with async/await
          for (const capId of capIds) {
@@ -107,30 +107,33 @@ export async function saveCap(capData) {
 
       updateLoadingScreen('Downsizing to 600x600 if needed...');
       const img = processed ? await resizeImageIfNeeded(processed.imageBlob) : capData.image;
-      const color = processed ? processed.capColor : capData.capColor;
       updateLoadingScreen('Compressing image to WebP at 0.9 quality...');
       imageWebP = await compressToWebP(img);
-      capColor = clampToPalette(color || '#8F8F8F');
+      const category = store.store.categories.find(cat => cat.name === capData.category);
+      const color = category.id === 'all' ? 'transparent' : category.color;
 
       // Add to store
       const newCap = {
          id: String(Date.now()),
          title: capData.title || '',
          description: capData.description || '',
-         category: capData.category || 'all', // Default to 'all' if not specified
+         category: capData.category || 'all',
          imageWebP,
-         color: capColor,
+         color,
          createdAt: new Date().toISOString(),
          updatedAt: new Date().toISOString(),
       };
 
-      store.store.caps.push(newCap);
-
       // If new category was created, add it to store
       if (capData.newCategory) {
+         const newCategoryName = capData.newCategory.name;
+         const newCategoryId = newCategoryName.toLowerCase().replace(/\s+/g, '-') + String(Date.now());
+         capData.newCategory.id = newCategoryId;
          store.store.categories.push(capData.newCategory);
+         newCap.category = newCategoryId;
       }
 
+      store.store.caps.push(newCap);
       await saveAppData();
       return newCap;
    } catch (error) {
@@ -162,12 +165,7 @@ export async function addCapsInBatch() {
             await saveCap(result);
             // Refresh gallery
             openGallery(store.currentCategory);
-
-            keepAdding = await Modal.confirm({
-               question: 'Cap added! Add another?',
-               yesLabel: 'Yes',
-               noLabel: 'No, done',
-            });
+            //keepAdding = false;
          } catch (error) {
             console.error('Error adding cap:', error);
             await Modal.confirm({
@@ -321,7 +319,6 @@ export async function replaceCapImage(capId) {
       const cap = store.store.caps.find(c => c.id === capId);
       if (cap) {
          cap.imageWebP = imageWebP;
-         cap.color = clampToPalette(processed.capColor);
          cap.updatedAt = new Date().toISOString();
       }
 
@@ -338,6 +335,21 @@ export async function replaceCapImage(capId) {
    }
 }
 
+async function webpToPngBlob(webpBlob) {
+   const bitmap = await createImageBitmap(webpBlob);
+
+   const canvas = document.createElement('canvas');
+   canvas.width = bitmap.width;
+   canvas.height = bitmap.height;
+
+   const ctx = canvas.getContext('2d');
+   ctx.drawImage(bitmap, 0, 0);
+
+   return new Promise(resolve => {
+      canvas.toBlob(resolve, 'image/png');
+   });
+}
+
 /**
  * Export cap image to device
  */
@@ -346,22 +358,87 @@ export async function exportCapImage(capId) {
    if (!cap || !cap.imageWebP) return false;
 
    try {
-      const url = URL.createObjectURL(cap.imageWebP);
-
+      const pngBlob = await webpToPngBlob(cap.imageWebP);
+      if (!pngBlob) {
+         throw new Error('Failed to convert WebP to PNG');
+      }
+      const url = URL.createObjectURL(pngBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${cap.title || 'cap' + cap.id}.webp`;
+      a.download = `cap${cap.id}-${cap.title}.png`;
 
       document.body.appendChild(a);
       a.click();
       a.remove();
 
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
 
       return true;
    } catch (error) {
       console.error('Error exporting image:', error);
       return false;
+   }
+}
+
+/**
+ * Export cap images to device
+ */
+export async function exportCapImages(onlySelected, compressIntoArchive) {
+   let caps = store.store.caps;
+   if (onlySelected) {
+      caps = getSelectedCaps();
+   }
+   if (!compressIntoArchive) {
+      //const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+      for (const cap of caps) {
+         await exportCapImage(cap.id);
+         //await delay(1000);
+      }
+   } else {
+      try {
+         const zip = new JSZip();
+
+         const pngFiles = await Promise.all(
+            caps
+               .filter(cap => cap.imageWebP)
+               .map(async cap => {
+                  const pngBlob = await webpToPngBlob(cap.imageWebP);
+
+                  return {
+                     filename: `cap${cap.id}-${cap.title}.png`,
+                     blob: pngBlob
+                  };
+               })
+         );
+
+         for (const file of pngFiles) {
+            zip.file(file.filename, file.blob);
+         }
+
+         const date = Date.now();
+         const zipBlob = await zip.generateAsync({
+            comment: `Cap gallery cap images export - ${date}`,
+            type: 'blob',
+            compression: 'DEFLATE',
+            compressionOptions: {
+               level: 9
+            }
+         });
+
+         const url = URL.createObjectURL(zipBlob);
+
+         const a = document.createElement('a');
+         a.href = url;
+         a.download = `cap-gallery-export-${date}.zip`;
+
+         document.body.appendChild(a);
+         a.click();
+         a.remove();
+
+         setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (error) {
+         console.error('Error exporting archive:', error);
+      }
    }
 }
 

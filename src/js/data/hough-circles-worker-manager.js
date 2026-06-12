@@ -5,11 +5,12 @@
  * Initializes early when app starts to load OpenCV in worker context.
  * Reuses the same worker for all operations.
  */
+import { updateLoadingScreen, hideLoadingScreen } from '../helpers/helper.js';
 
 let worker = null;
 let isInitialized = false;
 let pendingTasks = new Map();
-let taskIdCounter = 0;
+let taskIdCounter = -1;
 
 /**
  * Initialize the worker and load OpenCV
@@ -17,7 +18,6 @@ let taskIdCounter = 0;
  */
 export async function initializeHoughCirclesWorker() {
    if (isInitialized) return;
-
    try {
       const workerUrl = new URL('../workers/hough-circles-worker.js', import.meta.url);
       worker = new Worker(workerUrl);
@@ -29,6 +29,14 @@ export async function initializeHoughCirclesWorker() {
          if (type === 'init' && status === 'ready') {
             isInitialized = true;
             console.log('[HoughCircles Worker] OpenCV loaded and ready');
+            // Clean up the init task and resolve its promise
+            if (pendingTasks.has(taskId)) {
+               const { resolve, timeoutId } = pendingTasks.get(taskId);
+               clearTimeout(timeoutId);
+               pendingTasks.delete(taskId);
+               resolve();
+            }
+            return;
          }
 
          // Handle task responses
@@ -36,8 +44,7 @@ export async function initializeHoughCirclesWorker() {
             const { resolve, reject, timeoutId } = pendingTasks.get(taskId);
             clearTimeout(timeoutId);
             pendingTasks.delete(taskId);
-
-            if (type === 'success' || type === 'init') {
+            if (type === 'success') {
                resolve(event.data);
             } else if (type === 'error') {
                reject(new Error(event.data.error));
@@ -47,7 +54,6 @@ export async function initializeHoughCirclesWorker() {
 
       worker.onerror = (error) => {
          console.error('[HoughCircles Worker] Error:', error);
-         // Reject all pending tasks
          for (const { reject, timeoutId } of pendingTasks.values()) {
             clearTimeout(timeoutId);
             reject(error);
@@ -55,23 +61,18 @@ export async function initializeHoughCirclesWorker() {
          pendingTasks.clear();
       };
 
+      updateLoadingScreen('Loading CV library into memory...');
+
       // Send init message
       return new Promise((resolve) => {
          const taskId = ++taskIdCounter;
          const timeoutId = setTimeout(() => {
             console.warn('[HoughCircles Worker] Init timeout');
+            pendingTasks.delete(taskId);
             resolve();
-         }, 5000);
+         }, 4200);
 
-         pendingTasks.set(taskId, {
-            resolve: () => {
-               clearTimeout(timeoutId);
-               pendingTasks.delete(taskId);
-               resolve();
-            },
-            reject: () => { },
-            timeoutId
-         });
+         pendingTasks.set(taskId, { resolve, reject: () => { }, timeoutId });
 
          worker.postMessage({ taskId, type: 'init' });
       });
@@ -91,29 +92,17 @@ export async function detectCirclesInWorker(data, timeoutMs = 12000) {
    if (!isInitialized) {
       throw new Error('HoughCircles worker not initialized');
    }
-
    return new Promise((resolve, reject) => {
       const taskId = ++taskIdCounter;
 
       const timeoutId = setTimeout(() => {
          pendingTasks.delete(taskId);
-         worker.terminate();
-         worker = null;
-         isInitialized = false;
          reject(new Error(`Circle detection timed out after ${timeoutMs / 1000}s`));
       }, timeoutMs);
 
-      pendingTasks.set(taskId, {
-         resolve,
-         reject,
-         timeoutId
-      });
+      pendingTasks.set(taskId, { resolve, reject, timeoutId });
 
-      worker.postMessage({
-         taskId,
-         type: 'detectCircles',
-         data
-      });
+      worker.postMessage({ taskId, type: 'detectCircles', data });
    });
 }
 

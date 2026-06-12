@@ -1,5 +1,5 @@
 import { convertHeicToJpgIfNeeded } from '../data/image-processor.js'
-import { currentCategory } from '../data/store.js'; // and others for setupEncryption...
+import { currentCategory, store } from '../data/store.js'; // and others for setupEncryption...
 import Modal from '../ui/modal.js';
 import { inBatchMode } from '../data/caps.js';
 
@@ -322,6 +322,39 @@ export function hideLoadingScreen() {
    }
 }
 
+
+export function getSelectedCaps() {
+   const selectedIds = new Set(
+      [...document.querySelectorAll("#galleryList li.selected")].map(li => li.dataset.id)
+   );
+   const caps = store.caps.filter(cap => selectedIds.has(cap.id));
+   //const caps = store.caps.filter(cap => cap.category === currentCategory && selectedCaps.find(li => li.dataset.id === cap.id));
+   return caps;
+}
+
+
+export function setScrollToTopForDetailsView() {
+   document.getElementsByClassName("details-body")[0].scrollTop = 0;
+}
+
+
+export function makeAllActive() {
+   [...document.querySelectorAll(".cat-btn")].forEach(categoryButton => {
+      categoryButton.classList.remove("selected");
+      if (categoryButton.dataset.cat === "all") {
+         categoryButton.classList.add("selected");
+      }
+   });
+}
+
+
+export function setOverflowPostfix() {
+   const marquees = document.querySelectorAll('.marquee-content');
+
+   marquees.forEach((marquee) => {
+
+   });
+}
 
 export function setMarqueeScroll(defaultSpeed = 0.17) {
    const marquees = document.querySelectorAll('.marquee-content');

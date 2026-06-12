@@ -20,6 +20,7 @@ export function initGallerySelection(showRemoveButton = false, showDeleteButton 
    if (!galleryList) return; // Gallery not yet rendered
 
    gallerySelectionManager = new SelectionManager({
+      container: galleryList,
       delay: 350,
       onSelectionChange: (selectedIds) => {
          // Update UI to show selection count

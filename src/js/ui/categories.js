@@ -3,7 +3,7 @@ import Modal from './modal.js';
 import * as store from '../data/store.js';
 import { openGallery } from '../data/gallery.js';
 import { saveAppData } from '../data/saving.js';
-import { showLoadingScreen, hideLoadingScreen } from '../helpers/helper.js';
+import { showLoadingScreen, hideLoadingScreen, getWordForCount } from '../helpers/helper.js';
 
 let preventClickOnLongPress = null;
 
@@ -12,14 +12,14 @@ export async function deleteCategory(categoryId) {
    const capCount = store.store.caps.filter(c => c.category === categoryId).length;
 
    const confirmed = await Modal.confirm({
-      question: `Delete "${category?.name || 'Category'}"? ${capCount} cap(s) will be moved to "All".`,
+      question: `Delete "${category?.name || 'Category'}"? ${capCount} ${getWordForCount(capCount, 'cap')} will be moved to "All".`,
       yesLabel: 'Yes, delete',
       noLabel: 'Cancel',
    });
 
    if (confirmed) {
       try {
-         showLoadingScreen(`Deleting category and moving ${capCount} cap(s)...`);
+         showLoadingScreen(`Deleting category and moving ${capCount} ${getWordForCount(capCount, 'cap')}...`);
 
          // Move affected caps to 'all'
          store.store.caps.forEach(cap => {
@@ -148,8 +148,10 @@ export function updateCategoryTitles(category) {
 
 export function updateCategoryColor(category) {
    const buttonToUpdate = document.querySelector(`#categories li button[data-cat=${category.id}]:not([data-cat='all'])`);
-   buttonToUpdate.style.borderLeftColor = category.color;
-   buttonToUpdate.style.setProperty('--clr-category', category.color);
+   if (buttonToUpdate) {
+      buttonToUpdate.style.borderLeftColor = category.color;
+      buttonToUpdate.style.setProperty('--clr-category', category.color);
+   }
 }
 
 function showDeleteButton(li, catId) {
@@ -200,7 +202,7 @@ export function initCategoryUI() {
    allBtn.type = 'button';
    allBtn.className = 'cat-btn selected';
    allBtn.dataset.cat = 'all';
-   allBtn.textContent = 'All caps';
+   allBtn.textContent = `All caps (${store.store.caps.length})`;
    allLi.appendChild(allBtn);
    categoriesList.appendChild(allLi);
 
@@ -212,7 +214,7 @@ export function initCategoryUI() {
          btn.type = 'button';
          btn.className = 'cat-btn';
          btn.dataset.cat = cat.id;
-         btn.textContent = cat.name;
+         btn.textContent = `${cat.name} (${store.store.caps.filter(cap => cap.category === cat.id).length})`;
          btn.style.borderLeftColor = cat.color;
          btn.style.setProperty('--clr-category', cat.color);
          btn.style.borderLeftWidth = '4px';
@@ -225,4 +227,12 @@ export function initCategoryUI() {
    // Re-initialize handlers
    initCategoryButtons();
    initCategoryDeleteHandlers();
+}
+
+export function updateCapCountingForCategories() {
+   document.querySelectorAll('#categories ul li button').forEach(categoryButton => {
+      const categoryId = categoryButton.dataset.cat;
+      const categoryTitle = categoryButton.textContent;
+      categoryButton.textContent = categoryTitle.replace(/(.*)\s(\(\d+\))/, `$1 (${categoryId === 'all' ? store.store.caps.length : store.store.caps.filter(cap => cap.category === categoryId).length})`);
+   });
 }

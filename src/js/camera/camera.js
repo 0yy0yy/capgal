@@ -129,14 +129,12 @@ export async function showCameraModal() {
                ? {
                   deviceId: { exact: torchCameraId },
                   width: { ideal: 4096 },
-                  height: { ideal: 4096 },
-                  resizeMode: 'crop-and-scale'
+                  height: { ideal: 4096 }
                }
                : {
                   facingMode: { ideal: 'environment' },
                   width: { ideal: 4096 },
-                  height: { ideal: 4096 },
-                  resizeMode: 'crop-and-scale'
+                  height: { ideal: 4096 }
                }
          });
 

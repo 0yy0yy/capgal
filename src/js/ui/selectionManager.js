@@ -12,14 +12,21 @@ export class SelectionManager {
       this.lastSelectedIndex = -1;
       this.onSelectionChange = options.onSelectionChange || (() => { });
       this.onSelectionModeChange = options.onSelectionModeChange || (() => { });
+      this.container = options.container || document.body; // Add container option
 
       // Dragging variables
       this.isDragSelecting = false;
       this.lastHoveredItemId = null;
       this.dragSelectedIds = new Set();    // items selected in this gesture
       this.dragDeselectedIds = new Set();  // items deselected in this gesture
+      this.initialDragSelectionState = null; // Track if we started selecting or deselecting
+      this.isSelecting = true; // Whether we're selecting or deselecting during drag
 
-      this.exportSelectedCapImagesButton = document.getElementById("exportSelectedImagesBtn"); // Should I move this to gallery-selection.js instead?
+      this.exportSelectedCapImagesButton = document.getElementById("exportSelectedImagesBtn");
+
+      // Bind global move handler
+      this.globalMoveHandler = this.handleGlobalMove.bind(this);
+      this.globalUpHandler = this.handleGlobalUp.bind(this);
    }
 
    addSelectableItem(element, itemId) {
@@ -37,11 +44,10 @@ export class SelectionManager {
          startEvent = { clientX: e.clientX, clientY: e.clientY };
          longPressTriggered = false;
          justToggledSelection = false;
-         let dragSelectTriggered = false;  // ← track drag-select separately
 
-         // Capture pointer so pointermove keeps firing even outside the element
          element.setPointerCapture(e.pointerId);
 
+         // Start long press timer
          timer = setTimeout(() => {
             longPressTriggered = true;
             this.startSelectionMode(item, e);
@@ -53,19 +59,18 @@ export class SelectionManager {
 
          const dx = Math.abs(e.clientX - startEvent.clientX);
          const dy = Math.abs(e.clientY - startEvent.clientY);
-         if (dx <= 10 && dy <= 10) return;
 
-         if (timer) {
-            clearTimeout(timer);
-            timer = null;
-         }
+         // Movement detected - cancel long press and possibly start drag select
+         if (dx > 10 || dy > 10) {
+            if (timer) {
+               clearTimeout(timer);
+               timer = null;
+            }
 
-         if (!this.isSelectionMode) {
-            longPressTriggered = true;
-            this.isDragSelecting = true;
-            this.dragSelectedIds.clear();
-            this.dragDeselectedIds.clear();
-            this.startSelectionMode(item, e);
+            // Only start drag select if we're already in selection mode
+            if (this.isSelectionMode && !longPressTriggered && !this.isDragSelecting) {
+               this.startDragSelect(e, item);
+            }
          }
       };
 
@@ -76,10 +81,6 @@ export class SelectionManager {
          }
 
          startEvent = null;
-         this.isDragSelecting = false;
-         this.lastHoveredItemId = null;
-         this.dragSelectedIds.clear();
-         this.dragDeselectedIds.clear();
 
          if (!longPressTriggered && this.isSelectionMode && e.type === 'pointerup') {
             e.preventDefault();
@@ -92,39 +93,11 @@ export class SelectionManager {
       const onPointerEnter = (e) => {
          if (!this.isDragSelecting) return;
 
-         // Same item as before — do nothing
-         if (this.lastHoveredItemId === item.id) return;
-         this.lastHoveredItemId = item.id;
-
-         if (this.dragDeselectedIds.has(item.id)) {
-            // Already deselected in this gesture — leave it alone
-            return;
-         }
-
-         if (this.dragSelectedIds.has(item.id)) {
-            // Already selected in this gesture — leave it alone
-            return;
-         }
-
-         if (this.selectedItems.has(item.id)) {
-            // Was selected before gesture — deselect it
-            this.selectedItems.delete(item.id);
-            item.element.classList.remove('selected');
-            this.dragDeselectedIds.add(item.id);
-         } else {
-            // Not selected — select it
-            this.selectedItems.add(item.id);
-            item.element.classList.add('selected');
-            this.dragSelectedIds.add(item.id);
-         }
-
-         this.onSelectionChange(Array.from(this.selectedItems));
-         this.exportSelectedCapImagesButton.textContent =
-            `Selected caps (${this.selectedItems.size})`;
+         // Update selection based on drag mode
+         this.updateItemSelectionDuringDrag(item);
       };
 
       const clickHandler = (e) => {
-         // If we just toggled selection, prevent the click from opening details
          if (justToggledSelection) {
             e.preventDefault();
             e.stopPropagation();
@@ -135,12 +108,90 @@ export class SelectionManager {
 
       element.addEventListener('pointerdown', start);
       element.addEventListener('pointerup', cancel);
-      //element.addEventListener('pointerleave', cancel);
-      element.addEventListener('pointermove', move);
+      element.addEventListener('pointermove', move, { passive: false });
       element.addEventListener('click', clickHandler);
-
-      // Prevent context menu
+      element.addEventListener('pointerenter', onPointerEnter);
       element.addEventListener('contextmenu', (e) => e.preventDefault());
+   }
+
+   startDragSelect(event, startItem) {
+      this.isDragSelecting = true;
+      this.dragSelectedIds.clear();
+      this.dragDeselectedIds.clear();
+
+      // Determine if we're in select or deselect mode based on the starting item
+      this.isSelecting = !this.selectedItems.has(startItem.id);
+
+      // Initialize with the starting item
+      if (this.isSelecting && !this.selectedItems.has(startItem.id)) {
+         this.selectedItems.add(startItem.id);
+         startItem.element.classList.add('selected');
+         this.dragSelectedIds.add(startItem.id);
+      } else if (!this.isSelecting && this.selectedItems.has(startItem.id)) {
+         this.selectedItems.delete(startItem.id);
+         startItem.element.classList.remove('selected');
+         this.dragDeselectedIds.add(startItem.id);
+      }
+
+      this.lastHoveredItemId = startItem.id;
+      this.onSelectionChange(Array.from(this.selectedItems));
+      this.updateExportButtonText();
+
+      // Add global listeners for move and up events
+      window.addEventListener('pointermove', this.globalMoveHandler);
+      window.addEventListener('pointerup', this.globalUpHandler);
+   }
+
+   handleGlobalMove(e) {
+      if (!this.isDragSelecting) return;
+
+      // Find the element under the cursor
+      const elementUnderCursor = document.elementsFromPoint(e.clientX, e.clientY);
+
+      // Find the first selectable item under the cursor
+      for (let el of elementUnderCursor) {
+         const selectableItem = this.selectableItems.find(item => item.element === el || item.element.contains(el));
+         if (selectableItem) {
+            if (this.lastHoveredItemId !== selectableItem.id) {
+               this.lastHoveredItemId = selectableItem.id;
+               this.updateItemSelectionDuringDrag(selectableItem);
+            }
+            break;
+         }
+      }
+   }
+
+   handleGlobalUp(e) {
+      if (this.isDragSelecting) {
+         this.isDragSelecting = false;
+         this.lastHoveredItemId = null;
+         this.dragSelectedIds.clear();
+         this.dragDeselectedIds.clear();
+
+         // Remove global listeners
+         window.removeEventListener('pointermove', this.globalMoveHandler);
+         window.removeEventListener('pointerup', this.globalUpHandler);
+      }
+   }
+
+   updateItemSelectionDuringDrag(item) {
+      // Skip if already processed in this drag gesture
+      if (this.dragSelectedIds.has(item.id) || this.dragDeselectedIds.has(item.id)) return;
+
+      if (this.isSelecting && !this.selectedItems.has(item.id)) {
+         // Select the item
+         this.selectedItems.add(item.id);
+         item.element.classList.add('selected');
+         this.dragSelectedIds.add(item.id);
+      } else if (!this.isSelecting && this.selectedItems.has(item.id)) {
+         // Deselect the item
+         this.selectedItems.delete(item.id);
+         item.element.classList.remove('selected');
+         this.dragDeselectedIds.add(item.id);
+      }
+
+      this.onSelectionChange(Array.from(this.selectedItems));
+      this.updateExportButtonText();
    }
 
    startSelectionMode(item, event) {
@@ -149,9 +200,7 @@ export class SelectionManager {
          this.onSelectionModeChange(true);
       }
       this.toggleItemSelection(item, event);
-
-      this.exportSelectedCapImagesButton.textContent = `Selected caps (${this.selectedItems.size})`;
-      this.exportSelectedCapImagesButton.removeAttribute("disabled");
+      this.updateExportButtonText();
    }
 
    toggleItemSelection(item, event) {
@@ -177,8 +226,7 @@ export class SelectionManager {
       }
 
       this.onSelectionChange(Array.from(this.selectedItems));
-
-      this.exportSelectedCapImagesButton.textContent = `Selected caps (${this.selectedItems.size})`;
+      this.updateExportButtonText();
    }
 
    selectRange(startIndex, endIndex) {
@@ -197,8 +245,7 @@ export class SelectionManager {
 
       // Update last selected index
       this.lastSelectedIndex = endIndex;
-
-      this.exportSelectedCapImagesButton.textContent = `Selected caps (${this.selectedItems.size})`;
+      this.updateExportButtonText();
    }
 
    exitSelectionMode() {
@@ -210,8 +257,7 @@ export class SelectionManager {
       });
       this.onSelectionModeChange(false);
       this.onSelectionChange([]);
-      this.exportSelectedCapImagesButton.textContent = "Selected caps";
-      this.exportSelectedCapImagesButton.setAttribute("disabled", "disabled");
+      this.updateExportButtonText(true); // Disable button
    }
 
    getSelectedItems() {
@@ -232,12 +278,23 @@ export class SelectionManager {
          }
       });
       this.onSelectionChange(Array.from(this.selectedItems));
-
-      this.exportSelectedCapImagesButton.textContent = `Selected caps (${this.selectedItems.size})`;
+      this.updateExportButtonText();
    }
 
    deselectAll() {
       this.exitSelectionMode();
+   }
+
+   updateExportButtonText(disable = false) {
+      if (!this.exportSelectedCapImagesButton) return;
+
+      if (disable || this.selectedItems.size === 0) {
+         this.exportSelectedCapImagesButton.textContent = "Selected caps";
+         this.exportSelectedCapImagesButton.setAttribute("disabled", "disabled");
+      } else {
+         this.exportSelectedCapImagesButton.textContent = `Selected caps (${this.selectedItems.size})`;
+         this.exportSelectedCapImagesButton.removeAttribute("disabled");
+      }
    }
 }
 

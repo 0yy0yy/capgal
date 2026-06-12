@@ -2,14 +2,15 @@
 import * as store from '../data/store.js';
 import { popTab } from './navigation.js';
 import { openGallery, addLastCategoryToFilters, refreshGallery, updateGalleryTitleVisibility, setSlimColorPicker as setSlimColorPickerGallery } from '../data/gallery.js';
-import { handleAddCategoryClick, initCategoryButtons, initCategoryDeleteHandlers, initCategoryUI } from './categories.js';
-import { addCapsInBatch } from '../data/caps.js';
+import { handleAddCategoryClick, initCategoryUI } from './categories.js';
+import { addCapsInBatch, exportCapImages } from '../data/caps.js';
 import { saveAppData, backupToGitHub } from '../data/saving.js';
 import { importFromDevice, importFromGitHub, exportToDevice } from '../data/loading.js';
 import { hideLoadingScreen, showLoadingScreen, isAllCategorySelected } from '../helpers/helper.js';
 import { initGalleryCapColorPicker } from './gallery.js';
 import { setSlimColorPicker } from './gallery-selection.js';
 import { initGalleryZoom } from './gallery-zoom.js';
+import Modal from './modal.js';
 
 const settingsPanel = document.getElementById('settings');
 const settingsBackdrop = document.getElementById('settings-backdrop');
@@ -61,11 +62,6 @@ export async function initSettingsHandlers() {
 
    initToggleSwitch('toggleUseAutoCapFinder', store.store.userSettings.useAutoCapFinder, async (value) => {
       store.store.userSettings.useAutoCapFinder = value;
-      await saveAppData();
-   });
-
-   initToggleSwitch('toggleUseAutoColorFinder', store.store.userSettings.toggleUseAutoColorFinder, async (value) => {
-      store.store.userSettings.toggleUseAutoColorFinder = value;
       await saveAppData();
    });
 
@@ -294,6 +290,48 @@ export async function initSettingsHandlers() {
    document.getElementById('exportEncryptedBtn')?.addEventListener('click', async () => {
       await exportToDevice(true);
    });
+
+   document.getElementById('exportAllImagesBtn')?.addEventListener('click', async () => {
+      const compressIntoArchive = await Modal.confirm({
+         headerText: 'How to download the images',
+         question: 'Would you like to add all images into a .zip archive or download them individually?',
+         yesLabel: 'Compress to .zip',
+         noLabel: 'Download individually',
+      });
+      if (compressIntoArchive) {
+         showLoadingScreen(`Exporting all images to device...`);
+         const done = await exportCapImages(false, compressIntoArchive);
+         hideLoadingScreen();
+      }
+   });
+
+   document.getElementById('exportSelectedImagesBtn')?.addEventListener('click', async () => {
+      const compressIntoArchive = await Modal.confirm({
+         headerText: 'How to download the images',
+         question: 'Would you like to add all images into a .zip archive or download them individually?',
+         yesLabel: 'Compress to .zip',
+         noLabel: 'Download individually',
+      });
+      if (compressIntoArchive) {
+         showLoadingScreen(`Exporting all images to device...`);
+         const done = await exportCapImages(true, compressIntoArchive);
+         hideLoadingScreen();
+      }
+   });
+
+   document.getElementById('resetUserDataBtn')?.addEventListener('click', async () => {
+      const confirm = await Modal.confirm({
+         question: 'By doing this action you will lose all app data on this device, including cap images and all user settings. Do you want to continue?',
+         yesLabel: 'Yes, delete',
+         noLabel: 'Cancel',
+      });
+      if (confirm) {
+         showLoadingScreen("Resetting the app's data...");
+         await store.resetAppData();
+         hideLoadingScreen();
+         location.reload();
+      }
+   });
 }
 
 function initToggleSwitch(elementId, initialState, onChange) {
@@ -419,6 +457,7 @@ async function initAddCategoryButton() {
                const capToUpdate = store.store.caps.find(c => c.id === capId);
                if (capToUpdate) {
                   capToUpdate.category = cat.id;
+                  capToUpdate.color = cat.color;
                }
             });
             await saveAppData();
@@ -482,8 +521,6 @@ export async function init() {
    await initAddCapButton();
    initSidebarHandlers();
    initCategoryUI();  // Populate categories from store
-   initCategoryButtons();
-   initCategoryDeleteHandlers();
    initGalleryZoom();  // Initialize gallery zoom controls
    setUpThemeFromStore();
 }

@@ -3,22 +3,20 @@
  * Handles zoom/pinch gestures and keyboard zoom controls (Ctrl+scroll, +/-)
  * Smart zoom: exponential steps and max zoom based on viewport width
  */
-
 import * as store from '../data/store.js';
 import { saveAppData } from '../data/saving.js';
+
+const minZoom = 0.45;
+let maxZoom = 2.6;
+let zoomLevel = store.store.userSettings.galleryZoom || 1.05;
+
+const BASE_ITEM_SIZE = 100; // Base size in pixels
 
 export function initGalleryZoom() {
    const gallery = document.getElementById('gallery');
    const galleryList = document.getElementById('galleryList');
 
    if (!gallery || !galleryList) return;
-
-   // Get initial zoom from store
-   let zoomLevel = store.store.userSettings.galleryZoom || 1.05;
-   const minZoom = 0.45;
-   let maxZoom = 2.6;
-
-   const BASE_ITEM_SIZE = 100; // Base size in pixels
 
    /**
     * Calculate maximum zoom based on viewport width
@@ -193,4 +191,8 @@ export function initGalleryZoom() {
       gallery.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('resize', handleResize);
    };
+}
+
+export function setZoom(zoomLevel) { // gallery min zoom level should be a number of items per row so that each item will not be smaller than 64px in size
+
 }

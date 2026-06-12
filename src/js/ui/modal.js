@@ -982,7 +982,7 @@ const Modal = (() => {
          slotHint.style.display = 'block';
          // Disable crop button when no image
          cropBtn.disabled = true;
-         cropBtn.style.opacity = '0.5';
+         cropBtn.style.opacity = '0.4';
       };
 
       const titleInput = el('input', 'mdl-input');
@@ -994,7 +994,9 @@ const Modal = (() => {
          showLoadingScreen('Processing image...');
          isProcessing = true;
 
-         titleInput.value = _pendingImageName ? _pendingImageName : (file.name ? file.name : String(Date.now()));
+         const extractedTitle = _pendingImageName ? _pendingImageName : (file.name ? file.name : String(Date.now()));
+         _pendingImageName = extractedTitle;
+         titleInput.placeholder = extractedTitle;
 
          let convertedImage = null;
          try {
@@ -1011,7 +1013,7 @@ const Modal = (() => {
                originalFile = file
             }
 
-            updateLoadingScreen(`Detecting bottle cap in image '${titleInput.value}'...`);
+            updateLoadingScreen(`Detecting bottle cap in image '${extractedTitle}'...`);
             const processed = await processCapImage(convertedImage, signal);
 
             updateLoadingScreen('Preparing preview...');
@@ -1030,6 +1032,7 @@ const Modal = (() => {
                console.log('Image processing cancelled by user');
                isProcessing = false;
                _pendingImageName = null;
+               titleInput.placeholder = 'Enter cap name';
                hideLoadingScreen();
                return;
             }
@@ -1049,11 +1052,6 @@ const Modal = (() => {
             hideLoadingScreen();
          }
       };
-
-      // If a pending image was pre-loaded, process it
-      if (pendingImage) {
-         await processAndPreviewImage(pendingImage);
-      }
 
       // Handle camera capture
       cameraBtn.addEventListener('click', async () => {
@@ -1128,7 +1126,8 @@ const Modal = (() => {
          const f = fileInput.files[0];
          if (f && !titleInput.value) {
             // Use filename without extension as default title
-            titleInput.value = f.name.replace(/\.[^/.]+$/, '');
+            const extractedTitle = f.name ? f.name.replace(/\.[^/.]+$/, '') : String(Date.now());
+            titleInput.placeholder = extractedTitle;
          }
       });
 
@@ -1216,6 +1215,11 @@ const Modal = (() => {
       descField.appendChild(charCount);
       container.appendChild(descField);
 
+      // If a pending image was pre-loaded, process it
+      if (pendingImage) {
+         await processAndPreviewImage(pendingImage);
+      }
+
       /* ── getData ── */
       const getData = () => {
          // Validate image is present
@@ -1238,11 +1242,11 @@ const Modal = (() => {
          if (description.length > MAX_DESC) { errorEl.show(`Description must be ${MAX_DESC} characters or fewer.`); descArea.focus(); return null; }
 
          errorEl.hide();
+         titleInput.placeholder = 'Enter cap name';
          return {
             image: imageFile,
-            capColor: _capColor || '#8F8F8F',
-            imageProcessed: _capColor ? true : false,
-            title: titleInput.value.trim(),
+            imageProcessed: true,
+            title: titleInput.value ? titleInput.value.trim() : titleInput.placeholder,
             category: tagVal || 'all', // Default to 'all' if not selected
             ...(newCategory ? { newCategory } : {}),
             description,

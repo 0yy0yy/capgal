@@ -42,9 +42,6 @@ async function initApp() {
          }
       }
 
-      // Populate category UI from store
-      initCategoryUI();
-
       // Apply tab states and show initial tab
       applyTabStates();
 

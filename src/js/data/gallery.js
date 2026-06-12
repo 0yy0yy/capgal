@@ -3,18 +3,20 @@ import * as store from '../data/store.js';
 import { pushTab, popTab } from '../ui/navigation.js';
 import { updateGallerySelection, exitGallerySelectionMode, getGallerySelectionManager } from '../ui/gallery-selection.js';
 import { replaceCapImage, exportCapImage, deleteCapImage, deleteSelectedCaps, cropCapImage } from './caps.js';
-import { handleAddCategoryClick, deleteCategory, updateCategoryTitles, updateCategoryColor } from '../ui/categories.js';
+import { handleAddCategoryClick, deleteCategory, updateCategoryTitles, updateCategoryColor, updateCapCountingForCategories } from '../ui/categories.js';
 import { saveAppData } from './saving.js';
 import Modal from '../ui/modal.js';
-import { getWordForCount, setMarqueeScroll, isAllCategorySelected, checkBFVisibility, ALL_CAP_COLORS } from '../helpers/helper.js';
+import { getWordForCount, isAllCategorySelected, checkBFVisibility, ALL_CAP_COLORS } from '../helpers/helper.js';
 import { initColorCarousel } from '../ui/color-carousel.js';
 
 const galleryList = document.getElementById('galleryList');
 const galleryTitle = document.getElementById('galleryTitle');
 const galleryColor = document.getElementById('galleryColor');
+const stickyTop = document.getElementById('stickyTop');
 const searchBar = document.getElementById('searchBar');
 const searchInput = document.getElementById('searchInput');
 const filterRow = document.getElementById('filterRow');
+const moreBottomRow = document.getElementById('moreRow');
 const deleteBtn = document.getElementById('gallery')?.querySelector('#deleteButton');
 
 // Gallery cap color changer
@@ -108,7 +110,7 @@ export function openGallery(category, focusSearch = false) {
           ${cap.imageWebP ? `<img src="blob:data" class="cap-image" data-blob="true" alt="${cap.title}" />` : '<div class="no-image">📷</div>'}
         </div>
         <div class="cap-title ${store.store.userSettings.showCapNames ? 'visible' : 'hidden'}"${colorFilter}>
-          <div class="marquee-content" data-text="${cap.title}"></div>
+          <div class="marquee-content" data-text="${cap.title}">${cap.title}</div>
         </div>
       </li>
     `}).join('');
@@ -126,9 +128,9 @@ export function openGallery(category, focusSearch = false) {
    });
 
    // Show/hide filter row - only in ALL CAPS gallery
-   if (filterRow) {
+   if (filterRow && moreBottomRow) {
       const filtersDiv = filterRow.querySelector('#filters');
-      const selectingDiv = filterRow.querySelector('#selecting');
+      const selectingDiv = moreBottomRow.querySelector('#selecting');
       filtersDiv.innerHTML = '';
 
       const topBar = document.getElementById('topbar');
@@ -160,6 +162,7 @@ export function openGallery(category, focusSearch = false) {
                chip.className = 'filter-chip';
                chip.textContent = cat.name;
                chip.style.borderColor = cat.color;
+               chip.style.setProperty('--clr-filter-chip', cat.color);
                chip.style.setProperty('--clr-filter-chip-active', `${cat.color}99`); // alpha at 0.7
                chip.dataset.id = cat.id;
                // Click to filter, not navigate - show only caps with this category
@@ -173,11 +176,13 @@ export function openGallery(category, focusSearch = false) {
                         const capToUpdate = store.store.caps.find(c => c.id === capId);
                         if (capToUpdate) {
                            capToUpdate.category = cat.id;
+                           capToUpdate.color = cat.color;
                         }
                      });
                      await saveAppData();
                      exitGallerySelectionMode();
                      openGallery('all');
+                     updateCapCountingForCategories();
                   } else {
                      // Filter gallery to show only caps in this category
                      chip.classList.toggle('active');
@@ -224,11 +229,12 @@ export function openGallery(category, focusSearch = false) {
 
                // If in selection mode, assign category to selected items
                if (selectionManager && selectionManager.selectedItems.size > 0) {
-                  const catId = store.store.categories.at(-1).id;
+                  const cat = store.store.categories.at(-1);
                   selectionManager.selectedItems.forEach(capId => {
                      const capToUpdate = store.store.caps.find(c => c.id === capId);
                      if (capToUpdate) {
-                        capToUpdate.category = catId;
+                        capToUpdate.category = cat.id;
+                        capToUpdate.color = cat.color;
                      }
                   });
                   await saveAppData();
@@ -255,6 +261,7 @@ export function openGallery(category, focusSearch = false) {
 
    // Search bar visibility (only in ALL gallery)
    searchBar.classList.toggle('visible', category === 'all');
+   stickyTop.classList.toggle('hidden', category !== 'all');
 
    // Set gallery background based on category color
    const gallery = document.getElementById('gallery');
@@ -331,6 +338,7 @@ export function openGallery(category, focusSearch = false) {
 
                   selectionManager.exitSelectionMode();
                   refreshGallery();
+                  updateCapCountingForCategories();
                }
             }
          }
@@ -391,6 +399,7 @@ export function openGallery(category, focusSearch = false) {
             if (selectionManager.selectedItems.size !== 0) {
                await deleteSelectedCaps([...selectionManager.selectedItems]);
                refreshGallery();
+               updateCapCountingForCategories();
             }
          }
       }
@@ -407,7 +416,8 @@ export function openGallery(category, focusSearch = false) {
       }
    }
 
-   setMarqueeScroll();
+   //setMarqueeScroll();
+   //setOverflowPostfix();
 
    pushTab('gallery');
 
@@ -540,12 +550,12 @@ export function openDetails(id) {
       }
    };
 
-   document.addEventListener('click', (e) => {
+   document.onclick = (e) => {
       const actionBar = document.querySelector('.image-actions');
       if (actionBar && !actionBar.contains(e.target) && !detailsImage.contains(e.target)) {
          actionBar.classList.remove('visible');
       }
-   });
+   };
 
    // Set up image action buttons
    setupDetailsImageActions(id);
@@ -569,100 +579,10 @@ export function openDetails(id) {
       if (confirmed) {
          store.store.caps = store.store.caps.filter(c => c.id !== id);
          await saveAppData();
-         /* popTab();
-         openGallery(store.currentCategory); */
          refreshGallery();
+         updateCapCountingForCategories();
       }
    };
-
-   // Set up color picker
-   const colorPickerContainer = document.getElementById('detailsColorPicker');
-   const colorSwatches = colorPickerContainer.querySelectorAll('.color-picker-btn');
-
-   // Clear all selected states first
-   colorSwatches.forEach(btn => {
-      btn.classList.remove('selected');
-   });
-
-   // Set up click handlers and mark the correct one as selected
-   colorSwatches.forEach(colorBtn => {
-      const color = colorBtn.title;
-      if (color === cap.color) {
-         colorBtn.classList.add('selected');
-      }
-
-      colorBtn.onclick = async () => {
-         // Update UI - remove selected class from ALL buttons across the entire carousel
-         colorSwatches.forEach(btn => {
-            btn.classList.remove('selected');
-         });
-
-         // Add selected class to clicked button
-         colorBtn.classList.add('selected');
-
-         // Update cap color
-         const currentCap = store.store.caps.find(c => c.id === id);
-         if (currentCap) {
-            currentCap.color = color;
-            detailsImage.style.background = color;
-            await saveAppData();
-         }
-      };
-   });
-
-   // Initialize color carousel
-   initColorCarousel();
-
-
-   // Uncomment this if color swatches change
-   /* colorPickerContainer.innerHTML = '';
-   
-   for (const palletName in ALL_CAP_COLORS) {
-      const colorGroupDiv = document.createElement('div');
-      colorGroupDiv.className = 'color-group';
-   
-      const palletLabel = document.createElement('label');
-      palletLabel.textContent = palletName.replaceAll('_', ' ').replace('24', '').replace('UI', '').trim();
-      colorGroupDiv.appendChild(palletLabel);
-   
-      const buttonsContainerDiv = document.createElement('div');
-   
-      ALL_CAP_COLORS[palletName].forEach(color => {
-         const colorBtn = document.createElement('button');
-         colorBtn.type = 'button';
-         colorBtn.className = 'color-picker-btn';
-         colorBtn.style.backgroundColor = color;
-         colorBtn.title = color;
-   
-         // Mark as selected if it matches current cap color
-         if (color === cap.color) {
-            colorBtn.classList.add('selected');
-         }
-   
-         colorBtn.onclick = async () => {
-            // Update UI - remove selected class from all buttons
-            colorPickerContainer.querySelectorAll('.color-picker-btn').forEach(btn => {
-               btn.classList.remove('selected');
-            });
-   
-            // Add selected class to clicked button
-            colorBtn.classList.add('selected');
-   
-            // Update cap color
-            const currentCap = store.store.caps.find(c => c.id === id);
-            if (currentCap) {
-               currentCap.color = color;
-               detailsImage.style.background = color;
-               await saveAppData();
-            }
-         };
-   
-         buttonsContainerDiv.appendChild(colorBtn);
-      });
-   
-      colorGroupDiv.appendChild(buttonsContainerDiv);
-      colorPickerContainer.appendChild(colorGroupDiv);
-   } */
 
    pushTab('details');
 }
@@ -758,6 +678,7 @@ export function addLastCategoryToFilters() {
             const capToUpdate = store.store.caps.find(c => c.id === capId);
             if (capToUpdate) {
                capToUpdate.category = cat.id;
+               capToUpdate.color = cat.color;
             }
          });
          await saveAppData();

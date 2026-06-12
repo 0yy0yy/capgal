@@ -1,96 +1,6 @@
 import { updateLoadingScreen } from '../helpers/helper.js';
 import { detectCirclesInWorker, isHoughCirclesWorkerReady } from './hough-circles-worker-manager.js';
 
-// Web Worker for OpenCV processing
-//let openCVWorker = null;
-//initOpenCVWorker();
-
-/**
- * Initialize OpenCV Web Worker
- */
-/* function initOpenCVWorker() {
-   if (openCVWorker) return true; // Already initialized
-
-   const opencvUrl = new URL('../workers/opencv-worker.js', import.meta.url);
-   try {
-      openCVWorker = new Worker(opencvUrl); //(opencvUrl, { type: 'module' });
-   } catch (error) {
-      // Fallback for browsers that don't support module workers
-      //openCVWorker = new Worker(opencvUrl);
-      return false;
-   }
-
-   // Handle worker error
-   openCVWorker.onerror = (error) => {
-      console.error('Worker error:', error);
-   };
-
-   openCVWorker.onmessage = (message) => {
-      console.log('Worker message:', message.data.type);
-   };
-
-   return true;
-} */
-
-/**
- * Send task to worker and wait for response
- */
-/* function sendToWorker(task, data, timeoutMs = 10000) {
-   return new Promise((resolve, reject) => {
-      const taskId = Math.random().toString(36).substr(2, 9);
-      let timeoutId = null;
-
-      const handleMessage = (event) => {
-         const { taskId: responseTaskId, type, error } = event.data;
-
-         if (responseTaskId !== taskId) return; // Not for us
-
-         if (timeoutId) clearTimeout(timeoutId);
-         openCVWorker.removeEventListener('message', handleMessage);
-
-         if (type === 'error') {
-            reject(new Error(error));
-         } else {
-            resolve(event.data);
-         }
-      };
-
-      // Timeout safety
-      timeoutId = setTimeout(() => {
-         openCVWorker.removeEventListener('message', handleMessage);
-         reject(new Error('Worker task timeout'));
-      }, timeoutMs);
-
-      openCVWorker.addEventListener('message', handleMessage);
-      openCVWorker.postMessage({
-         taskId,
-         task,
-         ...data
-      });
-   });
-} */
-
-/**
-* Wait for OpenCV.js to load (checks cv global object)
-*/
-function waitForOpenCV(timeout = 30000) {
-   return new Promise((resolve, reject) => {
-      const startTime = Date.now();
-
-      const check = () => {
-         if (typeof cv !== 'undefined' && cv.Mat) {
-            resolve();
-         } else if (Date.now() - startTime > timeout) {
-            reject(new Error('OpenCV.js failed to load'));
-         } else {
-            setTimeout(check, 100);
-         }
-      };
-
-      check();
-   });
-}
-
 /**
  * Check if image is HEIC format and convert to WebP if needed
  */
@@ -181,26 +91,8 @@ async function detectAndProcessWithOpenCV(imageBlob, signal = null) {
    }
 
    try {
-      // Wait for OpenCV to load on main thread
-      await waitForOpenCV();
-
-      // Load image on main thread
-      const bitmap = await createImageBitmap(imageBlob);
-      const canvas = document.createElement('canvas');
-      canvas.width = bitmap.width;
-      canvas.height = bitmap.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(bitmap, 0, 0);
-
-      // Convert to grayscale on main thread
-      let src = cv.imread(canvas);
-      let gray = new cv.Mat();
-      cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-
       // Check abort before expensive operation
       if (signal?.aborted) {
-         src.delete();
-         gray.delete();
          throw new DOMException('Image processing cancelled', 'AbortError');
       }
 
@@ -213,11 +105,6 @@ async function detectAndProcessWithOpenCV(imageBlob, signal = null) {
       if (isHoughCirclesWorkerReady()) {
          try {
             updateLoadingScreen(`Searching for the cap in the image (${MAX_CIRCLE_DETECTION_TIME_MS / 1000} seconds max, worker)...`);
-
-            // Extract pixel data from grayscale Mat (serializable)
-            const pixelData = new Uint8Array(gray.data);
-            const width = gray.cols;
-            const height = gray.rows;
 
             // HoughCircles parameters
             const params = {
@@ -232,9 +119,7 @@ async function detectAndProcessWithOpenCV(imageBlob, signal = null) {
             // Send to worker with 12-second timeout (can kill worker thread)
             try {
                const result = await detectCirclesInWorker({
-                  pixelData,
-                  width,
-                  height,
+                  imageBlob,
                   params
                }, MAX_CIRCLE_DETECTION_TIME_MS);
 
@@ -291,28 +176,14 @@ async function detectAndProcessWithOpenCV(imageBlob, signal = null) {
 
       // Check abort before continuing with processing
       if (signal?.aborted) {
-         src.delete();
-         gray.delete();
          throw new DOMException('Image processing cancelled', 'AbortError');
       }
 
       if (detected && circle) {
-         // Extract color from circle
-         updateLoadingScreen('Extracting dominant color of the cap...');
-         // Check if auto color finding is enabled
-         const useAutoColorFinder = await getSetting('toggleUseAutoColorFinder');
-         if (useAutoColorFinder) {
-            capColor = extractColorFromCircle(src, circle, 'RGBA');
-         }
-
          // Crop to circle with padding
          updateLoadingScreen('Cropping image to circle...');
          processedBlob = await cropToCircle(canvas, circle);
       }
-
-      // Cleanup
-      src.delete();
-      gray.delete();
 
       return {
          imageBlob: processedBlob,
@@ -458,19 +329,20 @@ function extractColorFromCircle(mat, circle, colorSpace = 'BGR') {
 /**
  * Crop image to circle with padding
  */
-async function cropToCircle(canvas, circle) {
+async function cropToCircle(imageBlob, circle) {
    const [cx, cy, radius] = circle;
    const size = Math.ceil(radius * 2.4);
    const x = Math.max(0, Math.round(cx - size / 2));
    const y = Math.max(0, Math.round(cy - size / 2));
 
+   const bitmap = await createImageBitmap(imageBlob);
    const cropCanvas = document.createElement('canvas');
    cropCanvas.width = size;
    cropCanvas.height = size;
 
    const ctx = cropCanvas.getContext('2d');
    ctx.drawImage(
-      canvas,
+      bitmap,
       x, y, size, size,
       0, 0, size, size
    );
@@ -485,44 +357,7 @@ async function cropToCircle(canvas, circle) {
  */
 async function processWithColorExtraction(imageBlob) {
    updateLoadingScreen('Extracting dominant color of the cap...');
-
-   // Check if auto color finding is enabled
-   const useAutoColorFinder = await getSetting('toggleUseAutoColorFinder');
    let capColor = '#8F8F8F'; // Default to grey
-
-   if (useAutoColorFinder) {
-      const bitmap = await createImageBitmap(imageBlob);
-
-      // Sample the center for dominant color
-      const canvas = document.createElement('canvas');
-      canvas.width = 50;
-      canvas.height = 50;
-
-      const ctx = canvas.getContext('2d');
-      const scale = Math.min(bitmap.width, bitmap.height) / 50;
-      const offsetX = (bitmap.width - 50 * scale) / 2;
-      const offsetY = (bitmap.height - 50 * scale) / 2;
-
-      ctx.drawImage(bitmap, offsetX, offsetY, 50 * scale, 50 * scale, 0, 0, 50, 50);
-
-      const imageData = ctx.getImageData(0, 0, 50, 50);
-      const data = imageData.data;
-
-      let r = 0, g = 0, b = 0;
-      for (let i = 0; i < data.length; i += 4) {
-         r += data[i];
-         g += data[i + 1];
-         b += data[i + 2];
-      }
-
-      const count = data.length / 4;
-      r = Math.round(r / count);
-      g = Math.round(g / count);
-      b = Math.round(b / count);
-
-      capColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-   }
-
    // Return original image for full quality, only use small sample for color
    return new Promise(resolve => {
       resolve({
