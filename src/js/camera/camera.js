@@ -6,14 +6,15 @@
 export async function showCameraModal() {
    injectCameraStyles();
    return new Promise(async (resolve, reject) => {
-      // Create a hidden video element
-      const video = document.createElement('video');
-      video.playsInline = true;
-      video.autoplay = true;
+      try {
+         // Create a hidden video element
+         const video = document.createElement('video');
+         video.playsInline = true;
+         video.autoplay = true;
 
-      // Create modal overlay
-      const modal = document.createElement('div');
-      modal.style.cssText = `
+         // Create modal overlay
+         const modal = document.createElement('div');
+         modal.style.cssText = `
          position: fixed;
          top: 0;
          left: 0;
@@ -27,17 +28,17 @@ export async function showCameraModal() {
          justify-content: center;
       `;
 
-      // Add video element
-      video.style.cssText = `
+         // Add video element
+         video.style.cssText = `
          width: 100%;
          height: 100%;
          object-fit: cover;
       `;
-      modal.appendChild(video);
+         modal.appendChild(video);
 
-      // Button container
-      const buttons = document.createElement('div');
-      buttons.style.cssText = `
+         // Button container
+         const buttons = document.createElement('div');
+         buttons.style.cssText = `
          position: absolute;
          bottom: 20px;
          left: 0;
@@ -48,27 +49,27 @@ export async function showCameraModal() {
          padding: 0 16px;
       `;
 
-      // Capture button
-      const captureBtn = document.createElement('button');
-      //captureBtn.textContent = '📸 Take Photo';
-      captureBtn.style.cssText = `
+         // Capture button
+         const captureBtn = document.createElement('button');
+         //captureBtn.textContent = '📸 Take Photo';
+         captureBtn.style.cssText = `
          padding: 6px;
          font-size: 16px;
          width: 52px;
          height: 52px;
          background: transparent;
          color: white;
-         border: 2px solid #4CAF50;
-         box-shadow: inset 0 0 15px 0px #4CAF50;
+         border: 2px solid #808080;
+         box-shadow: inset 0 0 15px 0px #ffffff65;
          border-radius: 50%;
          cursor: pointer;
          font-weight: bold;
       `;
 
-      // Flash button
-      const lightBtn = document.createElement('button');
-      lightBtn.classList.add('off')
-      lightBtn.style.cssText = `
+         // Flash button
+         const lightBtn = document.createElement('button');
+         lightBtn.classList.add('off')
+         lightBtn.style.cssText = `
          position: absolute;
          top: 20px;
          left: 20px;
@@ -83,9 +84,9 @@ export async function showCameraModal() {
          background-color: transparent;
       `;
 
-      // Flash overlay (add this after modal is created)
-      const flashOverlay = document.createElement('div');
-      flashOverlay.style.cssText = `
+         // Flash overlay (add this after modal is created)
+         const flashOverlay = document.createElement('div');
+         flashOverlay.style.cssText = `
          position: absolute;
          inset: 0;
          background: white;
@@ -93,12 +94,12 @@ export async function showCameraModal() {
          pointer-events: none;
          z-index: 1;
       `;
-      modal.appendChild(flashOverlay);
+         modal.appendChild(flashOverlay);
 
-      // Cancel button
-      const cancelBtn = document.createElement('button');
-      cancelBtn.textContent = '✕';
-      cancelBtn.style.cssText = `
+         // Cancel button
+         const cancelBtn = document.createElement('button');
+         cancelBtn.textContent = '✕';
+         cancelBtn.style.cssText = `
          position: absolute;
          top: 20px;
          right: 20px;
@@ -112,165 +113,210 @@ export async function showCameraModal() {
          font-weight: bold;
       `;
 
-      buttons.appendChild(captureBtn);
-      //buttons.appendChild(cancelBtn);
-      modal.appendChild(buttons);
-      modal.appendChild(lightBtn);
-      modal.appendChild(cancelBtn);
+         buttons.appendChild(captureBtn);
+         modal.appendChild(buttons);
+         modal.appendChild(lightBtn);
+         modal.appendChild(cancelBtn);
 
-      const torchCameraId = await findTorchCamera();
-      if (!torchCameraId) {
-         lightBtn.style.display = 'none';
-      }
+         // ------------------------------------------------------------------
+         // Find best camera with torch
+         // ------------------------------------------------------------------
 
-      // Request camera access
-      navigator.mediaDevices
-         .getUserMedia({
+         const torchCameraId = await findBestTorchCamera();
+
+         const stream = await navigator.mediaDevices.getUserMedia({
             video: torchCameraId
-               ? { deviceId: { exact: torchCameraId } }
-               : { facingMode: 'environment' }
-         })
-         .then(async (stream) => {
-            document.body.appendChild(modal);
-            video.srcObject = stream;
-            await video.play();
-            const tracks = stream.getVideoTracks();
-            if (torchCameraId) {
-               await toggleTorch(tracks, false);
-            }
+               ? {
+                  deviceId: { exact: torchCameraId },
+                  width: { ideal: 4096 },
+                  height: { ideal: 4096 },
+                  resizeMode: 'crop-and-scale'
+               }
+               : {
+                  facingMode: { ideal: 'environment' },
+                  width: { ideal: 4096 },
+                  height: { ideal: 4096 },
+                  resizeMode: 'crop-and-scale'
+               }
+         });
 
-            captureBtn.addEventListener('click', () => {
-               // ── Trigger animations ──
+         const track = stream.getVideoTracks()[0];
+         const tracks = stream.getTracks();
+
+         video.srcObject = stream;
+         await video.play();
+         document.body.appendChild(modal);
+
+         const capabilities = track.getCapabilities();
+
+         if (!capabilities.torch) {
+            lightBtn.style.display = 'none';
+         } else {
+            await toggleTorch(track, false);
+         }
+
+         // ------------------------------------------------------------------
+         // Capture
+         // ------------------------------------------------------------------
+
+         captureBtn.addEventListener('click', async () => {
+            try {
                captureBtn.classList.remove('camera-capture-animate');
-               void captureBtn.offsetWidth; // force reflow to re-trigger
+               void captureBtn.offsetWidth;
                captureBtn.classList.add('camera-capture-animate');
 
                flashOverlay.style.animation = 'none';
                void flashOverlay.offsetWidth;
-               flashOverlay.style.animation = 'shutter-flash 0.4s ease forwards';
+               flashOverlay.style.animation =
+                  'shutter-flash 0.4s ease forwards';
 
-               setTimeout(() => {
-                  const canvas = document.createElement('canvas');
-                  canvas.width = video.videoWidth;
-                  canvas.height = video.videoHeight;
-                  const ctx = canvas.getContext('2d');
-                  ctx.drawImage(video, 0, 0);
+               const imageCapture = new ImageCapture(track);
 
-                  tracks.forEach(track => track.stop());
-                  modal.remove();
+               await new Promise(r => setTimeout(r, 230));
 
-                  canvas.toBlob((blob) => {
-                     resolve(blob);
-                  }, 'image/webp', 1);
-               }, 400);
-            });
+               const blob = await imageCapture.takePhoto();
 
-            lightBtn.addEventListener('click', async () => {
-               lightBtn.classList.toggle('on');
-               lightBtn.classList.toggle('off');
-               const lightOn = lightBtn.classList.contains('on');
-               await toggleTorch(tracks, lightOn);
-            });
-
-            cancelBtn.addEventListener('click', () => {
-               tracks.forEach(track => track.stop());
+               tracks.forEach(t => t.stop());
                modal.remove();
-               resolve(null);
-            });
-         })
-         .catch((error) => {
-            console.error('Camera error:', error);
-            reject(new Error('Could not access camera. Please check permissions.'));
+
+               resolve(blob);
+            }
+            catch (err) {
+               console.error(err);
+
+               tracks.forEach(t => t.stop());
+               modal.remove();
+
+               reject(err);
+            }
          });
+
+         // ------------------------------------------------------------------
+         // Torch
+         // ------------------------------------------------------------------
+
+         lightBtn.addEventListener('click', async () => {
+            lightBtn.classList.toggle('on');
+            lightBtn.classList.toggle('off');
+
+            const lightOn =
+               lightBtn.classList.contains('on');
+
+            await toggleTorch(track, lightOn);
+         });
+
+         // ------------------------------------------------------------------
+         // Cancel
+         // ------------------------------------------------------------------
+
+         cancelBtn.addEventListener('click', () => {
+            tracks.forEach(t => t.stop());
+            modal.remove();
+            resolve(null);
+         });
+      }
+      catch (error) {
+         console.error('Camera error:', error);
+         reject(
+            new Error(
+               'Could not access camera. Please check permissions.'
+            )
+         );
+      }
    });
 }
 
+// ── Find highest-resolution camera with torch ──────────────────────────────
+async function findBestTorchCamera() {
+   const devices =
+      await navigator.mediaDevices.enumerateDevices();
 
-/* async function findTorchCamera() {
-   const devices = await navigator.mediaDevices.enumerateDevices();
-
-   const rearCameras = devices.filter(
-      d =>
-         d.kind === 'videoinput' &&
-         d.label.toLowerCase().includes('back')
+   const cameras = devices.filter(
+      d => d.kind === 'videoinput'
    );
 
-   for (const camera of rearCameras) {
+   let best = null;
+
+   for (const camera of cameras) {
       let stream;
 
       try {
          stream = await navigator.mediaDevices.getUserMedia({
             video: {
-               deviceId: { exact: camera.deviceId }
+               deviceId: { exact: camera.deviceId },
+               width: { ideal: 4096 },
+               height: { ideal: 4096 }
             }
          });
 
          const track = stream.getVideoTracks()[0];
          const capabilities = track.getCapabilities();
-         stream.getTracks().forEach(t => t.stop());
-         if (capabilities.torch) {
-            return camera.deviceId;
+
+         if (!capabilities.torch) {
+            continue;
          }
-      } catch (err) {
-         if (stream) {
-            stream.getTracks().forEach(t => t.stop());
+
+         let score = 0;
+
+         try {
+            const imageCapture =
+               new ImageCapture(track);
+
+            const photoCaps =
+               await imageCapture.getPhotoCapabilities();
+
+            if (
+               photoCaps.imageWidth &&
+               photoCaps.imageHeight
+            ) {
+               score =
+                  photoCaps.imageWidth.max *
+                  photoCaps.imageHeight.max;
+            }
+         }
+         catch {
+            score =
+               (capabilities.width?.max ?? 0) *
+               (capabilities.height?.max ?? 0);
+         }
+
+         if (!best || score > best.score) {
+            best = {
+               deviceId: camera.deviceId,
+               score
+            };
          }
       }
-   }
-
-   return null;
-} */
-
-async function findTorchCamera() {
-   const devices = await navigator.mediaDevices.enumerateDevices();
-   const rearCameras = devices.filter(
-      d =>
-         d.kind === 'videoinput' &&
-         d.label.toLowerCase().includes('back')
-   );
-
-   let best = null; // { deviceId, resolution }
-
-   for (const camera of rearCameras) {
-      let stream;
-      try {
-         stream = await navigator.mediaDevices.getUserMedia({
-            video: { deviceId: { exact: camera.deviceId } }
-         });
-
-         const track = stream.getVideoTracks()[0];
-         const capabilities = track.getCapabilities();
-         stream.getTracks().forEach(t => t.stop());
-
-         if (capabilities.torch) {
-            const resolution = (capabilities.width?.max ?? 0) * (capabilities.height?.max ?? 0);
-            if (!best || resolution > best.resolution) {
-               best = { deviceId: camera.deviceId, resolution };
-            }
-         }
-      } catch (err) {
-         if (stream) stream.getTracks().forEach(t => t.stop());
+      catch {
+      }
+      finally {
+         stream?.getTracks().forEach(t => t.stop());
       }
    }
 
    return best?.deviceId ?? null;
 }
 
+// ── Torch control ──────────────────────────────────────────────────────────
+async function toggleTorch(track, turnOn) {
+   try {
+      await track.applyConstraints({
+         advanced: [{ torch: turnOn }]
+      });
+      return;
+   }
+   catch {
+   }
 
-async function toggleTorch(tracks, turnOn) {
-   for (const track of tracks) {
-      try {
-         await track.applyConstraints({ advanced: [{ torch: turnOn }] });
-      } catch (e) {
-         try {
-            await track.applyConstraints({ torch: turnOn });
-         } catch (e2) {
-            console.error("torch access failed", e2);
-         }
-      }
+   try {
+      await track.applyConstraints({
+         torch: turnOn
+      });
+   }
+   catch (err) {
+      console.error('Torch access failed', err);
    }
 }
-
 
 // ── Inject camera animation styles ─────────────────────────────────────────
 function injectCameraStyles() {
@@ -280,14 +326,14 @@ function injectCameraStyles() {
    style.textContent = `
       @keyframes shutter-flash {
          0%   { opacity: 0; }
-         15%  { opacity: 0.3; }
+         15%  { opacity: 0.23; }
          100% { opacity: 0; }
       }
 
       @keyframes ring-pulse {
-         0%   { box-shadow: inset 0 0 15px 0px #4CAF50, 0 0 0 0px rgba(76, 175, 80, 0.7); }
-         70%  { box-shadow: inset 0 0 15px 0px #4CAF50, 0 0 0 18px rgba(76, 175, 80, 0); }
-         100% { box-shadow: inset 0 0 15px 0px #4CAF50, 0 0 0 0px rgba(76, 175, 80, 0); }
+         0%   { box-shadow: inset 0 0 15px 0px #ffffff, 0 0 0 0px rgba(255, 255, 255, 0.7); }
+         70%  { box-shadow: inset 0 0 15px 0px #ffffff, 0 0 0 18px rgba(255, 255, 255, 0); }
+         100% { box-shadow: inset 0 0 15px 0px #ffffff, 0 0 0 0px rgba(255, 255, 255, 0); }
       }
 
       @keyframes btn-press {
